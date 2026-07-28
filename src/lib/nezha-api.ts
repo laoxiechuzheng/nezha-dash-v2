@@ -5,6 +5,7 @@ import type {
 	MonitorResponse,
 	ServerGroupResponse,
 	ServerMetricsResponse,
+	ServiceLiveResponse,
 	ServiceResponse,
 	SettingResponse,
 } from "@/types/nezha-api";
@@ -62,7 +63,7 @@ export const fetchLoginUser = async (): Promise<LoginUserResponse> => {
 	return data;
 };
 
-export type MonitorPeriod = "1d" | "7d" | "30d";
+export type MonitorPeriod = "6h" | "1d" | "7d" | "30d";
 
 export const fetchMonitor = async (
 	server_id: number,
@@ -70,6 +71,20 @@ export const fetchMonitor = async (
 ): Promise<MonitorResponse> => {
 	const query = period ? `?period=${period}` : "";
 	const response = await fetch(`/api/v1/server/${server_id}/service${query}`);
+	const data = await response.json();
+	if (data.error) {
+		throw new Error(data.error);
+	}
+	return data;
+};
+
+export const fetchMonitorLive = async (
+	server_id: number,
+	since: number,
+): Promise<ServiceLiveResponse> => {
+	const response = await fetch(
+		`/api/v1/server/${server_id}/service/live?since=${Math.max(0, since - 1)}`,
+	);
 	const data = await response.json();
 	if (data.error) {
 		throw new Error(data.error);
