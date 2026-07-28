@@ -11,11 +11,13 @@ import type { NezhaMonitor, ServerMonitorChart } from "@/types/nezha-api";
 const apiMocks = vi.hoisted(() => ({
 	fetchLoginUser: vi.fn(),
 	fetchMonitor: vi.fn(),
+	fetchMonitorLive: vi.fn(),
 }));
 
 vi.mock("@/lib/nezha-api", () => ({
 	fetchLoginUser: apiMocks.fetchLoginUser,
 	fetchMonitor: apiMocks.fetchMonitor,
+	fetchMonitorLive: apiMocks.fetchMonitorLive,
 }));
 
 vi.mock("recharts", () => {
@@ -146,6 +148,16 @@ describe("NetworkChart", () => {
 	beforeEach(() => {
 		apiMocks.fetchLoginUser.mockReset();
 		apiMocks.fetchMonitor.mockReset();
+		apiMocks.fetchMonitorLive.mockReset();
+		apiMocks.fetchMonitorLive.mockResolvedValue({
+			success: true,
+			data: {
+				server_id: 7,
+				server_name: "edge-chart",
+				min_duration_ms: 5000,
+				results: [],
+			},
+		});
 		apiMocks.fetchLoginUser.mockRejectedValue(new Error("anonymous"));
 		Object.defineProperty(document, "cookie", {
 			configurable: true,
@@ -190,7 +202,7 @@ describe("NetworkChart", () => {
 		renderWithQuery(<NetworkChart server_id={7} show={true} />);
 
 		expect(await screen.findByText("edge-chart")).toBeInTheDocument();
-		expect(apiMocks.fetchMonitor).toHaveBeenCalledWith(7, "1d");
+		expect(apiMocks.fetchMonitor).toHaveBeenCalledWith(7, "6h");
 		expect(screen.getByText("2 monitor.monitorCount")).toBeInTheDocument();
 		expect(screen.getByText("Alpha")).toBeInTheDocument();
 		expect(screen.getByText("Beta")).toBeInTheDocument();

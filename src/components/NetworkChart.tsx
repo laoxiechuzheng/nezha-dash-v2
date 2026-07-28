@@ -261,18 +261,20 @@ export function NetworkChart({
 			{ id: item.monitor_id, displayIndex: item.display_index },
 		]),
 	);
-	const chartDataKey = Object.keys(transformedData).sort((a, b) => {
-		const aInfo = monitorInfoByName.get(a);
-		const bInfo = monitorInfoByName.get(b);
-		if (!aInfo && !bInfo) return a.localeCompare(b);
-		if (!aInfo) return 1;
-		if (!bInfo) return -1;
+	const chartDataKey = Object.keys(transformedData)
+		.filter((key) => transformedData[key].length > 0)
+		.sort((a, b) => {
+			const aInfo = monitorInfoByName.get(a);
+			const bInfo = monitorInfoByName.get(b);
+			if (!aInfo && !bInfo) return a.localeCompare(b);
+			if (!aInfo) return 1;
+			if (!bInfo) return -1;
 
-		const indexDiff = (bInfo.displayIndex ?? 0) - (aInfo.displayIndex ?? 0);
-		if (indexDiff !== 0) return indexDiff;
+			const indexDiff = (bInfo.displayIndex ?? 0) - (aInfo.displayIndex ?? 0);
+			if (indexDiff !== 0) return indexDiff;
 
-		return aInfo.id - bInfo.id;
-	});
+			return aInfo.id - bInfo.id;
+		});
 
 	const initChartConfig = {
 		avg_delay: {
@@ -1121,7 +1123,8 @@ const mergeMonitorData = (
 			error_code: [],
 		};
 		for (let i = 0; i < item.created_at.length; i++) {
-			if (item.created_at[i] < cutoff) continue;
+			// The Dashboard already applies the requested history period. Keep its
+			// exact timestamps instead of filtering again with the browser clock.
 			copy.created_at.push(item.created_at[i]);
 			copy.avg_delay.push(item.avg_delay[i]);
 			copy.packet_loss?.push(
