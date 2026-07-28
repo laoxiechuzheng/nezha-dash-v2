@@ -79,6 +79,7 @@
 		"upload": "上传",
 		"download": "下载",
 		"realtime": "实时",
+		"period6h": "6 小时",
 		"period1d": "1 天",
 		"period7d": "7 天",
 		"period30d": "30 天",
@@ -121,7 +122,15 @@
 		"loginRequired": "请登录后查看",
 		"period1d": "1 天",
 		"period7d": "7 天",
-		"period30d": "30 天"
+		"period30d": "30 天",
+		"timeout": "连接超时",
+		"connectionRefused": "连接被拒绝",
+		"dnsError": "DNS 解析失败",
+		"unreachable": "网络不可达",
+		"invalidTarget": "目标地址无效",
+		"failed": "连接失败",
+		"outage": "中断",
+		"recovered": "已恢复"
 	},
 	"pwa": {
 		"offlineReady": "应用可以离线使用了",

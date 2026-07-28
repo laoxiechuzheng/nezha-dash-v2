@@ -79,6 +79,7 @@
 		"upload": "Upload",
 		"download": "Download",
 		"realtime": "Realtime",
+		"period6h": "6 Hours",
 		"period1d": "1 Day",
 		"period7d": "7 Days",
 		"period30d": "30 Days",
@@ -120,7 +121,15 @@
 		"loginRequired": "Please login to view",
 		"period1d": "1 Day",
 		"period7d": "7 Days",
-		"period30d": "30 Days"
+		"period30d": "30 Days",
+		"timeout": "Timeout",
+		"connectionRefused": "Connection refused",
+		"dnsError": "DNS error",
+		"unreachable": "Network unreachable",
+		"invalidTarget": "Invalid target",
+		"failed": "Failed",
+		"outage": "Outage",
+		"recovered": "Recovered"
 	},
 	"pwa": {
 		"offlineReady": "App ready to work offline",

@@ -85,8 +85,11 @@ export interface MonitorResponse {
 export type ServerMonitorChart = {
 	[key: string]: {
 		created_at: number;
-		avg_delay: number;
+		avg_delay: number | null;
 		packet_loss?: number;
+		status?: number;
+		error_code?: number;
+		recovered?: boolean;
 	}[];
 };
 
@@ -94,11 +97,37 @@ export interface NezhaMonitor {
 	monitor_id: number;
 	monitor_name: string;
 	display_index?: number;
+	duration?: number;
 	server_id: number;
 	server_name: string;
 	created_at: number[];
 	avg_delay: number[];
 	packet_loss?: number[];
+	status?: number[];
+	error_code?: number[];
+}
+
+export interface ServiceLatestResult {
+	monitor_id: number;
+	monitor_name: string;
+	server_id: number;
+	server_name: string;
+	duration: number;
+	created_at: number;
+	delay: number;
+	successful: boolean;
+	error_code: number;
+	error?: string;
+}
+
+export interface ServiceLiveResponse {
+	success: boolean;
+	data: {
+		server_id: number;
+		server_name: string;
+		min_duration_ms: number;
+		results: ServiceLatestResult[];
+	};
 }
 
 export interface ServiceResponse {

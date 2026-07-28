@@ -37,20 +37,60 @@ import {
 import {
 	fetchLoginUser,
 	fetchMonitor,
+	fetchMonitorLive,
 	type MonitorPeriod,
 } from "@/lib/nezha-api";
 import { cn, formatTime } from "@/lib/utils";
-import type { NezhaMonitor, ServerMonitorChart } from "@/types/nezha-api";
+import type {
+	NezhaMonitor,
+	ServerMonitorChart,
+	ServiceLatestResult,
+} from "@/types/nezha-api";
 import NetworkChartLoading from "./NetworkChartLoading";
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 
 interface ResultItem {
 	created_at: number;
-	[key: string]: number;
+	[key: string]: number | null | boolean;
 }
 
 const MIN_PERIOD_LOADING_MS = 500;
+const LIVE_POLL_MIN_MS = 1000;
+const LIVE_POLL_MAX_MS = 10000;
+
+const errorLabel = (
+	code: number | undefined,
+	translate: (key: string, fallback: string) => string,
+) => {
+	switch (code) {
+		case 1:
+			return translate("monitor.timeout", "Timeout");
+		case 2:
+			return translate("monitor.connectionRefused", "Connection refused");
+		case 3:
+			return translate("monitor.dnsError", "DNS error");
+		case 4:
+			return translate("monitor.unreachable", "Network unreachable");
+		case 5:
+			return translate("monitor.invalidTarget", "Invalid target");
+		default:
+			return translate("monitor.failed", "Failed");
+	}
+};
+
+const periodDurationMs = (period: MonitorPeriod) => {
+	switch (period) {
+		case "6h":
+			return 6 * 60 * 60 * 1000;
+		case "7d":
+			return 7 * 24 * 60 * 60 * 1000;
+		case "30d":
+			return 30 * 24 * 60 * 60 * 1000;
+		default:
+			return 24 * 60 * 60 * 1000;
+	}
+};
 
 /**
  * Helper method to calculate packet loss from delay data
@@ -127,7 +167,12 @@ export function NetworkChart({
 	show: boolean;
 }) {
 	const { t } = useTranslation();
-	const [period, setPeriod] = React.useState<MonitorPeriod>("1d");
+	const [period, setPeriod] = React.useState<MonitorPeriod>("6h");
+	const [liveResults, setLiveResults] = React.useState<ServiceLatestResult[]>(
+		[],
+	);
+	const [livePollMs, setLivePollMs] = React.useState(5000);
+	const lastSeenByServerRef = React.useRef<Record<number, number>>({});
 	const { data: userData, isError: isLoginError } = useQuery({
 		queryKey: ["login-user"],
 		queryFn: () => fetchLoginUser(),
@@ -144,8 +189,8 @@ export function NetworkChart({
 			: false;
 
 	React.useEffect(() => {
-		if (!isLogin && period !== "1d") {
-			setPeriod("1d");
+		if (!isLogin && period !== "1d" && period !== "6h") {
+			setPeriod("6h");
 		}
 	}, [isLogin, period]);
 
@@ -156,8 +201,34 @@ export function NetworkChart({
 		placeholderData: keepPreviousData,
 		refetchOnMount: true,
 		refetchOnWindowFocus: true,
-		refetchInterval: 10000,
 	});
+
+	const { data: liveData } = useQuery({
+		queryKey: ["monitor-live", server_id],
+		queryFn: () =>
+			fetchMonitorLive(server_id, lastSeenByServerRef.current[server_id] ?? 0),
+		enabled: show,
+		refetchOnMount: true,
+		refetchOnWindowFocus: true,
+		refetchIntervalInBackground: true,
+		refetchInterval: livePollMs,
+	});
+
+	React.useEffect(() => {
+		if (!liveData?.data) return;
+		const requestedInterval = Math.floor(liveData.data.min_duration_ms / 2);
+		setLivePollMs(
+			Math.max(LIVE_POLL_MIN_MS, Math.min(LIVE_POLL_MAX_MS, requestedInterval)),
+		);
+		if (!liveData.data.results?.length) return;
+		lastSeenByServerRef.current[server_id] = Math.max(
+			lastSeenByServerRef.current[server_id] ?? 0,
+			...liveData.data.results.map((item) => item.created_at),
+		);
+		setLiveResults((previous) =>
+			mergeLiveResults(previous, liveData.data.results),
+		);
+	}, [liveData, server_id]);
 
 	if (!monitorData) return <NetworkChartLoading />;
 
@@ -175,12 +246,17 @@ export function NetworkChart({
 		);
 	}
 
-	const transformedData = transformData(monitorData.data);
+	const mergedMonitorData = mergeMonitorData(
+		monitorData.data,
+		liveResults.filter((item) => item.server_id === server_id),
+		period,
+	);
+	const transformedData = transformData(mergedMonitorData);
 
-	const formattedData = formatData(monitorData.data);
+	const formattedData = formatData(mergedMonitorData);
 
 	const monitorInfoByName = new Map(
-		monitorData.data.map((item) => [
+		mergedMonitorData.map((item) => [
 			item.monitor_name,
 			{ id: item.monitor_id, displayIndex: item.display_index },
 		]),
@@ -215,7 +291,7 @@ export function NetworkChart({
 			chartDataKey={chartDataKey}
 			chartConfig={initChartConfig}
 			chartData={transformedData}
-			serverName={monitorData.data[0].server_name}
+			serverName={mergedMonitorData[0]?.server_name ?? ""}
 			formattedData={formattedData}
 			isPeriodLoading={isPlaceholderData}
 			period={period}
@@ -251,6 +327,7 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 	const loadingStartedAtRef = React.useRef<number | null>(null);
 
 	const TIME_RANGE_OPTIONS: { value: MonitorPeriod; label: string }[] = [
+		{ value: "6h", label: t("monitor.period6h", "6h") },
 		{ value: "1d", label: t("monitor.period1d") },
 		{ value: "7d", label: t("monitor.period7d") },
 		{ value: "30d", label: t("monitor.period30d") },
@@ -328,7 +405,13 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 		for (const key of chartDataKey) {
 			const data = chartData[key] || [];
 			if (data.length > 0) {
-				const delays = data.map((item) => item.avg_delay);
+				const delays = data
+					.filter((item) => item.avg_delay !== null && (item.status ?? 1) === 1)
+					.map((item) => item.avg_delay as number);
+				if (delays.length === 0) {
+					stats[key] = { minDelay: 0, maxDelay: 0 };
+					continue;
+				}
 				const minDelay = Math.min(...delays);
 				const maxDelay = Math.max(...delays);
 				stats[key] = { minDelay, maxDelay };
@@ -344,7 +427,9 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 		() =>
 			chartDataKey.map((key) => {
 				const monitorData = chartData[key];
-				const lastDelay = monitorData[monitorData.length - 1].avg_delay;
+				const lastPoint = monitorData[monitorData.length - 1];
+				const lastDelay = lastPoint.avg_delay;
+				const isFailed = (lastPoint.status ?? 1) === 0;
 				const stats = chartStats[key];
 
 				// Calculate average packet loss if available
@@ -372,7 +457,9 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 						</span>
 						<div className="flex flex-col gap-0.5">
 							<span className="text-md font-semibold leading-none sm:text-xl">
-								{lastDelay.toFixed(2)}ms
+								{isFailed
+									? errorLabel(lastPoint.error_code, t)
+									: `${(lastDelay ?? 0).toFixed(2)}ms`}
 							</span>
 							<div className="flex items-center gap-2 text-[12px]">
 								<span className="text-green-600 dark:text-green-400">
@@ -386,12 +473,15 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 										{avgPacketLoss.toFixed(2)}%
 									</span>
 								)}
+								<span className="text-muted-foreground">
+									{new Date(lastPoint.created_at).toLocaleTimeString()}
+								</span>
 							</div>
 						</div>
 					</button>
 				);
 			}),
-		[chartDataKey, activeCharts, chartData, chartStats, handleButtonClick],
+		[chartDataKey, activeCharts, chartData, chartStats, handleButtonClick, t],
 	);
 
 	const chartElements = useMemo(() => {
@@ -419,7 +509,27 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 					dataKey="avg_delay"
 					stroke={getColorByIndex(chart)}
 					yAxisId="delay"
-					connectNulls={true}
+					connectNulls={false}
+				/>,
+				<Line
+					key="outage-points"
+					isAnimationActive={false}
+					dataKey="outage"
+					legendType="none"
+					stroke="transparent"
+					dot={{ r: 4, fill: "#ef4444", stroke: "#991b1b" }}
+					connectNulls={false}
+					yAxisId="delay"
+				/>,
+				<Line
+					key="recovery-points"
+					isAnimationActive={false}
+					dataKey="recovery"
+					legendType="none"
+					stroke="transparent"
+					dot={{ r: 4, fill: "#22c55e", stroke: "#166534" }}
+					connectNulls={false}
+					yAxisId="delay"
 				/>,
 			);
 		} else if (activeCharts.length > 1) {
@@ -435,10 +545,30 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 						dataKey={chart}
 						stroke={getColorByIndex(chart)}
 						name={chart}
-						connectNulls={true}
+						connectNulls={false}
 						yAxisId="delay"
 					/>
 				)),
+				...activeCharts.flatMap((chart) => [
+					<Line
+						key={`${chart}-outage`}
+						isAnimationActive={false}
+						dataKey={`${chart}_outage`}
+						legendType="none"
+						stroke="transparent"
+						dot={{ r: 3, fill: "#ef4444" }}
+						yAxisId="delay"
+					/>,
+					<Line
+						key={`${chart}-recovery`}
+						isAnimationActive={false}
+						dataKey={`${chart}_recovery`}
+						legendType="none"
+						stroke="transparent"
+						dot={{ r: 3, fill: "#22c55e" }}
+						yAxisId="delay"
+					/>,
+				]),
 			);
 		} else {
 			// No selection - show all charts (default view)
@@ -452,10 +582,30 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 						dot={false}
 						dataKey={key}
 						stroke={getColorByIndex(key)}
-						connectNulls={true}
+						connectNulls={false}
 						yAxisId="delay"
 					/>
 				)),
+				...chartDataKey.flatMap((key) => [
+					<Line
+						key={`${key}-outage`}
+						isAnimationActive={false}
+						dataKey={`${key}_outage`}
+						legendType="none"
+						stroke="transparent"
+						dot={{ r: 3, fill: "#ef4444" }}
+						yAxisId="delay"
+					/>,
+					<Line
+						key={`${key}-recovery`}
+						isAnimationActive={false}
+						dataKey={`${key}_recovery`}
+						legendType="none"
+						stroke="transparent"
+						dot={{ r: 3, fill: "#22c55e" }}
+						yAxisId="delay"
+					/>,
+				]),
 			);
 		}
 
@@ -471,6 +621,9 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 				created_at: item.created_at,
 				avg_delay: item.avg_delay,
 				packet_loss: item.packet_loss ?? 0,
+				outage: item.status === 0 ? 0 : null,
+				recovery: item.recovered ? item.avg_delay : null,
+				error_code: item.error_code ?? 0,
 			}));
 		}
 
@@ -530,6 +683,9 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 
 			// Special handling for single chart selection
 			if (activeCharts.length === 1) {
+				if (point.avg_delay === null) {
+					return smoothed;
+				}
 				// Process avg_delay for single chart
 				const values = window
 					.map((w) => w.avg_delay as number)
@@ -553,6 +709,9 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 					activeCharts.length > 0 ? activeCharts : chartDataKey;
 
 				keysToProcess.forEach((key) => {
+					if (point[key] === null) {
+						return;
+					}
 					const values = window
 						.map((w) => w[key])
 						.filter((v) => v !== undefined && v !== null) as number[];
@@ -583,7 +742,8 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 				<TooltipProvider delayDuration={120}>
 					<div className="flex items-center gap-1 rounded-full bg-muted dark:bg-muted/40 p-0.5 border border-border/60 dark:border-border">
 						{TIME_RANGE_OPTIONS.map((option) => {
-							const isLocked = !isLogin && option.value !== "1d";
+							const isLocked =
+								!isLogin && option.value !== "1d" && option.value !== "6h";
 							const optionItem = (
 								<div
 									onClick={() => {
@@ -750,11 +910,29 @@ export const NetworkChartClient = React.memo(function NetworkChart({
 											labelFormatter={(_, payload) => {
 												return formatTime(payload[0].payload.created_at);
 											}}
-											formatter={(value, name) => {
+											formatter={(value, name, _item, _index, payload) => {
 												let formattedValue: string;
 												let label: string;
+												const field = String(name);
 
-												if (name === "packet_loss") {
+												if (field === "outage" || field.endsWith("_outage")) {
+													const monitorName = field.replace(/_outage$/, "");
+													const code = Number(
+														payload?.payload?.[
+															field === "outage"
+																? "error_code"
+																: `${monitorName}_error_code`
+														] ?? 6,
+													);
+													formattedValue = errorLabel(code, t);
+													label = t("monitor.outage", "Outage");
+												} else if (
+													field === "recovery" ||
+													field.endsWith("_recovery")
+												) {
+													formattedValue = `${Number(value).toFixed(2)}ms`;
+													label = t("monitor.recovered", "Recovered");
+												} else if (name === "packet_loss") {
 													formattedValue = `${Number(value).toFixed(2)}%`;
 													label = t("monitor.packetLoss", "Packet Loss");
 												} else if (name === "avg_delay") {
@@ -813,14 +991,22 @@ const transformData = (data: NezhaMonitor[]) => {
 		}
 
 		// Calculate packet loss from delay data if not provided
-		const packetLoss = item.packet_loss || calculatePacketLoss(item.avg_delay);
+		const packetLoss = item.packet_loss ?? calculatePacketLoss(item.avg_delay);
+		let previousStatus: number | undefined;
 
 		for (let i = 0; i < item.created_at.length; i++) {
+			const status =
+				item.status?.[i] ??
+				((packetLoss[i] ?? 0) >= 100 || item.avg_delay[i] === 0 ? 0 : 1);
 			monitorData[monitorName].push({
 				created_at: item.created_at[i],
-				avg_delay: item.avg_delay[i],
+				avg_delay: status === 1 ? item.avg_delay[i] : null,
 				packet_loss: packetLoss[i],
+				status,
+				error_code: item.error_code?.[i] ?? (status === 0 ? 6 : 0),
+				recovered: status === 1 && previousStatus === 0,
 			});
+			previousStatus = status;
 		}
 	});
 
@@ -843,7 +1029,7 @@ const formatData = (rawData: NezhaMonitor[]) => {
 		const { monitor_name, created_at, avg_delay } = item;
 
 		// Calculate packet loss if not provided
-		const packetLoss = item.packet_loss || calculatePacketLoss(avg_delay);
+		const packetLoss = item.packet_loss ?? calculatePacketLoss(avg_delay);
 
 		allTimeArray.forEach((time) => {
 			if (!result[time]) {
@@ -851,12 +1037,33 @@ const formatData = (rawData: NezhaMonitor[]) => {
 			}
 
 			const timeIndex = created_at.indexOf(time);
-			// @ts-expect-error - avg_delay is an array
-			result[time][monitor_name] =
-				timeIndex !== -1 ? avg_delay[timeIndex] : null;
+			const status = timeIndex !== -1 ? item.status?.[timeIndex] : undefined;
+			const resolvedStatus =
+				timeIndex !== -1
+					? (status ??
+						((packetLoss[timeIndex] ?? 0) >= 100 || avg_delay[timeIndex] === 0
+							? 0
+							: 1))
+					: undefined;
+			const delay =
+				timeIndex !== -1 && resolvedStatus === 1 ? avg_delay[timeIndex] : null;
+			result[time][monitor_name] = delay;
+			result[time][`${monitor_name}_outage`] =
+				timeIndex !== -1 && resolvedStatus === 0 ? 0 : null;
+			result[time][`${monitor_name}_recovery`] =
+				timeIndex > 0 &&
+				resolvedStatus === 1 &&
+				(item.status?.[timeIndex - 1] ??
+					((packetLoss[timeIndex - 1] ?? 0) >= 100 ||
+					avg_delay[timeIndex - 1] === 0
+						? 0
+						: 1)) === 0
+					? avg_delay[timeIndex]
+					: null;
+			result[time][`${monitor_name}_error_code`] =
+				timeIndex !== -1 ? (item.error_code?.[timeIndex] ?? 0) : null;
 			// Add packet loss data if available
 			if (packetLoss) {
-				// @ts-expect-error - packet_loss is calculated
 				result[time][`${monitor_name}_packet_loss`] =
 					timeIndex !== -1 ? packetLoss[timeIndex] : null;
 			}
@@ -864,4 +1071,89 @@ const formatData = (rawData: NezhaMonitor[]) => {
 	});
 
 	return Object.values(result).sort((a, b) => a.created_at - b.created_at);
+};
+
+const mergeLiveResults = (
+	previous: ServiceLatestResult[],
+	incoming: ServiceLatestResult[],
+) => {
+	const byEvent = new Map<string, ServiceLatestResult>();
+	for (const item of [...previous, ...incoming]) {
+		byEvent.set(`${item.monitor_id}:${item.created_at}`, item);
+	}
+	return [...byEvent.values()]
+		.sort((a, b) => a.created_at - b.created_at || a.monitor_id - b.monitor_id)
+		.slice(-4096);
+};
+
+const mergeMonitorData = (
+	history: NezhaMonitor[],
+	live: ServiceLatestResult[],
+	period: MonitorPeriod,
+): NezhaMonitor[] => {
+	const cutoff = Date.now() - periodDurationMs(period);
+	const byID = new Map<number, NezhaMonitor>();
+	for (const item of history) {
+		const copy: NezhaMonitor = {
+			...item,
+			created_at: [],
+			avg_delay: [],
+			packet_loss: [],
+			status: [],
+			error_code: [],
+		};
+		for (let i = 0; i < item.created_at.length; i++) {
+			if (item.created_at[i] < cutoff) continue;
+			copy.created_at.push(item.created_at[i]);
+			copy.avg_delay.push(item.avg_delay[i]);
+			copy.packet_loss?.push(
+				item.packet_loss?.[i] ?? (item.status?.[i] === 0 ? 100 : 0),
+			);
+			copy.status?.push(item.status?.[i] ?? (item.avg_delay[i] === 0 ? 0 : 1));
+			copy.error_code?.push(item.error_code?.[i] ?? 0);
+		}
+		byID.set(item.monitor_id, copy);
+	}
+
+	for (const event of live) {
+		if (event.created_at < cutoff) continue;
+		let item = byID.get(event.monitor_id);
+		if (!item) {
+			item = {
+				monitor_id: event.monitor_id,
+				monitor_name: event.monitor_name,
+				duration: event.duration,
+				server_id: event.server_id,
+				server_name: event.server_name,
+				created_at: [],
+				avg_delay: [],
+				packet_loss: [],
+				status: [],
+				error_code: [],
+			};
+			byID.set(event.monitor_id, item);
+		}
+		const existingIndex = item.created_at.indexOf(event.created_at);
+		const index = existingIndex >= 0 ? existingIndex : item.created_at.length;
+		item.created_at[index] = event.created_at;
+		item.avg_delay[index] = event.delay;
+		item.packet_loss ??= [];
+		item.status ??= [];
+		item.error_code ??= [];
+		item.packet_loss[index] = event.successful ? 0 : 100;
+		item.status[index] = event.successful ? 1 : 0;
+		item.error_code[index] = event.error_code;
+	}
+
+	for (const item of byID.values()) {
+		const order = item.created_at
+			.map((_, i) => i)
+			.sort((a, b) => item.created_at[a] - item.created_at[b]);
+		item.created_at = order.map((i) => item.created_at[i]);
+		item.avg_delay = order.map((i) => item.avg_delay[i]);
+		item.packet_loss = order.map((i) => item.packet_loss?.[i] ?? 0);
+		item.status = order.map((i) => item.status?.[i] ?? 1);
+		item.error_code = order.map((i) => item.error_code?.[i] ?? 0);
+	}
+	return [...byID.values()];
 };
