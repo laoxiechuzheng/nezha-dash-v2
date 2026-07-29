@@ -284,8 +284,13 @@ describe("network speed formatting", () => {
 	it("converts bytes per second to decimal Mbps", () => {
 		expect(bytesPerSecondToMbps(1_000_000)).toBe(8);
 		expect(bytesPerSecondToMbps(125_000)).toBe(1);
+		expect(formatMbps(0)).toBe("0.0 Kbps");
+		expect(formatMbps(0.5)).toBe("500 Kbps");
 		expect(formatMbps(8)).toBe("8.00 Mbps");
-		expect(formatMbps(Number.NaN)).toBe("0.00 Mbps");
+		expect(formatMbps(999.9)).toBe("999.9 Mbps");
+		expect(formatMbps(1000)).toBe("1.00 Gbps");
+		expect(formatMbps(12500)).toBe("12.5 Gbps");
+		expect(formatMbps(Number.NaN)).toBe("0.0 Kbps");
 	});
 });
 

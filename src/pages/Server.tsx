@@ -468,6 +468,8 @@ export default function Servers({
 					</button>
 					{hasServices && (
 						<button
+							type="button"
+							aria-label={`服务监控，共 ${Object.keys(serviceData?.data?.services ?? {}).length} 项`}
 							onClick={() => {
 								setShowServices(showServices === "0" ? "1" : "0");
 								localStorage.setItem(
@@ -476,7 +478,7 @@ export default function Servers({
 								);
 							}}
 							className={cn(
-								"glass-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-sky-600 transition-all hover:-translate-y-0.5 hover:text-sky-700 dark:text-sky-300",
+								"glass-control flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-2.5 text-sky-600 transition-all hover:-translate-y-0.5 hover:text-sky-700 dark:text-sky-300",
 								{
 									"inset-shadow-black/20 bg-blue-600 text-white dark:bg-blue-100 dark:text-blue-600":
 										showServices === "1",
@@ -486,7 +488,13 @@ export default function Servers({
 								},
 							)}
 						>
-							<ChartBarSquareIcon className="size-[13px]" />
+							<ChartBarSquareIcon className="size-4" />
+							<span className="hidden text-[11px] font-bold sm:inline">
+								服务监控
+							</span>
+							<span className="rounded-full bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-black tabular-nums">
+								{Object.keys(serviceData?.data?.services ?? {}).length}
+							</span>
 						</button>
 					)}
 					<button

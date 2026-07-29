@@ -14,7 +14,15 @@ export function bytesPerSecondToMbps(bytesPerSecond: number): number {
 
 export function formatMbps(mbps: number): string {
 	const safeValue = Number.isFinite(mbps) && mbps > 0 ? mbps : 0;
-	return `${safeValue.toFixed(2)} Mbps`;
+	if (safeValue < 1) {
+		const kbps = safeValue * 1000;
+		return `${kbps < 10 ? kbps.toFixed(1) : kbps.toFixed(0)} Kbps`;
+	}
+	if (safeValue >= 1000) {
+		const gbps = safeValue / 1000;
+		return `${gbps < 10 ? gbps.toFixed(2) : gbps.toFixed(1)} Gbps`;
+	}
+	return `${safeValue < 10 ? safeValue.toFixed(2) : safeValue.toFixed(1)} Mbps`;
 }
 
 export function formatNezhaInfo(now: number, serverInfo: NezhaServer) {

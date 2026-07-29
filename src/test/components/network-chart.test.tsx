@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactElement, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -323,9 +323,36 @@ describe("NetworkChartClient", () => {
 		const scrollBy = vi.fn();
 		track.scrollBy = scrollBy;
 
-		fireEvent.wheel(track, { deltaY: 120 });
+		const wheel = new WheelEvent("wheel", {
+			deltaY: 120,
+			cancelable: true,
+		});
+		track.dispatchEvent(wheel);
 
 		expect(scrollBy).toHaveBeenCalledWith({ left: 120, behavior: "auto" });
+		expect(wheel.defaultPrevented).toBe(true);
+	});
+
+	it("zooms the visible timeline and can reset it", async () => {
+		const user = userEvent.setup();
+		render(
+			<NetworkChartClient
+				chartDataKey={["Alpha"]}
+				chartConfig={chartConfig}
+				chartData={{ Alpha: clientChartData.Alpha }}
+				serverName="zoom-monitor"
+				isPeriodLoading={false}
+				period="6h"
+				onPeriodChange={vi.fn()}
+				isLogin={true}
+			/>,
+		);
+		const axis = screen.getByTestId("x-axis");
+		const fullDomain = axis.getAttribute("data-domain");
+		await user.click(screen.getByRole("button", { name: "monitor.zoomIn" }));
+		expect(axis.getAttribute("data-domain")).not.toBe(fullDomain);
+		await user.click(screen.getByRole("button", { name: "monitor.resetZoom" }));
+		expect(axis.getAttribute("data-domain")).toBe(fullDomain);
 	});
 
 	it("locks longer periods and renders one selected monitor with outage intervals", async () => {

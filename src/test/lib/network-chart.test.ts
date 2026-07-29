@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+	buildAdaptiveTimeTicks,
 	buildOutageIntervals,
 	buildTimeDomain,
 	buildTimeTicks,
 	compactMonitorPoints,
+	formatAdaptiveTimeTick,
 	formatDuration,
+	zoomTimeDomain,
 } from "@/lib/network-chart";
 
 describe("network chart time model", () => {
@@ -16,6 +19,17 @@ describe("network chart time model", () => {
 			now,
 		]);
 		expect(buildTimeTicks("6h", now, 4)).toHaveLength(4);
+	});
+
+	it("zooms around an anchor, stays inside the period, and adapts ticks", () => {
+		const full = [0, 6 * 60 * 60 * 1000] as const;
+		const zoomed = zoomTimeDomain(full, full, 0.5, full[1]);
+		expect(zoomed).toEqual([3 * 60 * 60 * 1000, full[1]]);
+		expect(buildAdaptiveTimeTicks(zoomed, 5)).toHaveLength(5);
+		expect(zoomTimeDomain(zoomed, full, 2)).toEqual(full);
+		expect(
+			formatAdaptiveTimeTick(Date.parse("2026-07-29T08:09:10"), 60 * 60 * 1000),
+		).toContain("08:09:10");
 	});
 
 	it("keeps real samples and every outage transition while compacting", () => {

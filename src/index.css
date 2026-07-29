@@ -253,6 +253,32 @@
 		mask-image: linear-gradient(to bottom, black, transparent 70%);
 	}
 
+	.app-shell::after {
+		content: "";
+		position: fixed;
+		inset: 4rem 0 0;
+		pointer-events: none;
+		z-index: 0;
+		background:
+			radial-gradient(
+				ellipse 28rem 18rem at 4% 32%,
+				hsl(190 95% 55% / 0.07),
+				transparent 72%
+			),
+			radial-gradient(
+				ellipse 34rem 22rem at 96% 58%,
+				hsl(252 90% 67% / 0.065),
+				transparent 72%
+			),
+			linear-gradient(
+				115deg,
+				transparent 20%,
+				hsl(215 90% 65% / 0.025) 45%,
+				transparent 70%
+			);
+		mask-image: linear-gradient(to bottom, black 5%, transparent 95%);
+	}
+
 	.server-detail-overview > section {
 		@apply mt-3 gap-2;
 	}

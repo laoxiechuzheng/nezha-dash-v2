@@ -1,8 +1,11 @@
 "use client";
 
 import {
+	ArrowPathIcon,
 	ChevronLeftIcon,
 	ChevronRightIcon,
+	MagnifyingGlassMinusIcon,
+	MagnifyingGlassPlusIcon,
 	SignalIcon,
 } from "@heroicons/react/20/solid";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -39,12 +42,15 @@ import {
 } from "@/components/ui/tooltip";
 import { useActiveIndicator } from "@/hooks/use-active-indicator";
 import {
+	buildAdaptiveTimeTicks,
 	buildOutageIntervals,
 	buildTimeDomain,
-	buildTimeTicks,
 	compactMonitorPoints,
+	formatAdaptiveTimeTick,
 	formatDuration,
 	periodDurationMs,
+	type TimeDomain,
+	zoomTimeDomain,
 } from "@/lib/network-chart";
 import {
 	fetchLoginUser,
@@ -235,8 +241,10 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 	);
 	const [showPeriodLoading, setShowPeriodLoading] = React.useState(false);
 	const [isMobile, setIsMobile] = React.useState(false);
+	const [viewDomain, setViewDomain] = React.useState<TimeDomain | null>(null);
 	const loadingStartedAtRef = React.useRef<number | null>(null);
 	const monitorTrackRef = React.useRef<HTMLDivElement | null>(null);
+	const chartViewportRef = React.useRef<HTMLDivElement | null>(null);
 	const monitorButtonRefs = React.useRef<
 		Record<string, HTMLButtonElement | null>
 	>({});
@@ -271,6 +279,19 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 		}
 	}, [chartDataKey, selectedMonitor]);
 	React.useEffect(() => {
+		const track = monitorTrackRef.current;
+		if (!track) return;
+		const onWheel = (event: WheelEvent) => {
+			if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+			if (track.scrollWidth <= track.clientWidth) return;
+			event.preventDefault();
+			event.stopPropagation();
+			track.scrollBy({ left: event.deltaY, behavior: "auto" });
+		};
+		track.addEventListener("wheel", onWheel, { passive: false });
+		return () => track.removeEventListener("wheel", onWheel);
+	}, []);
+	React.useEffect(() => {
 		let timeoutId: number | undefined;
 		if (isPeriodLoading) {
 			loadingStartedAtRef.current = Date.now();
@@ -303,13 +324,14 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 				: Date.now(),
 		[selectedPoints],
 	);
-	const timeDomain = React.useMemo(
+	const fullTimeDomain = React.useMemo(
 		() => buildTimeDomain(period, domainEnd),
 		[period, domainEnd],
 	);
+	const timeDomain = viewDomain ?? fullTimeDomain;
 	const timeTicks = React.useMemo(
-		() => buildTimeTicks(period, domainEnd, isMobile ? 4 : 6),
-		[period, domainEnd, isMobile],
+		() => buildAdaptiveTimeTicks(timeDomain, isMobile ? 4 : 6),
+		[timeDomain, isMobile],
 	);
 	const visiblePoints = React.useMemo(
 		() =>
@@ -341,31 +363,50 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 	const latestPoint = selectedPoints[selectedPoints.length - 1];
 	const currentFailed = latestPoint ? isPointFailed(latestPoint) : false;
 	const activeOutage = outages.find((outage) => !outage.recovered);
-	const minimumVisibleOutage =
-		periodDurationMs(period) * (isMobile ? 0.012 : 0.006);
+	const visibleSpan = timeDomain[1] - timeDomain[0];
+	const minimumVisibleOutage = visibleSpan * (isMobile ? 0.012 : 0.006);
 	const customBackgroundImage =
 		(window.CustomBackgroundImage as string) !== ""
 			? window.CustomBackgroundImage
 			: undefined;
-	const formatTick = (value: number) => {
-		const date = new Date(value);
-		if (period === "7d" || period === "30d") {
-			return (
-				(date.getMonth() + 1).toString().padStart(2, "0") +
-				"-" +
-				date.getDate().toString().padStart(2, "0")
+	const formatTick = (value: number) =>
+		formatAdaptiveTimeTick(value, visibleSpan);
+	const zoomChart = React.useCallback(
+		(factor: number, anchor?: number) => {
+			setViewDomain((current) =>
+				zoomTimeDomain(
+					current ?? fullTimeDomain,
+					fullTimeDomain,
+					factor,
+					anchor,
+					Math.max(60_000, periodDurationMs(period) / 720),
+				),
 			);
-		}
-		return (
-			date.getHours().toString().padStart(2, "0") +
-			":" +
-			date.getMinutes().toString().padStart(2, "0")
-		);
-	};
+		},
+		[fullTimeDomain, period],
+	);
+	React.useEffect(() => {
+		const viewport = chartViewportRef.current;
+		if (!viewport) return;
+		const onWheel = (event: WheelEvent) => {
+			if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+			event.preventDefault();
+			event.stopPropagation();
+			const rect = viewport.getBoundingClientRect();
+			const ratio = rect.width
+				? Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))
+				: 0.5;
+			const anchor = timeDomain[0] + visibleSpan * ratio;
+			zoomChart(event.deltaY < 0 ? 0.72 : 1.38, anchor);
+		};
+		viewport.addEventListener("wheel", onWheel, { passive: false });
+		return () => viewport.removeEventListener("wheel", onWheel);
+	}, [timeDomain, visibleSpan, zoomChart]);
 	const selectMonitorAt = React.useCallback(
 		(index: number) => {
 			if (index < 0 || index >= chartDataKey.length) return;
 			const monitor = chartDataKey[index];
+			setViewDomain(null);
 			setSelectedMonitor(monitor);
 			window.requestAnimationFrame(() => {
 				monitorButtonRefs.current[monitor]?.scrollIntoView?.({
@@ -377,17 +418,6 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 		},
 		[chartDataKey],
 	);
-	const handleMonitorWheel = React.useCallback(
-		(event: React.WheelEvent<HTMLDivElement>) => {
-			const track = monitorTrackRef.current;
-			if (!track || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-			if (track.scrollWidth <= track.clientWidth) return;
-			event.preventDefault();
-			track.scrollBy({ left: event.deltaY, behavior: "auto" });
-		},
-		[],
-	);
-
 	return (
 		<div className="flex min-w-0 flex-col gap-4">
 			<div className="flex flex-wrap items-center gap-2 sm:-mt-5 -mt-3">
@@ -418,6 +448,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									disabled={locked}
 									onClick={() => {
 										if (period !== option.value) enableIndicatorAnimation();
+										setViewDomain(null);
 										onPeriodChange(option.value);
 									}}
 									className={cn(
@@ -509,8 +540,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 						<div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-7 bg-gradient-to-l from-white/90 to-transparent dark:from-slate-950/90" />
 						<div
 							ref={monitorTrackRef}
-							onWheel={handleMonitorWheel}
-							className="scrollbar-hidden w-full min-w-0 touch-pan-x overflow-x-auto overscroll-x-contain scroll-smooth px-4 py-4 sm:px-6"
+							className="scrollbar-hidden w-full min-w-0 touch-pan-x overflow-x-auto overscroll-contain scroll-smooth px-4 py-4 sm:px-6"
 							data-testid="monitor-track"
 						>
 							<fieldset
@@ -609,7 +639,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									</p>
 								</div>
 							</div>
-							<div className="flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+							<div className="flex flex-wrap items-center justify-end gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
 								<span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/12 bg-red-500/7 px-2.5 py-1">
 									<i className="size-1.5 rounded-full bg-red-500" />
 									{t("monitor.outagePeriod", "故障时段")}
@@ -618,9 +648,43 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									<i className="h-3 w-0.5 bg-green-500" />
 									{t("monitor.recoveryTime", "恢复时间")}
 								</span>
+								<div className="flex items-center rounded-full border border-slate-200/80 bg-white/70 p-0.5 shadow-sm dark:border-white/10 dark:bg-white/5">
+									<button
+										type="button"
+										aria-label={t("monitor.zoomIn", "放大时间线")}
+										onClick={() => zoomChart(0.5)}
+										className="flex size-8 items-center justify-center rounded-full hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-300"
+									>
+										<MagnifyingGlassPlusIcon className="size-4" />
+									</button>
+									<button
+										type="button"
+										aria-label={t("monitor.zoomOut", "缩小时间线")}
+										onClick={() => zoomChart(2)}
+										className="flex size-8 items-center justify-center rounded-full hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-300"
+									>
+										<MagnifyingGlassMinusIcon className="size-4" />
+									</button>
+									<button
+										type="button"
+										aria-label={t("monitor.resetZoom", "重置时间线")}
+										disabled={!viewDomain}
+										onClick={() => setViewDomain(null)}
+										className="flex size-8 items-center justify-center rounded-full hover:bg-sky-500/10 hover:text-sky-600 disabled:opacity-35 dark:hover:text-sky-300"
+									>
+										<ArrowPathIcon className="size-4" />
+									</button>
+								</div>
 							</div>
 						</div>
-						<div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/50 to-transparent dark:from-white/[0.02]">
+						<div
+							ref={chartViewportRef}
+							className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/50 to-transparent dark:from-white/[0.02]"
+							title={t(
+								"monitor.zoomHint",
+								"滚动鼠标滚轮可围绕指针位置缩放时间线",
+							)}
+						>
 							<ChartContainer
 								config={chartConfig}
 								className={cn(

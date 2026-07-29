@@ -146,37 +146,44 @@ export default function ServerOverview({
 					},
 				)}
 			>
-				<CardContent className="relative flex h-full items-center px-5 py-5">
-					<section className="flex flex-col gap-1 w-full">
-						<div className="flex items-center w-full justify-between">
+				<CardContent className="relative flex h-full items-center px-4 py-4 sm:px-5">
+					<section className="z-10 flex w-full flex-col gap-2">
+						<div className="flex w-full items-center justify-between">
 							<p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
 								{t("serverOverview.network")}
 							</p>
+							<span className="rounded-full border border-indigo-500/15 bg-indigo-500/8 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-indigo-600 dark:text-indigo-300">
+								Live
+							</span>
 						</div>
-						<section className="flex items-start flex-row z-10 pr-0 gap-1">
-							<NumericText
-								value={`↑${formatBytes(up)}`}
-								className="sm:text-[12px] text-[10px] text-blue-800 dark:text-blue-400  text-nowrap font-medium"
-							/>
-							<NumericText
-								value={`↓${formatBytes(down)}`}
-								className="sm:text-[12px] text-[10px]  text-purple-800 dark:text-purple-400  text-nowrap font-medium"
-							/>
-						</section>
-						<section className="flex flex-col sm:flex-row -mr-1 sm:items-center items-start gap-1">
-							<p className="text-[11px] flex items-center text-nowrap font-semibold">
-								<ArrowUpCircleIcon className="size-3 mr-0.5 sm:mb-px" />
-								{formatMbps(bytesPerSecondToMbps(upSpeed))}
+						<section className="grid grid-cols-2 gap-2">
+							<p className="flex min-w-0 flex-col rounded-xl border border-sky-500/12 bg-sky-500/7 px-2.5 py-2 text-nowrap">
+								<span className="mb-0.5 flex items-center text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+									<ArrowUpCircleIcon className="mr-1 size-3 text-sky-500" />
+									上传
+								</span>
+								<span className="text-[11px] font-black tracking-tight text-sky-700 dark:text-sky-300 sm:text-xs">
+									{formatMbps(bytesPerSecondToMbps(upSpeed))}
+								</span>
 							</p>
-							<p className="text-[11px] flex items-center  text-nowrap font-semibold">
-								<ArrowDownCircleIcon className="size-3 mr-0.5" />
-								{formatMbps(bytesPerSecondToMbps(downSpeed))}
+							<p className="flex min-w-0 flex-col rounded-xl border border-violet-500/12 bg-violet-500/7 px-2.5 py-2 text-nowrap">
+								<span className="mb-0.5 flex items-center text-[9px] font-semibold text-slate-500 dark:text-slate-400">
+									<ArrowDownCircleIcon className="mr-1 size-3 text-violet-500" />
+									下载
+								</span>
+								<span className="text-[11px] font-black tracking-tight text-violet-700 dark:text-violet-300 sm:text-xs">
+									{formatMbps(bytesPerSecondToMbps(downSpeed))}
+								</span>
 							</p>
 						</section>
+						<p className="flex flex-wrap gap-x-2 text-[9px] font-medium text-slate-500 dark:text-slate-400 sm:text-[10px]">
+							<span>累计上传 {formatBytes(up)}</span>
+							<span>累计下载 {formatBytes(down)}</span>
+						</p>
 					</section>
 					{!disableAnimatedMan && (
 						<img
-							className="pointer-events-none absolute -bottom-4 right-2 z-0 w-20 opacity-15 grayscale transition-all duration-300 group-hover:scale-105 group-hover:opacity-25"
+							className="pointer-events-none absolute -bottom-4 right-2 z-0 w-20 opacity-[0.06] grayscale transition-all duration-300 group-hover:scale-105 group-hover:opacity-10"
 							alt={"animated-man"}
 							src={customIllustration}
 							loading="eager"

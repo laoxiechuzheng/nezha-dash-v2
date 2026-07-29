@@ -1778,7 +1778,7 @@ function NetworkChart({
 									minTickGap={50}
 									interval="preserveStartEnd"
 									domain={[1, maxDownload]}
-									tickFormatter={(value) => `${Number(value).toFixed(0)} Mbps`}
+									tickFormatter={(value) => formatMbps(Number(value))}
 								/>
 								<ChartTooltip
 									isAnimationActive={false}

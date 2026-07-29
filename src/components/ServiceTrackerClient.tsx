@@ -13,6 +13,7 @@ import { Separator } from "./ui/separator";
 interface ServiceTrackerProps {
 	days: Array<{
 		completed: boolean;
+		hasData?: boolean;
 		date?: Date;
 		uptime: number;
 		delay: number;
@@ -21,6 +22,7 @@ interface ServiceTrackerProps {
 	title?: string;
 	uptime?: number;
 	avgDelay?: number;
+	currentStatus?: "healthy" | "degraded" | "unknown";
 }
 
 export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
@@ -29,6 +31,7 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 	title,
 	uptime = 100,
 	avgDelay = 0,
+	currentStatus = "unknown",
 }) => {
 	const { t } = useTranslation();
 	const customBackgroundImage =
@@ -48,11 +51,15 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 		return "text-rose-500";
 	};
 
-	const getStatusColor = (uptime: number) => {
-		if (uptime >= 99) return "bg-emerald-500";
-		if (uptime >= 95) return "bg-amber-500";
-		return "bg-rose-500";
-	};
+	const incidentDays = days.filter(
+		(day) => day.hasData !== false && day.uptime < 99,
+	).length;
+	const statusLabel =
+		currentStatus === "healthy"
+			? "当前正常"
+			: currentStatus === "degraded"
+				? "当前异常"
+				: "等待采样";
 
 	return (
 		<div
@@ -64,15 +71,25 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 				},
 			)}
 		>
-			<div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+			<div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
 				<div className="flex items-center gap-2">
 					<div
 						className={cn(
 							"w-2.5 h-2.5 rounded-full transition-colors",
-							getStatusColor(uptime),
+							currentStatus === "healthy"
+								? "bg-emerald-500"
+								: currentStatus === "degraded"
+									? "bg-rose-500"
+									: "bg-slate-400",
 						)}
 					/>
-					<span className="font-medium text-sm">{title}</span>
+					<div>
+						<span className="block text-sm font-bold">{title}</span>
+						<span className="mt-0.5 block text-[10px] font-medium text-muted-foreground">
+							{statusLabel} · 过去 30 天 ·{" "}
+							{incidentDays ? `${incidentDays} 天发生异常` : "无异常记录"}
+						</span>
+					</div>
 				</div>
 				<div className="flex flex-wrap items-center gap-2 sm:gap-3">
 					<span
@@ -95,7 +112,11 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 				</div>
 			</div>
 
-			<div className="flex gap-1 rounded-xl border border-white/60 bg-white/35 p-1.5 dark:border-white/5 dark:bg-white/[0.025]">
+			<div
+				className="flex gap-1 rounded-xl border border-white/60 bg-white/35 p-1.5 dark:border-white/5 dark:bg-white/[0.025]"
+				role="img"
+				aria-label="30 天服务可用性时间线"
+			>
 				{days.map((day, index) => (
 					<TooltipProvider delayDuration={50} key={index}>
 						<Tooltip>
@@ -105,9 +126,13 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 										"relative flex-1 h-7 rounded-[8px] transition-all duration-200 cursor-help",
 										"before:absolute before:inset-0 before:rounded-[4px] before:opacity-0 hover:before:opacity-100 before:bg-white/10 before:transition-opacity",
 										"after:absolute after:inset-0 after:rounded-[4px] after:shadow-[inset_0_1px_--theme(--color-white/10%)]",
-										day.completed
-											? "bg-linear-to-b from-green-500/90 to-green-600 shadow-[0_1px_2px_--theme(--color-green-600/30%)]"
-											: "bg-linear-to-b from-red-500/80 to-red-600/90 shadow-[0_1px_2px_--theme(--color-red-600/30%)]",
+										day.hasData === false
+											? "bg-slate-300 dark:bg-slate-700"
+											: day.uptime >= 99
+												? "bg-linear-to-b from-emerald-400 to-emerald-600 shadow-[0_1px_2px_--theme(--color-green-600/30%)]"
+												: day.uptime >= 95
+													? "bg-linear-to-b from-amber-400 to-amber-500"
+													: "bg-linear-to-b from-rose-400 to-rose-600",
 									)}
 								/>
 							</TooltipTrigger>

@@ -35,6 +35,57 @@ export const buildTimeTicks = (
 	);
 };
 
+export type TimeDomain = readonly [number, number];
+
+export const zoomTimeDomain = (
+	domain: TimeDomain,
+	fullDomain: TimeDomain,
+	factor: number,
+	anchor = (domain[0] + domain[1]) / 2,
+	minimumSpan = 60 * 1000,
+): TimeDomain => {
+	const fullSpan = Math.max(1, fullDomain[1] - fullDomain[0]);
+	const currentSpan = Math.max(1, domain[1] - domain[0]);
+	const nextSpan = Math.min(
+		fullSpan,
+		Math.max(minimumSpan, currentSpan * factor),
+	);
+	const anchorRatio = Math.min(
+		1,
+		Math.max(0, (anchor - domain[0]) / currentSpan),
+	);
+	let start = anchor - nextSpan * anchorRatio;
+	let end = start + nextSpan;
+	if (start < fullDomain[0]) {
+		start = fullDomain[0];
+		end = start + nextSpan;
+	}
+	if (end > fullDomain[1]) {
+		end = fullDomain[1];
+		start = end - nextSpan;
+	}
+	return [Math.round(start), Math.round(end)];
+};
+
+export const buildAdaptiveTimeTicks = (domain: TimeDomain, count = 6) => {
+	const safeCount = Math.max(2, count);
+	return Array.from({ length: safeCount }, (_, index) =>
+		Math.round(domain[0] + ((domain[1] - domain[0]) * index) / (safeCount - 1)),
+	);
+};
+
+export const formatAdaptiveTimeTick = (value: number, span: number) => {
+	const date = new Date(value);
+	const pad = (part: number) => part.toString().padStart(2, "0");
+	if (span <= 2 * 60 * 60 * 1000) {
+		return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+	}
+	if (span <= 36 * 60 * 60 * 1000) {
+		return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+	}
+	return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
 export const compactMonitorPoints = (
 	points: MonitorChartPoint[],
 	maxPoints = 720,
