@@ -20,11 +20,11 @@ export default function PlanInfo({
 		: [];
 
 	return (
-		<section className="flex gap-1 items-center flex-wrap mt-0.5">
+		<section className="mt-1 flex flex-wrap items-center gap-1.5">
 			{parsedData.planDataMod.bandwidth !== "" && (
 				<p
 					className={cn(
-						"text-[9px] bg-blue-600 dark:bg-blue-800 text-blue-200 dark:text-blue-300  w-fit rounded-[5px] px-[3px] py-[1.5px]",
+						"w-fit rounded-full border border-sky-500/15 bg-sky-500/10 px-2 py-0.5 text-[9px] font-bold text-sky-700 dark:text-sky-300",
 					)}
 				>
 					{parsedData.planDataMod.bandwidth}
@@ -33,7 +33,7 @@ export default function PlanInfo({
 			{parsedData.planDataMod.trafficVol !== "" && (
 				<p
 					className={cn(
-						"text-[9px] bg-green-600 text-green-200 dark:bg-green-800 dark:text-green-300  w-fit rounded-[5px] px-[3px] py-[1.5px]",
+						"w-fit rounded-full border border-emerald-500/15 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300",
 					)}
 				>
 					{parsedData.planDataMod.trafficVol}
@@ -42,7 +42,7 @@ export default function PlanInfo({
 			{parsedData.planDataMod.IPv4 === "1" && (
 				<p
 					className={cn(
-						"text-[9px] bg-purple-600 text-purple-200 dark:bg-purple-800 dark:text-purple-300  w-fit rounded-[5px] px-[3px] py-[1.5px]",
+						"w-fit rounded-full border border-violet-500/15 bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold text-violet-700 dark:text-violet-300",
 					)}
 				>
 					IPv4
@@ -51,7 +51,7 @@ export default function PlanInfo({
 			{parsedData.planDataMod.IPv6 === "1" && (
 				<p
 					className={cn(
-						"text-[9px] bg-pink-600 text-pink-200 dark:bg-pink-800 dark:text-pink-300  w-fit rounded-[5px] px-[3px] py-[1.5px]",
+						"w-fit rounded-full border border-pink-500/15 bg-pink-500/10 px-2 py-0.5 text-[9px] font-bold text-pink-700 dark:text-pink-300",
 					)}
 				>
 					IPv6
@@ -60,7 +60,7 @@ export default function PlanInfo({
 			{parsedData.planDataMod.networkRoute && (
 				<p
 					className={cn(
-						"text-[9px] bg-blue-600 text-blue-200 dark:bg-blue-800 dark:text-blue-300  w-fit rounded-[5px] px-[3px] py-[1.5px]",
+						"w-fit rounded-full border border-blue-500/15 bg-blue-500/10 px-2 py-0.5 text-[9px] font-bold text-blue-700 dark:text-blue-300",
 					)}
 				>
 					{networkRoutes.map((route, index) => {
@@ -73,7 +73,7 @@ export default function PlanInfo({
 					<p
 						key={index}
 						className={cn(
-							"text-[9px] bg-stone-600 text-stone-200 dark:bg-stone-800 dark:text-stone-300  w-fit rounded-[5px] px-[3px] py-[1.5px]",
+							"w-fit rounded-full border border-slate-500/15 bg-slate-500/10 px-2 py-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-300",
 						)}
 					>
 						{extra}

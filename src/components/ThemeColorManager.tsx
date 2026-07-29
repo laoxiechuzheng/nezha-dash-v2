@@ -23,9 +23,7 @@ export function ThemeColorManager() {
 			}
 
 			const themeColor =
-				currentTheme === "dark"
-					? "hsl(30 15% 8%)" // 深色模式背景色
-					: "hsl(0 0% 98%)"; // 浅色模式背景色
+				currentTheme === "dark" ? "hsl(222 47% 7%)" : "hsl(216 33% 97%)";
 
 			document
 				.querySelector('meta[name="theme-color"]')

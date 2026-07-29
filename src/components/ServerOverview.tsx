@@ -43,28 +43,31 @@ export default function ServerOverview({
 			: undefined;
 
 	return (
-		<section className="grid grid-cols-2 gap-4 lg:grid-cols-4 server-overview">
+		<section className="server-overview grid grid-cols-2 gap-3 lg:grid-cols-4">
 			<Card
 				onClick={() => {
 					setStatus("all");
 				}}
 				className={cn(
-					"group cursor-pointer transition-all hover:ring-blue-500 dark:hover:ring-blue-600",
+					"group relative min-h-28 cursor-pointer overflow-hidden border-sky-500/15 bg-gradient-to-br from-sky-500/12 via-white/72 to-blue-500/6 hover:-translate-y-1 hover:border-sky-400/45 hover:shadow-[0_26px_65px_-34px_rgba(14,165,233,0.75)] dark:via-slate-950/62",
 					{
 						"bg-card/70": customBackgroundImage,
 					},
 				)}
 			>
-				<CardContent className="flex h-full items-center px-6 py-3">
+				<CardContent className="flex h-full items-center px-5 py-5">
 					<section className="flex flex-col gap-1">
-						<p className="text-sm font-medium md:text-base">
+						<p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
 							{t("serverOverview.totalServers")}
 						</p>
 						<div className="flex items-center gap-2">
 							<span className="relative flex h-2 w-2">
 								<span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
 							</span>
-							<NumericText value={total} className="text-lg font-semibold" />
+							<NumericText
+								value={total}
+								className="text-3xl font-black tracking-tight"
+							/>
 						</div>
 					</section>
 				</CardContent>
@@ -74,7 +77,7 @@ export default function ServerOverview({
 					setStatus("online");
 				}}
 				className={cn(
-					"cursor-pointer ring-1 transition-all hover:ring-green-500 dark:hover:ring-green-600",
+					"group relative min-h-28 cursor-pointer overflow-hidden border-emerald-500/15 bg-gradient-to-br from-emerald-500/12 via-white/72 to-teal-500/6 hover:-translate-y-1 hover:border-emerald-400/45 hover:shadow-[0_26px_65px_-34px_rgba(16,185,129,0.75)] dark:via-slate-950/62",
 					{
 						"bg-card/70": customBackgroundImage,
 					},
@@ -84,9 +87,9 @@ export default function ServerOverview({
 					},
 				)}
 			>
-				<CardContent className="flex h-full items-center px-6 py-3">
+				<CardContent className="flex h-full items-center px-5 py-5">
 					<section className="flex flex-col gap-1">
-						<p className="text-sm font-medium md:text-base">
+						<p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
 							{t("serverOverview.onlineServers")}
 						</p>
 						<div className="flex items-center gap-2">
@@ -94,7 +97,10 @@ export default function ServerOverview({
 								<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
 								<span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
 							</span>
-							<NumericText value={online} className="text-lg font-semibold" />
+							<NumericText
+								value={online}
+								className="text-3xl font-black tracking-tight"
+							/>
 						</div>
 					</section>
 				</CardContent>
@@ -104,7 +110,7 @@ export default function ServerOverview({
 					setStatus("offline");
 				}}
 				className={cn(
-					"cursor-pointer ring-1 transition-all hover:ring-red-500 dark:hover:ring-red-600",
+					"group relative min-h-28 cursor-pointer overflow-hidden border-rose-500/15 bg-gradient-to-br from-rose-500/11 via-white/72 to-orange-500/5 hover:-translate-y-1 hover:border-rose-400/45 hover:shadow-[0_26px_65px_-34px_rgba(244,63,94,0.7)] dark:via-slate-950/62",
 					{
 						"bg-card/70": customBackgroundImage,
 					},
@@ -114,9 +120,9 @@ export default function ServerOverview({
 					},
 				)}
 			>
-				<CardContent className="flex h-full items-center px-6 py-3">
+				<CardContent className="flex h-full items-center px-5 py-5">
 					<section className="flex flex-col gap-1">
-						<p className="text-sm font-medium md:text-base">
+						<p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
 							{t("serverOverview.offlineServers")}
 						</p>
 						<div className="flex items-center gap-2">
@@ -124,23 +130,26 @@ export default function ServerOverview({
 								<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75"></span>
 								<span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
 							</span>
-							<NumericText value={offline} className="text-lg font-semibold" />
+							<NumericText
+								value={offline}
+								className="text-3xl font-black tracking-tight"
+							/>
 						</div>
 					</section>
 				</CardContent>
 			</Card>
 			<Card
 				className={cn(
-					"group ring-1 hover:ring-purple-500 dark:hover:ring-purple-600",
+					"group relative min-h-28 overflow-hidden border-indigo-500/15 bg-gradient-to-br from-indigo-500/12 via-white/72 to-violet-500/6 hover:-translate-y-1 hover:border-indigo-400/45 hover:shadow-[0_26px_65px_-34px_rgba(99,102,241,0.75)] dark:via-slate-950/62",
 					{
 						"bg-card/70": customBackgroundImage,
 					},
 				)}
 			>
-				<CardContent className="flex h-full items-center relative px-6 py-3">
+				<CardContent className="relative flex h-full items-center px-5 py-5">
 					<section className="flex flex-col gap-1 w-full">
 						<div className="flex items-center w-full justify-between">
-							<p className="text-sm font-medium md:text-base">
+							<p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
 								{t("serverOverview.network")}
 							</p>
 						</div>
@@ -167,7 +176,7 @@ export default function ServerOverview({
 					</section>
 					{!disableAnimatedMan && (
 						<img
-							className="absolute right-3 top-[-85px] z-50 w-20 scale-90 group-hover:opacity-50 md:scale-100 transition-all"
+							className="pointer-events-none absolute -bottom-4 right-2 z-0 w-20 opacity-15 grayscale transition-all duration-300 group-hover:scale-105 group-hover:opacity-25"
 							alt={"animated-man"}
 							src={customIllustration}
 							loading="eager"

@@ -74,14 +74,17 @@ export default function GlobalMap({
 
 	return (
 		<section
-			className={cn("flex flex-col gap-4 mt-8", {
-				"bg-card/70 rounded-lg  p-4": customBackgroundImage,
-			})}
+			className={cn(
+				"glass-panel mt-5 flex flex-col gap-4 overflow-hidden rounded-2xl p-4 sm:p-5",
+				{
+					"bg-card/70 rounded-lg  p-4": customBackgroundImage,
+				},
+			)}
 		>
-			<p className="text-sm font-medium opacity-40">
+			<p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
 				{t("map.Distributions")} {countryList.length} {t("map.Regions")}
 			</p>
-			<div className="w-full overflow-x-auto">
+			<div className="w-full overflow-x-auto rounded-xl bg-gradient-to-b from-sky-500/5 to-transparent">
 				<InteractiveMap
 					countries={countryList}
 					serverCounts={serverCounts}

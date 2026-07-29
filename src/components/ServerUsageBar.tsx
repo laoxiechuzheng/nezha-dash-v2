@@ -17,7 +17,7 @@ export default function ServerUsageBar({ value }: ServerUsageBarProps) {
 						? "bg-orange-400"
 						: "bg-green-500"
 			}
-			className={"h-[3px] rounded-sm"}
+			className="mt-1 h-1 rounded-full"
 		/>
 	);
 }

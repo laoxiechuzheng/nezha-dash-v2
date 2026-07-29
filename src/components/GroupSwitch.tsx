@@ -85,12 +85,12 @@ export default function GroupSwitch({
 	return (
 		<div
 			ref={scrollRef}
-			className="scrollbar-hidden z-50 flex flex-col items-start overflow-x-scroll rounded-[50px]"
+			className="scrollbar-hidden z-50 flex min-w-0 flex-col items-start overflow-x-auto overscroll-x-contain rounded-2xl"
 		>
 			<div
 				ref={containerRef}
 				className={cn(
-					"relative flex items-center gap-1 rounded-[50px] bg-stone-100 p-[3px] dark:bg-stone-800",
+					"glass-control relative flex items-center gap-1 rounded-2xl p-1",
 					{
 						"bg-stone-100/70 dark:bg-stone-800/70": customBackgroundImage,
 					},
@@ -98,7 +98,7 @@ export default function GroupSwitch({
 			>
 				{indicator && (
 					<div
-						className="active-indicator-fade-in absolute left-0 top-0 z-10 content-center bg-white shadow-lg shadow-black/5 dark:bg-stone-700 dark:shadow-white/5"
+						className="active-indicator-fade-in absolute left-0 top-0 z-10 content-center bg-gradient-to-br from-white to-sky-50 shadow-[0_8px_24px_-12px_rgba(14,165,233,0.65)] ring-1 ring-sky-500/15 dark:from-slate-700 dark:to-slate-800 dark:ring-white/10"
 						style={{
 							borderRadius: 46,
 							height: indicator.height,
@@ -121,7 +121,7 @@ export default function GroupSwitch({
 							setCurrentTab(tab);
 						}}
 						className={cn(
-							"relative cursor-pointer rounded-3xl px-2.5 py-2 text-[13px] font-semibold transition-all duration-500  ease-in-out hover:text-stone-950  hover:dark:text-stone-50",
+							"relative cursor-pointer rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-all duration-300 ease-out hover:text-sky-700 hover:dark:text-sky-300",
 							currentTab === tab
 								? "text-black dark:text-white"
 								: "text-stone-400 dark:text-stone-500",

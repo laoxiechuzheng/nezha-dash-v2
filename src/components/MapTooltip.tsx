@@ -20,7 +20,7 @@ const MapTooltip = memo(function MapTooltip() {
 
 	return (
 		<div
-			className="tooltip-animate absolute hidden lg:block bg-white dark:bg-neutral-800 px-2 py-1 rounded shadow-lg text-sm dark:border dark:border-neutral-700 z-50"
+			className="glass-panel tooltip-animate absolute z-50 hidden rounded-xl px-3 py-2 text-sm lg:block"
 			data-testid="map-tooltip"
 			key={tooltipData.country}
 			style={{

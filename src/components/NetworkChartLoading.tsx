@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function NetworkChartLoading() {
 	return (
-		<Card>
+		<Card className="overflow-hidden border-white/70 bg-white/68 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/58">
 			<CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
 				<div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5">
 					<CardTitle className="flex items-center gap-0.5 text-xl">

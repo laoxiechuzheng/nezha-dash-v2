@@ -21,7 +21,7 @@ export default function RemainPercentBar({
 						? "bg-orange-400"
 						: "bg-green-500"
 			}
-			className={cn("h-[3px] rounded-sm w-[70px]", className)}
+			className={cn("h-1 w-[70px] rounded-full", className)}
 		/>
 	);
 }

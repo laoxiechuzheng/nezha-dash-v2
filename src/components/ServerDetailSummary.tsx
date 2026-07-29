@@ -102,7 +102,7 @@ function UsageBar({ value }: UsageBarProps) {
 						? "bg-orange-400"
 						: "bg-green-500"
 			}
-			className={"h-[3px] rounded-sm bg-stone-200 dark:bg-stone-800"}
+			className={"h-1 rounded-full bg-slate-200/70 dark:bg-white/10"}
 		/>
 	);
 }

@@ -56,16 +56,16 @@ function BackendErrorState({ error }: { error: unknown }) {
 	const message = getErrorMessage(error);
 
 	return (
-		<div className="flex min-h-96 flex-col items-center justify-center px-4 text-center">
-			<div className="flex max-w-md flex-col items-center gap-2">
-				<p className="text-sm font-semibold text-stone-900 dark:text-stone-100">
+		<div className="flex min-h-96 flex-col items-center justify-center text-center">
+			<div className="glass-panel flex w-full max-w-lg flex-col items-center gap-2 rounded-3xl px-6 py-12">
+				<p className="text-base font-bold text-slate-950 dark:text-white">
 					{t("error.backendUnavailableTitle")}
 				</p>
 				<p className="text-sm text-muted-foreground">
 					{t("error.backendUnavailableDescription")}
 				</p>
 				{message && (
-					<p className="mt-1 max-w-full break-words rounded-md bg-stone-100 px-2 py-1 text-xs text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+					<p className="mt-2 max-w-full break-words rounded-xl border border-rose-500/10 bg-rose-500/6 px-3 py-2 text-xs text-rose-600 dark:text-rose-300">
 						{message}
 					</p>
 				)}
@@ -433,7 +433,7 @@ export default function Servers({
 	const hasServers = nezhaWsData.servers.length > 0;
 
 	return (
-		<div className="mx-auto w-full max-w-5xl px-0">
+		<div className="mx-auto w-full max-w-6xl px-0">
 			<ServerOverview
 				total={totalServers}
 				online={onlineServers}
@@ -445,16 +445,16 @@ export default function Servers({
 			/>
 			<div
 				hidden={!hasServers}
-				className="flex mt-6 items-center justify-between gap-2 server-overview-controls"
+				className="glass-panel server-overview-controls mt-5 flex min-w-0 flex-col items-stretch justify-between gap-3 rounded-2xl p-2.5 sm:flex-row sm:items-center"
 			>
-				<section className="flex items-center gap-2 w-full overflow-hidden">
+				<section className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
 					<button
 						onClick={() => {
 							setShowMap(showMap === "0" ? "1" : "0");
 							localStorage.setItem("showMap", showMap === "0" ? "1" : "0");
 						}}
 						className={cn(
-							"inset-shadow-2xs inset-shadow-white/20 flex cursor-pointer flex-col items-center gap-0 rounded-[50px] bg-blue-100 p-2.5 text-blue-600 transition-all dark:bg-blue-900 dark:text-blue-100",
+							"glass-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-sky-600 transition-all hover:-translate-y-0.5 hover:text-sky-700 dark:text-sky-300",
 							{
 								"inset-shadow-black/20 bg-blue-600 text-white dark:bg-blue-100 dark:text-blue-600":
 									showMap === "1",
@@ -476,7 +476,7 @@ export default function Servers({
 								);
 							}}
 							className={cn(
-								"inset-shadow-2xs inset-shadow-white/20 flex cursor-pointer flex-col items-center gap-0 rounded-[50px] bg-blue-100 p-2.5 text-blue-600 transition-all dark:bg-blue-900 dark:text-blue-100",
+								"glass-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-sky-600 transition-all hover:-translate-y-0.5 hover:text-sky-700 dark:text-sky-300",
 								{
 									"inset-shadow-black/20 bg-blue-600 text-white dark:bg-blue-100 dark:text-blue-600":
 										showServices === "1",
@@ -495,7 +495,7 @@ export default function Servers({
 							localStorage.setItem("inline", inline === "0" ? "1" : "0");
 						}}
 						className={cn(
-							"inset-shadow-2xs inset-shadow-white/20 flex cursor-pointer flex-col items-center gap-0 rounded-[50px] bg-blue-100 p-2.5 text-blue-600 transition-all dark:bg-blue-900 dark:text-blue-100",
+							"glass-control flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-xl text-sky-600 transition-all hover:-translate-y-0.5 hover:text-sky-700 dark:text-sky-300",
 							{
 								"inset-shadow-black/20 bg-blue-600 text-white dark:bg-blue-100 dark:text-blue-600":
 									inline === "1",
@@ -515,7 +515,7 @@ export default function Servers({
 				</section>
 				<div
 					className={cn(
-						"flex h-8 items-center rounded-full border border-stone-200 bg-white text-sm text-stone-600 shadow-xs transition-all dark:border-stone-800 dark:bg-stone-800 dark:text-stone-300 dark:shadow-none shrink-0",
+						"glass-control flex h-9 shrink-0 items-center self-end rounded-xl text-sm text-slate-600 transition-all dark:text-slate-300 sm:self-auto",
 						{
 							"dark:border-stone-600/80 dark:bg-stone-800/80 bg-white/75":
 								customBackgroundImage,
@@ -582,7 +582,7 @@ export default function Servers({
 				<ServerEmptyState />
 			) : filteredServers.length > 0 ? (
 				inline === "1" ? (
-					<section className="flex flex-col gap-2 overflow-x-scroll p-px scrollbar-hidden mt-6 server-inline-list">
+					<section className="server-inline-list scrollbar-hidden mt-5 flex flex-col gap-2 overflow-x-auto overscroll-x-contain p-px">
 						{filteredServers.map((serverInfo) => (
 							<ServerCardInline
 								key={serverInfo.id}
@@ -592,7 +592,7 @@ export default function Servers({
 						))}
 					</section>
 				) : (
-					<section className="grid grid-cols-1 gap-2 md:grid-cols-2 mt-6 server-card-list">
+					<section className="server-card-list mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
 						{filteredServers.map((serverInfo) => (
 							<ServerCard
 								key={serverInfo.id}

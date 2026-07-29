@@ -106,11 +106,11 @@ const MainApp: React.FC = () => {
 				/>
 			)}
 			<div
-				className={cn("flex min-h-screen w-full flex-col", {
+				className={cn("app-shell relative flex min-h-screen w-full flex-col", {
 					"bg-background": !customBackgroundImage,
 				})}
 			>
-				<main className="flex z-20 min-h-[calc(100vh-calc(var(--spacing)*16))] flex-1 flex-col gap-4 p-4 md:p-10 md:pt-8">
+				<main className="relative z-20 flex min-h-[calc(100vh-calc(var(--spacing)*16))] flex-1 flex-col gap-5 px-4 py-5 sm:px-6 md:px-10 md:py-8">
 					<RefreshToast />
 					<Header />
 					<DashCommand />

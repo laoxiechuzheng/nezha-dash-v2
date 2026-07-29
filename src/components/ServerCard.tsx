@@ -64,7 +64,7 @@ function ServerCard({
 	return online ? (
 		<Card
 			className={cn(
-				"flex cursor-pointer flex-col items-center justify-start gap-3 p-3 transition-all hover:shadow-sm hover:ring-stone-300 md:px-5 dark:hover:ring-stone-700",
+				"group relative flex cursor-pointer flex-col items-stretch justify-start gap-3 overflow-hidden border-white/75 bg-gradient-to-br from-white/78 via-white/62 to-sky-500/5 p-4 transition-all hover:-translate-y-1 hover:border-sky-400/45 hover:shadow-[0_28px_70px_-36px_rgba(14,165,233,0.68)] md:px-5 dark:border-white/10 dark:from-slate-950/70 dark:via-slate-950/58 dark:to-sky-500/8",
 				{
 					"flex-col": fixedTopServerName,
 					"lg:flex-row": !fixedTopServerName,
@@ -117,9 +117,9 @@ function ServerCard({
 			>
 				{parsedData?.billingDataMod && <BillingInfo parsedData={parsedData} />}
 			</div>
-			<div className="flex flex-col lg:items-start items-center gap-2">
+			<div className="flex min-w-0 flex-col items-stretch gap-2 lg:items-start">
 				<section
-					className={cn("grid grid-cols-5 items-center gap-3", {
+					className={cn("grid w-full grid-cols-5 items-center gap-2 sm:gap-3", {
 						"lg:grid-cols-6 lg:gap-4": fixedTopServerName,
 					})}
 				>
@@ -212,7 +212,7 @@ function ServerCard({
 	) : (
 		<Card
 			className={cn(
-				"flex flex-col items-center justify-start gap-3 sm:gap-0 p-3 md:px-5 cursor-pointer hover:bg-accent/50 transition-colors",
+				"group relative flex cursor-pointer flex-col items-stretch justify-start gap-3 overflow-hidden border-rose-500/12 bg-gradient-to-br from-white/72 via-white/60 to-rose-500/6 p-4 transition-all hover:-translate-y-0.5 hover:border-rose-400/35 hover:shadow-[0_24px_60px_-38px_rgba(244,63,94,0.55)] sm:gap-0 md:px-5 dark:from-slate-950/66 dark:via-slate-950/58 dark:to-rose-500/7",
 				showNetTransfer
 					? "lg:min-h-[91px] min-h-[123px]"
 					: "lg:min-h-[61px] min-h-[93px]",

@@ -22,7 +22,7 @@ export function ServerDetailLoading() {
 	const navigate = useNavigate();
 
 	return (
-		<div className="mx-auto w-full max-w-5xl px-0">
+		<div className="glass-panel mx-auto w-full max-w-6xl rounded-2xl p-5">
 			<div
 				onClick={() => {
 					navigate("/");

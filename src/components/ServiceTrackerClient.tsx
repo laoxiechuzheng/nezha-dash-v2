@@ -57,14 +57,14 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 	return (
 		<div
 			className={cn(
-				"w-full space-y-3 bg-white px-4 py-4  rounded-lg border bg-card text-card-foreground shadow-lg shadow-neutral-200/40 dark:shadow-none",
+				"glass-panel w-full space-y-4 rounded-2xl px-4 py-4 text-card-foreground sm:px-5",
 				className,
 				{
 					"bg-card/70": customBackgroundImage,
 				},
 			)}
 		>
-			<div className="flex justify-between items-center">
+			<div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
 				<div className="flex items-center gap-2">
 					<div
 						className={cn(
@@ -74,7 +74,7 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 					/>
 					<span className="font-medium text-sm">{title}</span>
 				</div>
-				<div className="flex items-center gap-3">
+				<div className="flex flex-wrap items-center gap-2 sm:gap-3">
 					<span
 						className={cn(
 							"font-medium text-sm transition-colors",
@@ -95,7 +95,7 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 				</div>
 			</div>
 
-			<div className="flex gap-[3px] p-1 rounded-lg">
+			<div className="flex gap-1 rounded-xl border border-white/60 bg-white/35 p-1.5 dark:border-white/5 dark:bg-white/[0.025]">
 				{days.map((day, index) => (
 					<TooltipProvider delayDuration={50} key={index}>
 						<Tooltip>

@@ -115,16 +115,16 @@ function Header() {
 	const customBackgroundImage = backgroundImage;
 
 	return (
-		<div className="mx-auto w-full max-w-5xl">
-			<section className="flex items-center justify-between header-top">
+		<div className="mx-auto w-full max-w-6xl">
+			<section className="glass-panel header-top flex min-w-0 items-center justify-between gap-3 rounded-2xl px-3 py-2.5 sm:px-4">
 				<section
 					onClick={() => {
 						sessionStorage.removeItem("selectedGroup");
 						navigate("/");
 					}}
-					className="cursor-pointer flex items-center sm:text-base text-sm font-medium"
+					className="group flex min-w-0 cursor-pointer items-center text-sm font-bold tracking-tight sm:text-base"
 				>
-					<div className="mr-1 flex flex-row items-center justify-start header-logo">
+					<div className="header-logo mr-2 flex size-9 shrink-0 items-center justify-center rounded-xl border border-sky-500/15 bg-gradient-to-br from-sky-500/15 to-indigo-500/10 shadow-inner">
 						<img
 							width={40}
 							height={40}
@@ -146,7 +146,7 @@ function Header() {
 						{customDesc}
 					</p>
 				</section>
-				<section className="flex items-center gap-2 header-handles">
+				<section className="header-handles flex min-w-0 items-center gap-1.5 sm:gap-2">
 					<div className="hidden sm:flex items-center gap-2">
 						<Links />
 						<DashboardLink />
@@ -160,7 +160,7 @@ function Header() {
 							variant="outline"
 							size="sm"
 							onClick={handleBackgroundToggle}
-							className={cn("rounded-full px-[9px] bg-white dark:bg-black", {
+							className={cn("size-9 rounded-xl px-0", {
 								"bg-white/70 dark:bg-black/70": customBackgroundImage,
 								"hidden sm:block": customMobileBackgroundImage,
 							})}
@@ -172,7 +172,7 @@ function Header() {
 						variant="outline"
 						size="sm"
 						className={cn(
-							"hover:bg-white dark:hover:bg-black cursor-default rounded-full flex items-center px-[9px] bg-white dark:bg-black",
+							"flex h-9 cursor-default items-center rounded-xl px-2.5",
 							{
 								"bg-white/70 dark:bg-black/70": customBackgroundImage,
 							},
@@ -194,7 +194,7 @@ function Header() {
 					</Button>
 				</section>
 			</section>
-			<div className="w-full flex justify-between sm:hidden mt-1">
+			<div className="glass-control mt-2 flex w-full justify-between rounded-xl px-3 py-2 sm:hidden">
 				<DashboardLink />
 				<Links />
 			</div>
@@ -272,7 +272,7 @@ export function RefreshToast() {
 	}
 
 	return (
-		<div className="refresh-toast-animate fixed left-1/2 -translate-x-1/2 top-8 z-999 flex items-center justify-between gap-4 rounded-[50px] border border-solid bg-white px-2 py-1.5 shadow-xl shadow-black/5 dark:border-stone-700 dark:bg-stone-800 dark:shadow-none">
+		<div className="glass-panel refresh-toast-animate fixed left-1/2 top-8 z-999 flex -translate-x-1/2 items-center justify-between gap-4 rounded-full px-3 py-2">
 			<section className="flex items-center gap-1.5">
 				<LoadingSpinner />
 				<p className="text-[12.5px] font-medium">{t("refreshing")}...</p>
@@ -352,7 +352,7 @@ function Overview() {
 	}, []);
 
 	return (
-		<section className={"mt-10 flex flex-col md:mt-16 header-timer"}>
+		<section className={"header-timer mt-9 flex flex-col gap-1 md:mt-12"}>
 			<p className="text-base font-semibold">👋 {t("overview")}</p>
 			<div className="flex items-center gap-1">
 				<p className="text-sm font-medium opacity-50">{t("whereTheTimeIs")}</p>

@@ -105,13 +105,16 @@ export default function ServerDetailOverview({
 
 	return (
 		<div
-			className={cn({
-				"bg-card/70 p-4 rounded-[10px]": customBackgroundImage,
-			})}
+			className={cn(
+				"server-detail-overview glass-panel overflow-hidden rounded-2xl p-4 sm:p-5",
+				{
+					"bg-card/70 p-4 rounded-[10px]": customBackgroundImage,
+				},
+			)}
 		>
 			<div
 				onClick={linkClick}
-				className="flex flex-none cursor-pointer font-semibold leading-none items-center break-all tracking-tight gap-1 text-xl server-name"
+				className="server-name flex flex-none cursor-pointer items-center gap-2 break-all text-xl font-black leading-none tracking-tight sm:text-2xl"
 			>
 				<BackIcon />
 				{name}

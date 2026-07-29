@@ -60,7 +60,7 @@ function ServerCardInline({
 		<section>
 			<Card
 				className={cn(
-					"flex w-full min-w-[900px] cursor-pointer items-center justify-start gap-3 p-3 transition-all hover:shadow-sm hover:ring-stone-300 md:px-5 lg:flex-row dark:hover:ring-stone-700",
+					"group flex w-full min-w-[900px] cursor-pointer items-center justify-start gap-3 overflow-hidden border-white/75 bg-gradient-to-r from-white/78 via-white/62 to-sky-500/5 p-4 transition-all hover:-translate-y-0.5 hover:border-sky-400/45 hover:shadow-[0_24px_60px_-36px_rgba(14,165,233,0.62)] md:px-5 lg:flex-row dark:border-white/10 dark:from-slate-950/70 dark:via-slate-950/58 dark:to-sky-500/8",
 					{
 						"bg-card/70": customBackgroundImage,
 					},

@@ -9,10 +9,13 @@ export default function ErrorPage({ code = "500", message }: ErrorPageProps) {
 	const { t } = useTranslation();
 
 	return (
-		<div className="flex flex-col items-center justify-center">
-			<div className="flex flex-col items-center gap-2">
-				<h1 className="text-4xl font-semibold">{code}</h1>
-				<p className="text-xl text-muted-foreground">
+		<div className="flex min-h-[55vh] flex-col items-center justify-center">
+			<div className="glass-panel relative flex w-full max-w-lg flex-col items-center gap-3 overflow-hidden rounded-3xl px-6 py-14 text-center">
+				<div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_50%_0%,rgba(14,165,233,0.2),transparent_65%)]" />
+				<h1 className="text-6xl font-black tracking-tight text-sky-600 dark:text-sky-300">
+					{code}
+				</h1>
+				<p className="text-lg font-medium text-muted-foreground">
 					{message || t("error.somethingWentWrong")}
 				</p>
 			</div>

@@ -28,7 +28,7 @@ export const CycleTransferStatsClient: React.FC<
 	return (
 		<div
 			className={cn(
-				"w-full bg-white px-4 py-3.5 rounded-lg border bg-card text-card-foreground hover:shadow-xs transition-all duration-200 dark:shadow-none",
+				"glass-panel w-full rounded-2xl px-4 py-4 text-card-foreground transition-all duration-200 hover:border-sky-400/30",
 				className,
 				{
 					"bg-card/70": customBackgroundImage,

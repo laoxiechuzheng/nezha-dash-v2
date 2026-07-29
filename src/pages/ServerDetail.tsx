@@ -27,9 +27,9 @@ export default function ServerDetail() {
 	}
 
 	return (
-		<div className="mx-auto w-full max-w-5xl px-0 flex flex-col gap-4 server-info">
+		<div className="server-info mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-5 px-0">
 			<ServerDetailOverview server_id={server_id} />
-			<section className="flex items-center my-2 w-full">
+			<section className="my-1 flex w-full items-center">
 				<Separator className="flex-1" />
 				<div className="flex justify-center w-full max-w-50">
 					<TabSwitch

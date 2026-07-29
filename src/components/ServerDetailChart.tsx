@@ -128,11 +128,11 @@ function PeriodSelector({
 		<TooltipProvider delayDuration={120}>
 			<div
 				ref={containerRef}
-				className="relative flex gap-0.5 mb-3 flex-wrap sm:-mt-5 -mt-3 p-0.5 bg-muted dark:bg-muted/40 rounded-full w-fit border border-border/60 dark:border-border"
+				className="glass-control scrollbar-hidden relative mb-3 flex max-w-full gap-1 overflow-x-auto overscroll-x-contain rounded-2xl p-1 sm:-mt-5 -mt-3"
 			>
 				{indicator && (
 					<div
-						className="active-indicator-fade-in absolute left-0 top-0 z-10 bg-white dark:bg-background rounded-full ring-1 ring-border/60 dark:ring-border/40"
+						className="active-indicator-fade-in absolute left-0 top-0 z-10 rounded-xl bg-gradient-to-br from-white to-sky-50 shadow-sm ring-1 ring-sky-500/15 dark:from-slate-700 dark:to-slate-800 dark:ring-white/10"
 						style={{
 							height: indicator.height,
 							transform: `translate(${indicator.x}px, ${indicator.y}px)`,
@@ -166,7 +166,7 @@ function PeriodSelector({
 								}
 							}}
 							className={cn(
-								"relative cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-300",
+								"relative shrink-0 cursor-pointer rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors duration-300",
 								selectedPeriod === period.value
 									? "text-foreground"
 									: "text-muted-foreground hover:text-foreground",
@@ -278,14 +278,14 @@ export default function ServerDetailChart({
 	const gpuList = server.host.gpu || [];
 
 	return (
-		<section className="flex flex-col">
+		<section className="server-detail-charts flex min-w-0 flex-col">
 			<PeriodSelector
 				selectedPeriod={selectedPeriod}
 				onPeriodChange={setSelectedPeriod}
 				isLogin={isLogin}
 				isTsdbEnabled={isTsdbEnabled}
 			/>
-			<section className="grid md:grid-cols-2 lg:grid-cols-3 grid-cols-1 gap-3 server-charts">
+			<section className="server-charts grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
 				<CpuChart
 					now={nezhaWsData.now}
 					data={server}

@@ -62,7 +62,7 @@ const DropdownMenuContent = React.forwardRef<
 			ref={ref}
 			sideOffset={sideOffset}
 			className={cn(
-				"z-50 min-w-32 origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-2xl will-change-[transform,opacity] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+				"z-50 min-w-36 origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-2xl border border-white/70 bg-white/86 p-1.5 text-popover-foreground shadow-[0_24px_70px_-30px_rgba(15,23,42,0.65)] ring-1 ring-slate-950/5 backdrop-blur-2xl will-change-[transform,opacity] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:border-white/10 dark:bg-slate-950/88 dark:ring-white/5",
 				className,
 			)}
 			{...props}
@@ -80,7 +80,7 @@ const DropdownMenuItem = React.forwardRef<
 	<DropdownMenuPrimitive.Item
 		ref={ref}
 		className={cn(
-			"relative flex cursor-default justify-between select-none items-center gap-2 rounded-[10px] px-2 py-1.5 text-sm outline-hidden transition-colors focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+			"relative flex cursor-default select-none items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-sm outline-none transition-colors focus:bg-sky-500/10 focus:text-sky-700 data-disabled:pointer-events-none data-disabled:opacity-50 dark:focus:text-sky-300 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 			inset && "pl-8",
 			className,
 		)}
