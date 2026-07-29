@@ -1,3 +1,4 @@
+import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/20/solid";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -14,7 +15,6 @@ import { cn, formatMbps, formatNezhaInfo, parsePublicNote } from "@/lib/utils";
 import type { NezhaServer } from "@/types/nezha-api";
 import BillingInfo from "./billingInfo";
 import PlanInfo from "./PlanInfo";
-import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 
 function ServerCard({
@@ -52,9 +52,6 @@ function ServerCard({
 		(window.CustomBackgroundImage as string) !== ""
 			? window.CustomBackgroundImage
 			: undefined;
-
-	// @ts-expect-error ShowNetTransfer is a global variable
-	const showNetTransfer = window.ShowNetTransfer as boolean;
 
 	// @ts-expect-error FixedTopServerName is a global variable
 	const fixedTopServerName = window.FixedTopServerName as boolean;
@@ -119,8 +116,8 @@ function ServerCard({
 			</div>
 			<div className="flex min-w-0 flex-col items-stretch gap-2 lg:items-start">
 				<section
-					className={cn("grid w-full grid-cols-5 items-center gap-2 sm:gap-3", {
-						"lg:grid-cols-6 lg:gap-4": fixedTopServerName,
+					className={cn("grid w-full grid-cols-3 items-center gap-3", {
+						"lg:grid-cols-4 lg:gap-4": fixedTopServerName,
 					})}
 				>
 					{fixedTopServerName && (
@@ -173,39 +170,33 @@ function ServerCard({
 						</div>
 						<ServerUsageBar value={stg} />
 					</div>
-					<div className={"flex w-14 flex-col"}>
-						<p className="text-xs text-muted-foreground">
-							{t("serverCard.upload")}
-						</p>
-						<div className="flex items-center text-xs font-semibold">
+				</section>
+				<section className="grid w-full grid-cols-2 gap-2">
+					<div className="rounded-xl border border-sky-500/15 bg-gradient-to-br from-sky-500/10 to-blue-500/4 px-3 py-2">
+						<div className="flex items-center gap-1 text-[10px] font-semibold text-sky-700 dark:text-sky-300">
+							<ArrowUpIcon className="size-3" />
+							实时上传
+						</div>
+						<p className="mt-1 text-sm font-black tracking-tight tabular-nums text-slate-950 dark:text-white">
 							{formatMbps(up)}
-						</div>
-					</div>
-					<div className={"flex w-14 flex-col"}>
-						<p className="text-xs text-muted-foreground">
-							{t("serverCard.download")}
 						</p>
-						<div className="flex items-center text-xs font-semibold">
-							{formatMbps(down)}
+						<p className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+							已用 {formatBytes(net_out_transfer)}
+						</p>
+					</div>
+					<div className="rounded-xl border border-violet-500/15 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/4 px-3 py-2">
+						<div className="flex items-center gap-1 text-[10px] font-semibold text-violet-700 dark:text-violet-300">
+							<ArrowDownIcon className="size-3" />
+							实时下载
 						</div>
+						<p className="mt-1 text-sm font-black tracking-tight tabular-nums text-slate-950 dark:text-white">
+							{formatMbps(down)}
+						</p>
+						<p className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+							已用 {formatBytes(net_in_transfer)}
+						</p>
 					</div>
 				</section>
-				{showNetTransfer && (
-					<section className={"flex items-center w-full justify-between gap-1"}>
-						<Badge
-							variant="secondary"
-							className="items-center flex-1 justify-center rounded-[8px] text-nowrap text-[11px] border-muted-50 shadow-md shadow-neutral-200/30 dark:shadow-none"
-						>
-							{t("serverCard.upload")}:{formatBytes(net_out_transfer)}
-						</Badge>
-						<Badge
-							variant="outline"
-							className="items-center flex-1 justify-center rounded-[8px] text-nowrap text-[11px] shadow-md shadow-neutral-200/30 dark:shadow-none"
-						>
-							{t("serverCard.download")}:{formatBytes(net_in_transfer)}
-						</Badge>
-					</section>
-				)}
 				{parsedData?.planDataMod && <PlanInfo parsedData={parsedData} />}
 			</div>
 		</Card>
@@ -213,9 +204,7 @@ function ServerCard({
 		<Card
 			className={cn(
 				"group relative flex cursor-pointer flex-col items-stretch justify-start gap-3 overflow-hidden border-rose-500/12 bg-gradient-to-br from-white/72 via-white/60 to-rose-500/6 p-4 transition-all hover:-translate-y-0.5 hover:border-rose-400/35 hover:shadow-[0_24px_60px_-38px_rgba(244,63,94,0.55)] sm:gap-0 md:px-5 dark:from-slate-950/66 dark:via-slate-950/58 dark:to-rose-500/7",
-				showNetTransfer
-					? "lg:min-h-[91px] min-h-[123px]"
-					: "lg:min-h-[61px] min-h-[93px]",
+				"lg:min-h-[91px] min-h-[123px]",
 				{
 					"flex-col": fixedTopServerName,
 					"lg:flex-row": !fixedTopServerName,

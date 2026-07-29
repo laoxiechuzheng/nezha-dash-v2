@@ -29,16 +29,15 @@ export default function ServerDetail() {
 	return (
 		<div className="server-info mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-5 px-0">
 			<ServerDetailOverview server_id={server_id} />
-			<section className="my-1 flex w-full items-center">
-				<Separator className="flex-1" />
-				<div className="flex justify-center w-full max-w-50">
+			<section className="relative my-1 flex w-full items-center justify-center">
+				<Separator className="absolute inset-x-0 top-1/2 -z-10" />
+				<div className="flex justify-center rounded-3xl bg-background/70 p-1 backdrop-blur-xl">
 					<TabSwitch
 						tabs={tabs}
 						currentTab={currentTab}
 						setCurrentTab={setCurrentTab}
 					/>
 				</div>
-				<Separator className="flex-1" />
 			</section>
 
 			{/* <section>

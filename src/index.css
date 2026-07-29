@@ -303,7 +303,26 @@
 	}
 
 	.server-charts > div > div {
-		@apply px-4 py-4 sm:px-5;
+		@apply px-4 py-4 sm:px-5 sm:py-5;
+	}
+
+	.dark .server-charts > div {
+		background-image:
+			linear-gradient(145deg, hsl(0 0% 100% / 0.025), transparent 46%),
+			radial-gradient(circle at 88% 0%, hsl(199 89% 55% / 0.1), transparent 42%);
+	}
+
+	.server-charts [data-chart] {
+		@apply mt-3 h-[176px] rounded-2xl border border-slate-200/60 bg-slate-50/45 p-2 dark:border-white/7 dark:bg-white/[0.018];
+	}
+
+	.server-charts .recharts-cartesian-grid line {
+		stroke: hsl(215 25% 55% / 0.13);
+	}
+
+	.server-charts .recharts-line-curve,
+	.server-charts .recharts-area-curve {
+		filter: drop-shadow(0 2px 4px hsl(215 80% 45% / 0.15));
 	}
 
 	/* biome-ignore lint/style/noDescendingSpecificity: component-scoped visual override */

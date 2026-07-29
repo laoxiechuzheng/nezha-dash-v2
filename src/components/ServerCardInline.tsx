@@ -153,7 +153,7 @@ function ServerCardInline({
 							</div>
 							<ServerUsageBar value={stg} />
 						</div>
-						<div className={"flex w-16 flex-col"}>
+						<div className="flex w-24 flex-col rounded-xl border border-sky-500/15 bg-sky-500/8 px-2 py-1.5">
 							<p className="text-xs text-muted-foreground">
 								{t("serverCard.upload")}
 							</p>
@@ -161,7 +161,7 @@ function ServerCardInline({
 								{formatMbps(up)}
 							</div>
 						</div>
-						<div className={"flex w-16 flex-col"}>
+						<div className="flex w-24 flex-col rounded-xl border border-violet-500/15 bg-violet-500/8 px-2 py-1.5">
 							<p className="text-xs text-muted-foreground">
 								{t("serverCard.download")}
 							</p>
@@ -169,7 +169,7 @@ function ServerCardInline({
 								{formatMbps(down)}
 							</div>
 						</div>
-						<div className={"flex w-20 flex-col"}>
+						<div className="flex w-24 flex-col rounded-xl border border-sky-500/10 bg-white/40 px-2 py-1.5 dark:bg-white/[0.025]">
 							<p className="text-xs text-muted-foreground">
 								{t("serverCard.totalUpload")}
 							</p>
@@ -177,7 +177,7 @@ function ServerCardInline({
 								{formatBytes(net_out_transfer)}
 							</div>
 						</div>
-						<div className={"flex w-20 flex-col"}>
+						<div className="flex w-24 flex-col rounded-xl border border-violet-500/10 bg-white/40 px-2 py-1.5 dark:bg-white/[0.025]">
 							<p className="text-xs text-muted-foreground">
 								{t("serverCard.totalDownload")}
 							</p>

@@ -1,5 +1,20 @@
+import {
+	CircleStackIcon,
+	ClockIcon,
+	CpuChipIcon,
+	QueueListIcon,
+	SignalIcon,
+	Square3Stack3DIcon,
+} from "@heroicons/react/20/solid";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	createContext,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
 	Area,
@@ -50,6 +65,7 @@ import { ServerDetailChartLoading } from "./loading/ServerDetailLoading";
 import AnimatedCircularProgressBar from "./ui/animated-circular-progress-bar";
 
 type ChartPeriod = "realtime" | MetricPeriod;
+const PersistentMetricsContext = createContext(true);
 
 type gpuChartData = {
 	timeStamp: string;
@@ -94,6 +110,62 @@ const sleep = (ms: number) =>
 	new Promise<void>((resolve) => {
 		setTimeout(resolve, ms);
 	});
+
+function MetricTitle({
+	title,
+	tone = "sky",
+	type,
+}: {
+	title: string;
+	tone?: "sky" | "violet" | "emerald" | "amber" | "rose";
+	type:
+		| "cpu"
+		| "gpu"
+		| "memory"
+		| "disk"
+		| "process"
+		| "network"
+		| "connection";
+}) {
+	const Icon =
+		type === "cpu" || type === "gpu"
+			? CpuChipIcon
+			: type === "memory"
+				? Square3Stack3DIcon
+				: type === "disk"
+					? CircleStackIcon
+					: type === "process"
+						? QueueListIcon
+						: SignalIcon;
+	const tones = {
+		sky: "border-sky-500/15 bg-sky-500/10 text-sky-600 dark:text-sky-300",
+		violet:
+			"border-violet-500/15 bg-violet-500/10 text-violet-600 dark:text-violet-300",
+		emerald:
+			"border-emerald-500/15 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+		amber:
+			"border-amber-500/15 bg-amber-500/10 text-amber-600 dark:text-amber-300",
+		rose: "border-rose-500/15 bg-rose-500/10 text-rose-600 dark:text-rose-300",
+	};
+	return (
+		<div className="flex items-center gap-2">
+			<span
+				className={cn(
+					"flex size-8 items-center justify-center rounded-xl border shadow-inner",
+					tones[tone],
+				)}
+			>
+				<Icon className="size-4" />
+			</span>
+			<div>
+				<p className="text-sm font-black tracking-tight">{title}</p>
+				<p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+					实时遥测
+				</p>
+			</div>
+		</div>
+	);
+}
 
 function PeriodSelector({
 	selectedPeriod,
@@ -177,6 +249,9 @@ function PeriodSelector({
 								{period.value === "realtime" && (
 									<span className="inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 dark:bg-emerald-400"></span>
 								)}
+								{period.value !== "realtime" && (
+									<ClockIcon className="size-3.5" />
+								)}
 								{period.label}
 							</div>
 						</div>
@@ -238,7 +313,7 @@ export default function ServerDetailChart({
 		refetchOnMount: true,
 		refetchOnWindowFocus: true,
 	});
-	const isTsdbEnabled = settingData?.data?.tsdb_enabled ?? true;
+	const isTsdbEnabled = settingData?.data?.tsdb_enabled === true;
 
 	useEffect(() => {
 		if (!isTsdbEnabled && selectedPeriod !== "realtime") {
@@ -285,71 +360,73 @@ export default function ServerDetailChart({
 				isLogin={isLogin}
 				isTsdbEnabled={isTsdbEnabled}
 			/>
-			<section className="server-charts grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-				<CpuChart
-					now={nezhaWsData.now}
-					data={server}
-					messageHistory={messageHistory}
-					period={selectedPeriod}
-				/>
-				{gpuStats.length >= 1 && gpuList.length === gpuStats.length
-					? gpuList.map((gpu, index) => (
-							<GpuChart
-								index={index}
-								id={server.id}
-								now={nezhaWsData.now}
-								gpuStat={gpuStats[index]}
-								gpuName={gpu}
-								messageHistory={messageHistory}
-								period={selectedPeriod}
-								key={index}
-							/>
-						))
-					: gpuStats.length > 0
-						? gpuStats.map((gpu, index) => (
+			<PersistentMetricsContext.Provider value={isTsdbEnabled}>
+				<section className="server-charts grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+					<CpuChart
+						now={nezhaWsData.now}
+						data={server}
+						messageHistory={messageHistory}
+						period={selectedPeriod}
+					/>
+					{gpuStats.length >= 1 && gpuList.length === gpuStats.length
+						? gpuList.map((gpu, index) => (
 								<GpuChart
 									index={index}
 									id={server.id}
 									now={nezhaWsData.now}
-									gpuStat={gpu}
-									gpuName={`#${index + 1}`}
+									gpuStat={gpuStats[index]}
+									gpuName={gpu}
 									messageHistory={messageHistory}
 									period={selectedPeriod}
 									key={index}
 								/>
 							))
-						: null}
-				<MemChart
-					now={nezhaWsData.now}
-					data={server}
-					messageHistory={messageHistory}
-					period={selectedPeriod}
-				/>
-				<DiskChart
-					now={nezhaWsData.now}
-					data={server}
-					messageHistory={messageHistory}
-					period={selectedPeriod}
-				/>
-				<ProcessChart
-					now={nezhaWsData.now}
-					data={server}
-					messageHistory={messageHistory}
-					period={selectedPeriod}
-				/>
-				<NetworkChart
-					now={nezhaWsData.now}
-					data={server}
-					messageHistory={messageHistory}
-					period={selectedPeriod}
-				/>
-				<ConnectChart
-					now={nezhaWsData.now}
-					data={server}
-					messageHistory={messageHistory}
-					period={selectedPeriod}
-				/>
-			</section>
+						: gpuStats.length > 0
+							? gpuStats.map((gpu, index) => (
+									<GpuChart
+										index={index}
+										id={server.id}
+										now={nezhaWsData.now}
+										gpuStat={gpu}
+										gpuName={`#${index + 1}`}
+										messageHistory={messageHistory}
+										period={selectedPeriod}
+										key={index}
+									/>
+								))
+							: null}
+					<MemChart
+						now={nezhaWsData.now}
+						data={server}
+						messageHistory={messageHistory}
+						period={selectedPeriod}
+					/>
+					<DiskChart
+						now={nezhaWsData.now}
+						data={server}
+						messageHistory={messageHistory}
+						period={selectedPeriod}
+					/>
+					<ProcessChart
+						now={nezhaWsData.now}
+						data={server}
+						messageHistory={messageHistory}
+						period={selectedPeriod}
+					/>
+					<NetworkChart
+						now={nezhaWsData.now}
+						data={server}
+						messageHistory={messageHistory}
+						period={selectedPeriod}
+					/>
+					<ConnectChart
+						now={nezhaWsData.now}
+						data={server}
+						messageHistory={messageHistory}
+						period={selectedPeriod}
+					/>
+				</section>
+			</PersistentMetricsContext.Provider>
 		</section>
 	);
 }
@@ -360,6 +437,7 @@ function useHistoricalData<T>(
 	period: ChartPeriod,
 	transformData: (timestamp: number, value: number) => T,
 ) {
+	const persistentMetricsEnabled = useContext(PersistentMetricsContext);
 	const [historicalData, setHistoricalData] = useState<T[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [displayData, setDisplayData] = useState<T[]>([]);
@@ -367,31 +445,26 @@ function useHistoricalData<T>(
 
 	useEffect(() => {
 		let cancelled = false;
-
-		if (period === "realtime") {
-			setHistoricalData([]);
-			setDisplayData([]);
+		if (period === "realtime" && !persistentMetricsEnabled) {
 			setIsLoading(false);
-			setLoadedPeriod("realtime");
-			return () => {
-				cancelled = true;
-			};
+			return;
 		}
+		const requestPeriod: MetricPeriod = period === "realtime" ? "1d" : period;
 
 		const fetchData = async () => {
 			const loadingStartedAt = Date.now();
-			setIsLoading(true);
+			if (period !== "realtime") setIsLoading(true);
 
 			try {
 				const response = await fetchServerMetrics(
 					serverId,
 					metricName as Parameters<typeof fetchServerMetrics>[1],
-					period as MetricPeriod,
+					requestPeriod,
 				);
 				if (response.success && response.data?.data_points) {
-					const transformedData = response.data.data_points.map((point) =>
-						transformData(point.ts, point.value),
-					);
+					const transformedData = response.data.data_points
+						.map((point) => transformData(point.ts, point.value))
+						.slice(period === "realtime" ? -30 : undefined);
 					if (!cancelled) {
 						setHistoricalData(transformedData);
 						setDisplayData(transformedData);
@@ -401,7 +474,7 @@ function useHistoricalData<T>(
 				console.error(`Failed to fetch ${metricName} metrics:`, error);
 			} finally {
 				const elapsed = Date.now() - loadingStartedAt;
-				if (elapsed < MIN_HISTORY_LOADING_MS) {
+				if (period !== "realtime" && elapsed < MIN_HISTORY_LOADING_MS) {
 					await sleep(MIN_HISTORY_LOADING_MS - elapsed);
 				}
 				if (!cancelled) {
@@ -415,7 +488,7 @@ function useHistoricalData<T>(
 		return () => {
 			cancelled = true;
 		};
-	}, [serverId, metricName, period, transformData]);
+	}, [serverId, metricName, period, transformData, persistentMetricsEnabled]);
 
 	const isHistoricalLoading =
 		period !== "realtime" && (isLoading || loadedPeriod !== period);
@@ -458,6 +531,18 @@ function GpuChart({
 
 	const { displayData: gpuHistoricalData, isLoading } =
 		useHistoricalData<gpuChartData>(id, "gpu", period, transformGpuData);
+
+	useEffect(() => {
+		if (
+			period === "realtime" &&
+			gpuHistoricalData.length &&
+			!hasInitialized.current
+		) {
+			setGpuChartData(gpuHistoricalData);
+			hasInitialized.current = true;
+			setHistoryLoaded(true);
+		}
+	}, [gpuHistoricalData, period]);
 
 	// 初始化历史数据
 	useEffect(() => {
@@ -532,8 +617,11 @@ function GpuChart({
 				<section className="flex flex-col gap-1">
 					<div className="flex items-center justify-between">
 						<section className="flex flex-col items-center gap-2">
-							{!gpuName && <p className="text-md font-medium">GPU</p>}
-							{gpuName && <p className="text-xs mt-1 mb-1.5">GPU: {gpuName}</p>}
+							<MetricTitle
+								title={gpuName ? `GPU · ${gpuName}` : "GPU"}
+								type="gpu"
+								tone="violet"
+							/>
 						</section>
 						<section className="flex items-center gap-2">
 							<p className="text-xs text-end w-10 font-medium">
@@ -607,7 +695,7 @@ function GpuChart({
 								<Area
 									isAnimationActive={false}
 									dataKey="gpu"
-									type="step"
+									type="monotone"
 									fill="hsl(var(--chart-3))"
 									fillOpacity={0.3}
 									stroke="hsl(var(--chart-3))"
@@ -653,6 +741,18 @@ function CpuChart({
 
 	const { displayData: cpuHistoricalData, isLoading } =
 		useHistoricalData<cpuChartData>(data.id, "cpu", period, transformCpuData);
+
+	useEffect(() => {
+		if (
+			period === "realtime" &&
+			cpuHistoricalData.length &&
+			!hasInitialized.current
+		) {
+			setCpuChartData(cpuHistoricalData);
+			hasInitialized.current = true;
+			setHistoryLoaded(true);
+		}
+	}, [cpuHistoricalData, period]);
 
 	// 初始化历史数据
 	useEffect(() => {
@@ -727,7 +827,7 @@ function CpuChart({
 			<CardContent className="px-6 py-3">
 				<section className="flex flex-col gap-1">
 					<div className="flex items-center justify-between">
-						<p className="text-md font-medium">CPU</p>
+						<MetricTitle title="CPU" type="cpu" tone="sky" />
 						<section className="flex items-center gap-2">
 							<p className="text-xs text-end w-10 font-medium">
 								{cpu.toFixed(2)}%
@@ -800,7 +900,7 @@ function CpuChart({
 								<Area
 									isAnimationActive={false}
 									dataKey="cpu"
-									type="step"
+									type="monotone"
 									fill="hsl(var(--chart-1))"
 									fillOpacity={0.3}
 									stroke="hsl(var(--chart-1))"
@@ -854,6 +954,18 @@ function ProcessChart({
 			period,
 			transformProcessData,
 		);
+
+	useEffect(() => {
+		if (
+			period === "realtime" &&
+			processHistoricalData.length &&
+			!hasInitialized.current
+		) {
+			setProcessChartData(processHistoricalData);
+			hasInitialized.current = true;
+			setHistoryLoaded(true);
+		}
+	}, [processHistoricalData, period]);
 
 	// 初始化历史数据
 	useEffect(() => {
@@ -929,9 +1041,11 @@ function ProcessChart({
 			<CardContent className="px-6 py-3">
 				<section className="flex flex-col gap-1">
 					<div className="flex items-center justify-between">
-						<p className="text-md font-medium">
-							{t("serverDetailChart.process")}
-						</p>
+						<MetricTitle
+							title={t("serverDetailChart.process")}
+							type="process"
+							tone="rose"
+						/>
 						<section className="flex items-center gap-2">
 							<p className="text-xs text-end w-10 font-medium">{process}</p>
 						</section>
@@ -995,7 +1109,7 @@ function ProcessChart({
 								<Area
 									isAnimationActive={false}
 									dataKey="process"
-									type="step"
+									type="monotone"
 									fill="hsl(var(--chart-2))"
 									fillOpacity={0.3}
 									stroke="hsl(var(--chart-2))"
@@ -1020,6 +1134,7 @@ function MemChart({
 	messageHistory: NezhaWebsocketResponse[];
 	period: ChartPeriod;
 }) {
+	const persistentMetricsEnabled = useContext(PersistentMetricsContext);
 	const { t } = useTranslation();
 	const [memChartData, setMemChartData] = useState([] as memChartData[]);
 	const hasInitialized = useRef(false);
@@ -1042,23 +1157,17 @@ function MemChart({
 
 	useEffect(() => {
 		let cancelled = false;
+		if (period === "realtime" && !persistentMetricsEnabled) return;
 
-		if (period === "realtime") {
-			setMemHistoricalData([]);
-			setIsLoadingMem(false);
-			setLoadedPeriodMem("realtime");
-			return () => {
-				cancelled = true;
-			};
-		}
+		const requestPeriod: MetricPeriod = period === "realtime" ? "1d" : period;
 
 		const fetchMemData = async () => {
 			const loadingStartedAt = Date.now();
-			setIsLoadingMem(true);
+			if (period !== "realtime") setIsLoadingMem(true);
 			try {
 				const [memResponse, swapResponse] = await Promise.all([
-					fetchServerMetrics(data.id, "memory", period as MetricPeriod),
-					fetchServerMetrics(data.id, "swap", period as MetricPeriod),
+					fetchServerMetrics(data.id, "memory", requestPeriod),
+					fetchServerMetrics(data.id, "swap", requestPeriod),
 				]);
 
 				if (memResponse.success && memResponse.data?.data_points) {
@@ -1074,18 +1183,20 @@ function MemChart({
 						}
 					}
 
-					const combinedData = memResponse.data.data_points.map((point) => {
-						// Convert bytes to percentage
-						const memPercent =
-							data.host.mem_total > 0
-								? (point.value / data.host.mem_total) * 100
-								: 0;
-						return {
-							timeStamp: point.ts.toString(),
-							mem: memPercent,
-							swap: swapMap.get(point.ts) || 0,
-						};
-					});
+					const combinedData = memResponse.data.data_points
+						.map((point) => {
+							// Convert bytes to percentage
+							const memPercent =
+								data.host.mem_total > 0
+									? (point.value / data.host.mem_total) * 100
+									: 0;
+							return {
+								timeStamp: point.ts.toString(),
+								mem: memPercent,
+								swap: swapMap.get(point.ts) || 0,
+							};
+						})
+						.slice(period === "realtime" ? -30 : undefined);
 					if (!cancelled) {
 						setMemHistoricalData(combinedData);
 					}
@@ -1094,7 +1205,7 @@ function MemChart({
 				console.error("Failed to fetch memory metrics:", error);
 			} finally {
 				const elapsed = Date.now() - loadingStartedAt;
-				if (elapsed < MIN_HISTORY_LOADING_MS) {
+				if (period !== "realtime" && elapsed < MIN_HISTORY_LOADING_MS) {
 					await sleep(MIN_HISTORY_LOADING_MS - elapsed);
 				}
 				if (!cancelled) {
@@ -1108,7 +1219,25 @@ function MemChart({
 		return () => {
 			cancelled = true;
 		};
-	}, [data.id, period, data.host.mem_total, data.host.swap_total]);
+	}, [
+		data.id,
+		period,
+		data.host.mem_total,
+		data.host.swap_total,
+		persistentMetricsEnabled,
+	]);
+
+	useEffect(() => {
+		if (
+			period === "realtime" &&
+			memHistoricalData.length &&
+			!hasInitialized.current
+		) {
+			setMemChartData(memHistoricalData);
+			hasInitialized.current = true;
+			setHistoryLoaded(true);
+		}
+	}, [memHistoricalData, period]);
 
 	// 初始化历史数据
 	useEffect(() => {
@@ -1139,7 +1268,7 @@ function MemChart({
 
 	// Reset when switching to realtime
 	useEffect(() => {
-		if (period === "realtime") {
+		if (period !== "realtime") {
 			hasInitialized.current = false;
 			setHistoryLoaded(false);
 		}
@@ -1188,8 +1317,13 @@ function MemChart({
 		>
 			<CardContent className="px-6 py-3">
 				<section className="flex flex-col gap-1">
-					<div className="flex items-center justify-between">
+					<div className="flex items-start justify-between gap-3">
 						<section className="flex items-center gap-4">
+							<MetricTitle
+								title={t("serverDetailChart.mem")}
+								type="memory"
+								tone="violet"
+							/>
 							<div className="flex flex-col">
 								<p className=" text-xs text-muted-foreground">
 									{t("serverDetailChart.mem")}
@@ -1305,7 +1439,7 @@ function MemChart({
 								<Area
 									isAnimationActive={false}
 									dataKey="mem"
-									type="step"
+									type="monotone"
 									fill="hsl(var(--chart-8))"
 									fillOpacity={0.3}
 									stroke="hsl(var(--chart-8))"
@@ -1313,7 +1447,7 @@ function MemChart({
 								<Area
 									isAnimationActive={false}
 									dataKey="swap"
-									type="step"
+									type="monotone"
 									fill="hsl(var(--chart-10))"
 									fillOpacity={0.3}
 									stroke="hsl(var(--chart-10))"
@@ -1370,6 +1504,18 @@ function DiskChart({
 			period,
 			transformDiskData,
 		);
+
+	useEffect(() => {
+		if (
+			period === "realtime" &&
+			diskHistoricalData.length &&
+			!hasInitialized.current
+		) {
+			setDiskChartData(diskHistoricalData);
+			hasInitialized.current = true;
+			setHistoryLoaded(true);
+		}
+	}, [diskHistoricalData, period]);
 
 	// 初始化历史数据
 	useEffect(() => {
@@ -1445,7 +1591,11 @@ function DiskChart({
 			<CardContent className="px-6 py-3">
 				<section className="flex flex-col gap-1">
 					<div className="flex items-center justify-between">
-						<p className="text-md font-medium">{t("serverDetailChart.disk")}</p>
+						<MetricTitle
+							title={t("serverDetailChart.disk")}
+							type="disk"
+							tone="amber"
+						/>
 						<section className="flex flex-col items-end gap-0.5">
 							<section className="flex items-center gap-2">
 								<p className="text-xs text-end w-10 font-medium">
@@ -1526,7 +1676,7 @@ function DiskChart({
 								<Area
 									isAnimationActive={false}
 									dataKey="disk"
-									type="step"
+									type="monotone"
 									fill="hsl(var(--chart-5))"
 									fillOpacity={0.3}
 									stroke="hsl(var(--chart-5))"
@@ -1551,6 +1701,7 @@ function NetworkChart({
 	messageHistory: NezhaWebsocketResponse[];
 	period: ChartPeriod;
 }) {
+	const persistentMetricsEnabled = useContext(PersistentMetricsContext);
 	const { t } = useTranslation();
 	const [networkChartData, setNetworkChartData] = useState(
 		[] as networkChartData[],
@@ -1575,23 +1726,17 @@ function NetworkChart({
 
 	useEffect(() => {
 		let cancelled = false;
+		if (period === "realtime" && !persistentMetricsEnabled) return;
 
-		if (period === "realtime") {
-			setNetworkHistoricalData([]);
-			setIsLoadingNetwork(false);
-			setLoadedPeriodNetwork("realtime");
-			return () => {
-				cancelled = true;
-			};
-		}
+		const requestPeriod: MetricPeriod = period === "realtime" ? "1d" : period;
 
 		const fetchNetworkData = async () => {
 			const loadingStartedAt = Date.now();
-			setIsLoadingNetwork(true);
+			if (period !== "realtime") setIsLoadingNetwork(true);
 			try {
 				const [uploadResponse, downloadResponse] = await Promise.all([
-					fetchServerMetrics(data.id, "net_out_speed", period as MetricPeriod),
-					fetchServerMetrics(data.id, "net_in_speed", period as MetricPeriod),
+					fetchServerMetrics(data.id, "net_out_speed", requestPeriod),
+					fetchServerMetrics(data.id, "net_in_speed", requestPeriod),
 				]);
 
 				if (uploadResponse.success && uploadResponse.data?.data_points) {
@@ -1602,11 +1747,13 @@ function NetworkChart({
 						}
 					}
 
-					const combinedData = uploadResponse.data.data_points.map((point) => ({
-						timeStamp: point.ts.toString(),
-						upload: bytesPerSecondToMbps(point.value),
-						download: downloadMap.get(point.ts) || 0,
-					}));
+					const combinedData = uploadResponse.data.data_points
+						.map((point) => ({
+							timeStamp: point.ts.toString(),
+							upload: bytesPerSecondToMbps(point.value),
+							download: downloadMap.get(point.ts) || 0,
+						}))
+						.slice(period === "realtime" ? -30 : undefined);
 					if (!cancelled) {
 						setNetworkHistoricalData(combinedData);
 					}
@@ -1615,7 +1762,7 @@ function NetworkChart({
 				console.error("Failed to fetch network metrics:", error);
 			} finally {
 				const elapsed = Date.now() - loadingStartedAt;
-				if (elapsed < MIN_HISTORY_LOADING_MS) {
+				if (period !== "realtime" && elapsed < MIN_HISTORY_LOADING_MS) {
 					await sleep(MIN_HISTORY_LOADING_MS - elapsed);
 				}
 				if (!cancelled) {
@@ -1629,7 +1776,19 @@ function NetworkChart({
 		return () => {
 			cancelled = true;
 		};
-	}, [data.id, period]);
+	}, [data.id, period, persistentMetricsEnabled]);
+
+	useEffect(() => {
+		if (
+			period === "realtime" &&
+			networkHistoricalData.length &&
+			!hasInitialized.current
+		) {
+			setNetworkChartData(networkHistoricalData);
+			hasInitialized.current = true;
+			setHistoryLoaded(true);
+		}
+	}, [networkHistoricalData, period]);
 
 	// 初始化历史数据
 	useEffect(() => {
@@ -1660,7 +1819,7 @@ function NetworkChart({
 
 	// Reset when switching to realtime
 	useEffect(() => {
-		if (period === "realtime") {
+		if (period !== "realtime") {
 			hasInitialized.current = false;
 			setHistoryLoaded(false);
 		}
@@ -1720,7 +1879,8 @@ function NetworkChart({
 		>
 			<CardContent className="px-6 py-3">
 				<section className="flex flex-col gap-1">
-					<div className="flex items-center">
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<MetricTitle title="网络吞吐" type="network" tone="emerald" />
 						<section className="flex items-center gap-4">
 							<div className="flex flex-col w-20">
 								<p className="text-xs text-muted-foreground">
@@ -1814,7 +1974,7 @@ function NetworkChart({
 									dataKey="upload"
 									type="linear"
 									stroke="hsl(var(--chart-1))"
-									strokeWidth={1}
+									strokeWidth={2.4}
 									dot={false}
 								/>
 								<Line
@@ -1822,7 +1982,7 @@ function NetworkChart({
 									dataKey="download"
 									type="linear"
 									stroke="hsl(var(--chart-4))"
-									strokeWidth={1}
+									strokeWidth={2.4}
 									dot={false}
 								/>
 							</LineChart>
@@ -1845,6 +2005,7 @@ function ConnectChart({
 	messageHistory: NezhaWebsocketResponse[];
 	period: ChartPeriod;
 }) {
+	const persistentMetricsEnabled = useContext(PersistentMetricsContext);
 	const [connectChartData, setConnectChartData] = useState(
 		[] as connectChartData[],
 	);
@@ -1868,23 +2029,17 @@ function ConnectChart({
 
 	useEffect(() => {
 		let cancelled = false;
+		if (period === "realtime" && !persistentMetricsEnabled) return;
 
-		if (period === "realtime") {
-			setConnectHistoricalData([]);
-			setIsLoadingConnect(false);
-			setLoadedPeriodConnect("realtime");
-			return () => {
-				cancelled = true;
-			};
-		}
+		const requestPeriod: MetricPeriod = period === "realtime" ? "1d" : period;
 
 		const fetchConnectData = async () => {
 			const loadingStartedAt = Date.now();
-			setIsLoadingConnect(true);
+			if (period !== "realtime") setIsLoadingConnect(true);
 			try {
 				const [tcpResponse, udpResponse] = await Promise.all([
-					fetchServerMetrics(data.id, "tcp_conn", period as MetricPeriod),
-					fetchServerMetrics(data.id, "udp_conn", period as MetricPeriod),
+					fetchServerMetrics(data.id, "tcp_conn", requestPeriod),
+					fetchServerMetrics(data.id, "udp_conn", requestPeriod),
 				]);
 
 				if (tcpResponse.success && tcpResponse.data?.data_points) {
@@ -1895,11 +2050,13 @@ function ConnectChart({
 						}
 					}
 
-					const combinedData = tcpResponse.data.data_points.map((point) => ({
-						timeStamp: point.ts.toString(),
-						tcp: point.value,
-						udp: udpMap.get(point.ts) || 0,
-					}));
+					const combinedData = tcpResponse.data.data_points
+						.map((point) => ({
+							timeStamp: point.ts.toString(),
+							tcp: point.value,
+							udp: udpMap.get(point.ts) || 0,
+						}))
+						.slice(period === "realtime" ? -30 : undefined);
 					if (!cancelled) {
 						setConnectHistoricalData(combinedData);
 					}
@@ -1908,7 +2065,7 @@ function ConnectChart({
 				console.error("Failed to fetch connection metrics:", error);
 			} finally {
 				const elapsed = Date.now() - loadingStartedAt;
-				if (elapsed < MIN_HISTORY_LOADING_MS) {
+				if (period !== "realtime" && elapsed < MIN_HISTORY_LOADING_MS) {
 					await sleep(MIN_HISTORY_LOADING_MS - elapsed);
 				}
 				if (!cancelled) {
@@ -1922,7 +2079,19 @@ function ConnectChart({
 		return () => {
 			cancelled = true;
 		};
-	}, [data.id, period]);
+	}, [data.id, period, persistentMetricsEnabled]);
+
+	useEffect(() => {
+		if (
+			period === "realtime" &&
+			connectHistoricalData.length &&
+			!hasInitialized.current
+		) {
+			setConnectChartData(connectHistoricalData);
+			hasInitialized.current = true;
+			setHistoryLoaded(true);
+		}
+	}, [connectHistoricalData, period]);
 
 	// 初始化历史数据
 	useEffect(() => {
@@ -1953,7 +2122,7 @@ function ConnectChart({
 
 	// Reset when switching to realtime
 	useEffect(() => {
-		if (period === "realtime") {
+		if (period !== "realtime") {
 			hasInitialized.current = false;
 			setHistoryLoaded(false);
 		}
@@ -2004,7 +2173,8 @@ function ConnectChart({
 		>
 			<CardContent className="px-6 py-3">
 				<section className="flex flex-col gap-1">
-					<div className="flex items-center">
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<MetricTitle title="连接会话" type="connection" tone="sky" />
 						<section className="flex items-center gap-4">
 							<div className="flex flex-col w-12">
 								<p className="text-xs text-muted-foreground">TCP</p>
@@ -2088,7 +2258,7 @@ function ConnectChart({
 									dataKey="tcp"
 									type="linear"
 									stroke="hsl(var(--chart-1))"
-									strokeWidth={1}
+									strokeWidth={2.4}
 									dot={false}
 								/>
 								<Line
@@ -2096,7 +2266,7 @@ function ConnectChart({
 									dataKey="udp"
 									type="linear"
 									stroke="hsl(var(--chart-4))"
-									strokeWidth={1}
+									strokeWidth={2.4}
 									dot={false}
 								/>
 							</LineChart>

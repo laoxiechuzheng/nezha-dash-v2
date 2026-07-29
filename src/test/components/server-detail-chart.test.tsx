@@ -194,6 +194,10 @@ describe("ServerDetailChart", () => {
 		detailChartMocks.messageHistory = [];
 		detailChartMocks.fetchLoginUser.mockRejectedValue(new Error("anonymous"));
 		detailChartMocks.fetchSetting.mockResolvedValue(settingResponse());
+		detailChartMocks.fetchServerMetrics.mockImplementation(
+			(_serverId: number, metric: string) =>
+				Promise.resolve(metricsResponse(metric)),
+		);
 	});
 
 	it("renders the loading grid without websocket data", () => {
@@ -216,8 +220,10 @@ describe("ServerDetailChart", () => {
 		expect(screen.getByText("serverDetailChart.period1d")).toBeInTheDocument();
 		expect(screen.getByText("serverDetailChart.period7d")).toBeInTheDocument();
 		expect(screen.getByText("CPU")).toBeInTheDocument();
-		expect(screen.getByText("GPU: NVIDIA T4")).toBeInTheDocument();
-		expect(screen.getByText("serverDetailChart.mem")).toBeInTheDocument();
+		expect(screen.getByText("GPU · NVIDIA T4")).toBeInTheDocument();
+		expect(screen.getAllByText("serverDetailChart.mem").length).toBeGreaterThan(
+			0,
+		);
 		expect(screen.getByText("serverDetailChart.swap")).toBeInTheDocument();
 		expect(screen.getByText("serverDetailChart.disk")).toBeInTheDocument();
 		expect(screen.getByText("serverDetailChart.process")).toBeInTheDocument();
@@ -230,7 +236,11 @@ describe("ServerDetailChart", () => {
 
 		await user.click(screen.getByText("serverDetailChart.period7d"));
 
-		expect(detailChartMocks.fetchServerMetrics).not.toHaveBeenCalled();
+		expect(detailChartMocks.fetchServerMetrics).not.toHaveBeenCalledWith(
+			7,
+			"cpu",
+			"7d",
+		);
 	});
 
 	it("prevents historical periods when TSDB is disabled", async () => {
@@ -241,9 +251,36 @@ describe("ServerDetailChart", () => {
 		renderWithQuery(<ServerDetailChart server_id="7" />);
 
 		await screen.findByText("serverDetailChart.realtime");
+		detailChartMocks.fetchServerMetrics.mockClear();
 		await user.click(screen.getByText("serverDetailChart.period1d"));
 
 		expect(detailChartMocks.fetchServerMetrics).not.toHaveBeenCalled();
+	});
+
+	it("hydrates realtime charts from persisted metrics after a dashboard restart", async () => {
+		seedWebSocketData();
+		detailChartMocks.messageHistory = [];
+		detailChartMocks.fetchServerMetrics.mockImplementation(
+			(_serverId: number, metric: string) =>
+				Promise.resolve(metricsResponse(metric)),
+		);
+
+		renderWithQuery(<ServerDetailChart server_id="7" />);
+
+		await waitFor(() => {
+			expect(detailChartMocks.fetchServerMetrics).toHaveBeenCalledWith(
+				7,
+				"cpu",
+				"1d",
+			);
+		});
+		await waitFor(() => {
+			expect(
+				Number(
+					screen.getAllByTestId("area-chart")[0].getAttribute("data-points"),
+				),
+			).toBeGreaterThanOrEqual(3);
+		});
 	});
 
 	it("fetches every historical metric group for the selected period", async () => {

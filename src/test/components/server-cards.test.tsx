@@ -63,10 +63,10 @@ describe("ServerCard", () => {
 		expect(screen.getByText("Windows")).toBeInTheDocument();
 		expect(screen.getByText("12.00%")).toBeInTheDocument();
 		expect(screen.getAllByText("25.00%")).toHaveLength(2);
-		expect(screen.getByText("serverCard.upload:2.00 GiB")).toBeInTheDocument();
-		expect(
-			screen.getByText("serverCard.download:1.00 GiB"),
-		).toBeInTheDocument();
+		expect(screen.getByText("已用 2.00 GiB")).toBeInTheDocument();
+		expect(screen.getByText("已用 1.00 GiB")).toBeInTheDocument();
+		expect(screen.getByText("实时上传")).toBeInTheDocument();
+		expect(screen.getByText("实时下载")).toBeInTheDocument();
 		expect(screen.getByText("1Gbps")).toBeInTheDocument();
 		expect(
 			screen.getAllByText(/billingInfo.remaining: 16/).length,

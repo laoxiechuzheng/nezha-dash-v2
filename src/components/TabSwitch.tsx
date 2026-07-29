@@ -1,3 +1,4 @@
+import { ChartBarIcon, SignalIcon } from "@heroicons/react/20/solid";
 import { useTranslation } from "react-i18next";
 import { useActiveIndicator } from "@/hooks/use-active-indicator";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,8 @@ export default function TabSwitch({
 					/>
 				)}
 				{tabs.map((tab: string, index: number) => (
-					<div
+					<button
+						type="button"
 						key={tab}
 						ref={setItemRef(index)}
 						onClick={() => {
@@ -54,16 +56,21 @@ export default function TabSwitch({
 							setCurrentTab(tab);
 						}}
 						className={cn(
-							"relative cursor-pointer rounded-xl px-4 py-2 text-[13px] font-semibold transition-all duration-300 ease-out hover:text-sky-700 hover:dark:text-sky-300",
+							"relative min-w-28 cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all duration-300 ease-out hover:text-sky-700 hover:dark:text-sky-300",
 							currentTab === tab
 								? "text-black dark:text-white"
 								: "text-stone-400 dark:text-stone-500",
 						)}
 					>
-						<div className="relative z-20 flex items-center gap-1">
+						<div className="relative z-20 flex items-center justify-center gap-2">
+							{tab === "Detail" ? (
+								<ChartBarIcon className="size-4" />
+							) : (
+								<SignalIcon className="size-4" />
+							)}
 							<p className="whitespace-nowrap">{t(`tabSwitch.${tab}`)}</p>
 						</div>
-					</div>
+					</button>
 				))}
 			</div>
 		</div>
