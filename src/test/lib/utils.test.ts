@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	bytesPerSecondToMbps,
 	fetcher,
+	formatMbps,
 	formatNezhaInfo,
 	formatRelativeTime,
 	formatTime,
@@ -232,8 +234,8 @@ describe("nezha data formatting", () => {
 		const result = formatNezhaInfo(now, serverFixture);
 
 		expect(result.online).toBe(true);
-		expect(result.up).toBe(2);
-		expect(result.down).toBe(1);
+		expect(result.up).toBeCloseTo(16.777216);
+		expect(result.down).toBeCloseTo(8.388608);
 		expect(result.mem).toBe(25);
 		expect(result.swap).toBe(10);
 		expect(result.disk).toBe(25);
@@ -275,6 +277,15 @@ describe("nezha data formatting", () => {
 		expect(result.swap).toBe(0);
 		expect(result.disk).toBe(0);
 		expect(result.public_note).toBe("");
+	});
+});
+
+describe("network speed formatting", () => {
+	it("converts bytes per second to decimal Mbps", () => {
+		expect(bytesPerSecondToMbps(1_000_000)).toBe(8);
+		expect(bytesPerSecondToMbps(125_000)).toBe(1);
+		expect(formatMbps(8)).toBe("8.00 Mbps");
+		expect(formatMbps(Number.NaN)).toBe("0.00 Mbps");
 	});
 });
 

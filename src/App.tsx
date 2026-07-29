@@ -65,17 +65,17 @@ const MainApp: React.FC = () => {
 		}
 	}, [forceTheme, setTheme]);
 
+	useEffect(() => {
+		const configuredLanguage = settingData?.data?.config?.language;
+		if (configuredLanguage && !localStorage.getItem("language")) {
+			void i18n.changeLanguage(configuredLanguage);
+		}
+	}, [i18n, settingData?.data?.config?.language]);
+
 	const initialBackendError = !settingData ? toError(error) : null;
 
 	if (settingData?.data?.config?.custom_code && !isCustomCodeInjected) {
 		return null;
-	}
-
-	if (
-		settingData?.data?.config?.language &&
-		!localStorage.getItem("language")
-	) {
-		i18n.changeLanguage(settingData?.data?.config?.language);
 	}
 
 	const customMobileBackgroundImage =

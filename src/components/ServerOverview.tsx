@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStatus } from "@/hooks/use-status";
 import { formatBytes } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { bytesPerSecondToMbps, cn, formatMbps } from "@/lib/utils";
 import NumericText from "./NumericText";
 
 type ServerOverviewProps = {
@@ -157,11 +157,11 @@ export default function ServerOverview({
 						<section className="flex flex-col sm:flex-row -mr-1 sm:items-center items-start gap-1">
 							<p className="text-[11px] flex items-center text-nowrap font-semibold">
 								<ArrowUpCircleIcon className="size-3 mr-0.5 sm:mb-px" />
-								{formatBytes(upSpeed)}/s
+								{formatMbps(bytesPerSecondToMbps(upSpeed))}
 							</p>
 							<p className="text-[11px] flex items-center  text-nowrap font-semibold">
 								<ArrowDownCircleIcon className="size-3 mr-0.5" />
-								{formatBytes(downSpeed)}/s
+								{formatMbps(bytesPerSecondToMbps(downSpeed))}
 							</p>
 						</section>
 					</section>

@@ -61,8 +61,8 @@ describe("ServerDetailSummary", () => {
 		expect(screen.getByText("8")).toBeInTheDocument();
 		expect(screen.getByText("UDP")).toBeInTheDocument();
 		expect(screen.getByText("4")).toBeInTheDocument();
-		expect(screen.getByText("1.00M/s")).toBeInTheDocument();
-		expect(screen.getByText("2.00M/s")).toBeInTheDocument();
+		expect(screen.getByText("8.39 Mbps")).toBeInTheDocument();
+		expect(screen.getByText("16.78 Mbps")).toBeInTheDocument();
 	});
 });
 

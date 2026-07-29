@@ -32,7 +32,9 @@ import {
 	fetchSetting,
 } from "@/lib/nezha-api";
 import {
+	bytesPerSecondToMbps,
 	cn,
+	formatMbps,
 	formatNezhaInfo,
 	formatRelativeTime,
 	formatTime,
@@ -1596,14 +1598,13 @@ function NetworkChart({
 					const downloadMap = new Map<number, number>();
 					if (downloadResponse.success && downloadResponse.data?.data_points) {
 						for (const point of downloadResponse.data.data_points) {
-							// Convert bytes to MB
-							downloadMap.set(point.ts, point.value / 1024 / 1024);
+							downloadMap.set(point.ts, bytesPerSecondToMbps(point.value));
 						}
 					}
 
 					const combinedData = uploadResponse.data.data_points.map((point) => ({
 						timeStamp: point.ts.toString(),
-						upload: point.value / 1024 / 1024, // Convert bytes to MB
+						upload: bytesPerSecondToMbps(point.value),
 						download: downloadMap.get(point.ts) || 0,
 					}));
 					if (!cancelled) {
@@ -1727,13 +1728,7 @@ function NetworkChart({
 								</p>
 								<div className="flex items-center gap-1">
 									<span className="relative inline-flex  size-1.5 rounded-full bg-[hsl(var(--chart-1))]" />
-									<p className="text-xs font-medium">
-										{up >= 1024
-											? `${(up / 1024).toFixed(2)}G/s`
-											: up >= 1
-												? `${up.toFixed(2)}M/s`
-												: `${(up * 1024).toFixed(2)}K/s`}
-									</p>
+									<p className="text-xs font-medium">{formatMbps(up)}</p>
 								</div>
 							</div>
 							<div className="flex flex-col w-20">
@@ -1742,13 +1737,7 @@ function NetworkChart({
 								</p>
 								<div className="flex items-center gap-1">
 									<span className="relative inline-flex  size-1.5 rounded-full bg-[hsl(var(--chart-4))]" />
-									<p className="text-xs font-medium">
-										{down >= 1024
-											? `${(down / 1024).toFixed(2)}G/s`
-											: down >= 1
-												? `${down.toFixed(2)}M/s`
-												: `${(down * 1024).toFixed(2)}K/s`}
-									</p>
+									<p className="text-xs font-medium">{formatMbps(down)}</p>
 								</div>
 							</div>
 						</section>
@@ -1789,7 +1778,7 @@ function NetworkChart({
 									minTickGap={50}
 									interval="preserveStartEnd"
 									domain={[1, maxDownload]}
-									tickFormatter={(value) => `${value.toFixed(0)}M/s`}
+									tickFormatter={(value) => `${Number(value).toFixed(0)} Mbps`}
 								/>
 								<ChartTooltip
 									isAnimationActive={false}
@@ -1812,7 +1801,7 @@ function NetworkChart({
 															{label}
 														</span>
 														<span className="ml-2 font-medium text-foreground tabular-nums">
-															{Number(value).toFixed(2)} MB/s
+															{formatMbps(Number(value))}
 														</span>
 													</div>
 												);

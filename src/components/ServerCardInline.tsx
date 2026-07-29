@@ -10,7 +10,7 @@ import {
 	MageMicrosoftWindows,
 } from "@/lib/logo-class";
 import { saveMainPageScrollPosition } from "@/lib/navigation";
-import { cn, formatNezhaInfo, parsePublicNote } from "@/lib/utils";
+import { cn, formatMbps, formatNezhaInfo, parsePublicNote } from "@/lib/utils";
 import type { NezhaServer } from "@/types/nezha-api";
 import BillingInfo from "./billingInfo";
 import PlanInfo from "./PlanInfo";
@@ -158,11 +158,7 @@ function ServerCardInline({
 								{t("serverCard.upload")}
 							</p>
 							<div className="flex items-center text-xs font-semibold">
-								{up >= 1024
-									? `${(up / 1024).toFixed(2)}G/s`
-									: up >= 1
-										? `${up.toFixed(2)}M/s`
-										: `${(up * 1024).toFixed(2)}K/s`}
+								{formatMbps(up)}
 							</div>
 						</div>
 						<div className={"flex w-16 flex-col"}>
@@ -170,11 +166,7 @@ function ServerCardInline({
 								{t("serverCard.download")}
 							</p>
 							<div className="flex items-center text-xs font-semibold">
-								{down >= 1024
-									? `${(down / 1024).toFixed(2)}G/s`
-									: down >= 1
-										? `${down.toFixed(2)}M/s`
-										: `${(down * 1024).toFixed(2)}K/s`}
+								{formatMbps(down)}
 							</div>
 						</div>
 						<div className={"flex w-20 flex-col"}>

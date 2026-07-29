@@ -83,16 +83,15 @@ export interface MonitorResponse {
 	data: NezhaMonitor[];
 }
 
-export type ServerMonitorChart = {
-	[key: string]: {
-		created_at: number;
-		avg_delay: number | null;
-		packet_loss?: number;
-		status?: number;
-		error_code?: number;
-		recovered?: boolean;
-	}[];
-};
+export interface MonitorChartPoint {
+	created_at: number;
+	avg_delay: number | null;
+	packet_loss?: number;
+	status?: number;
+	error_code?: number;
+}
+
+export type ServerMonitorChart = Record<string, MonitorChartPoint[]>;
 
 export interface NezhaMonitor {
 	monitor_id: number;

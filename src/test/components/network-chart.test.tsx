@@ -27,12 +27,28 @@ vi.mock("recharts", () => {
 			children,
 			data,
 			dataKey,
+			domain,
+			type,
+			x1,
+			x2,
 		}: {
 			children?: ReactNode;
 			data?: unknown[];
 			dataKey?: string;
+			domain?: unknown[];
+			type?: string;
+			x1?: number;
+			x2?: number;
 		}) => (
-			<div data-key={dataKey} data-points={data?.length} data-testid={testId}>
+			<div
+				data-domain={domain ? JSON.stringify(domain) : undefined}
+				data-key={dataKey}
+				data-points={data?.length}
+				data-type={type}
+				data-x1={x1}
+				data-x2={x2}
+				data-testid={testId}
+			>
 				{children}
 			</div>
 		);
@@ -55,6 +71,8 @@ vi.mock("recharts", () => {
 		PieChart: genericChart,
 		RadarChart: genericChart,
 		RadialBarChart: genericChart,
+		ReferenceArea: createElement("reference-area"),
+		ReferenceLine: createElement("reference-line"),
 		ResponsiveContainer: ({ children }: { children?: ReactNode }) => (
 			<div data-testid="responsive-chart">{children}</div>
 		),
@@ -99,8 +117,10 @@ const monitorData: NezhaMonitor[] = [
 const clientChartData: ServerMonitorChart = {
 	Alpha: times.map((created_at, index) => ({
 		created_at,
-		avg_delay: 30 + index,
-		packet_loss: index,
+		avg_delay: index >= 4 && index < 6 ? null : 30 + index,
+		packet_loss: index >= 4 && index < 6 ? 100 : index,
+		status: index >= 4 && index < 6 ? 0 : 1,
+		error_code: index >= 4 && index < 6 ? 1 : 0,
 	})),
 	Beta: times.map((created_at, index) => ({
 		created_at,
@@ -204,12 +224,14 @@ describe("NetworkChart", () => {
 		expect(await screen.findByText("edge-chart")).toBeInTheDocument();
 		expect(apiMocks.fetchMonitor).toHaveBeenCalledWith(7, "6h");
 		expect(screen.getByText("2 monitor.monitorCount")).toBeInTheDocument();
-		expect(screen.getByText("Alpha")).toBeInTheDocument();
+		expect(screen.getAllByText("Alpha").length).toBeGreaterThan(0);
 		expect(screen.getByText("Beta")).toBeInTheDocument();
 		expect(screen.getByTestId("composed-chart")).toHaveAttribute(
 			"data-points",
-			"12",
+			"7",
 		);
+		expect(screen.getByTestId("x-axis")).toHaveAttribute("data-type", "number");
+		expect(screen.getAllByTestId("line")).toHaveLength(1);
 
 		await user.click(screen.getByText("monitor.period7d"));
 
@@ -220,7 +242,7 @@ describe("NetworkChart", () => {
 });
 
 describe("NetworkChartClient", () => {
-	it("locks longer periods for anonymous users and manages chart selection state", async () => {
+	it("locks longer periods and renders one selected monitor with outage intervals", async () => {
 		const user = userEvent.setup();
 		const onPeriodChange = vi.fn();
 
@@ -244,29 +266,21 @@ describe("NetworkChartClient", () => {
 		await user.click(screen.getByText("monitor.period7d"));
 		expect(onPeriodChange).not.toHaveBeenCalled();
 
-		await user.click(screen.getByText("Alpha"));
-		expect(
-			screen.getByRole("button", { name: /monitor.clearSelections/ }),
-		).toBeInTheDocument();
-		expect(screen.getByTestId("area")).toHaveAttribute(
-			"data-key",
-			"packet_loss",
-		);
+		const alpha = screen.getByRole("button", { name: /^Alpha/ });
+		const beta = screen.getByRole("button", { name: /^Beta/ });
+		expect(alpha).toHaveAttribute("aria-pressed", "true");
+		expect(screen.getAllByTestId("line")).toHaveLength(1);
+		expect(screen.getByTestId("reference-area")).toBeInTheDocument();
 
-		await user.click(screen.getByText("Beta"));
-		expect(screen.queryByTestId("area")).not.toBeInTheDocument();
-
-		await user.click(
-			screen.getByRole("button", { name: /monitor.clearSelections/ }),
-		);
-		expect(
-			screen.queryByRole("button", { name: /monitor.clearSelections/ }),
-		).not.toBeInTheDocument();
+		await user.click(beta);
+		expect(beta).toHaveAttribute("aria-pressed", "true");
+		expect(alpha).toHaveAttribute("aria-pressed", "false");
+		expect(screen.getAllByTestId("line")).toHaveLength(1);
+		expect(screen.queryByTestId("reference-area")).not.toBeInTheDocument();
 	});
 
-	it("shows period loading and honors the forced peak-cut global", async () => {
+	it("shows period loading and allows authenticated period changes", async () => {
 		const user = userEvent.setup();
-		Object.assign(window, { ForcePeakCutEnabled: true });
 		const onPeriodChange = vi.fn();
 
 		const { container } = render(
@@ -284,16 +298,9 @@ describe("NetworkChartClient", () => {
 		);
 
 		expect(container.querySelector(".opacity-60")).toBeInTheDocument();
-		expect(
-			screen.getByRole("switch", { name: "monitor.peakCut" }),
-		).toHaveAttribute("data-state", "checked");
+		expect(screen.queryByRole("switch")).not.toBeInTheDocument();
 
 		await user.click(screen.getByText("monitor.period30d"));
 		expect(onPeriodChange).toHaveBeenCalledWith("30d");
-
-		await user.click(screen.getByRole("switch", { name: "monitor.peakCut" }));
-		expect(
-			screen.getByRole("switch", { name: "monitor.peakCut" }),
-		).toHaveAttribute("data-state", "unchecked");
 	});
 });

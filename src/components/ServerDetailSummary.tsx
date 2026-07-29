@@ -2,7 +2,7 @@
 
 import { Progress } from "@/components/ui/progress";
 import { useWebSocketContext } from "@/hooks/use-websocket-context";
-import { formatNezhaInfo } from "@/lib/utils";
+import { formatMbps, formatNezhaInfo } from "@/lib/utils";
 
 export default function ServerDetailSummary({
 	server_id,
@@ -74,11 +74,11 @@ export default function ServerDetailSummary({
 			<section className="flex min-w-[120px] flex-col justify-center gap-0.5 px-1.5 py-1">
 				<section className="flex items-center justify-between gap-4">
 					<span className="text-[10px] text-muted-foreground">Upload</span>
-					<span className="font-medium text-[10px]">{up.toFixed(2)}M/s</span>
+					<span className="font-medium text-[10px]">{formatMbps(up)}</span>
 				</section>
 				<section className="flex items-center justify-between gap-4">
 					<span className="text-[10px] text-muted-foreground">Download</span>
-					<span className="font-medium text-[10px]">{down.toFixed(2)}M/s</span>
+					<span className="font-medium text-[10px]">{formatMbps(down)}</span>
 				</section>
 			</section>
 		</div>

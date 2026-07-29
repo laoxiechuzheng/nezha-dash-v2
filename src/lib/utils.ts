@@ -7,6 +7,16 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
+export function bytesPerSecondToMbps(bytesPerSecond: number): number {
+	if (!Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) return 0;
+	return (bytesPerSecond * 8) / 1_000_000;
+}
+
+export function formatMbps(mbps: number): string {
+	const safeValue = Number.isFinite(mbps) && mbps > 0 ? mbps : 0;
+	return `${safeValue.toFixed(2)} Mbps`;
+}
+
 export function formatNezhaInfo(now: number, serverInfo: NezhaServer) {
 	const lastActiveTime = serverInfo.last_active.startsWith("000")
 		? 0
@@ -16,8 +26,8 @@ export function formatNezhaInfo(now: number, serverInfo: NezhaServer) {
 		cpu: serverInfo.state.cpu || 0,
 		gpu: serverInfo.state.gpu || [],
 		process: serverInfo.state.process_count || 0,
-		up: serverInfo.state.net_out_speed / 1024 / 1024 || 0,
-		down: serverInfo.state.net_in_speed / 1024 / 1024 || 0,
+		up: bytesPerSecondToMbps(serverInfo.state.net_out_speed),
+		down: bytesPerSecondToMbps(serverInfo.state.net_in_speed),
 		last_active_time_string: lastActiveTime
 			? dayjs(lastActiveTime).format("YYYY-MM-DD HH:mm:ss")
 			: "",
