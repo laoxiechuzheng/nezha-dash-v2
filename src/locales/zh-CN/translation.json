@@ -122,6 +122,8 @@
 		"monitorCount": "个监控服务",
 		"trueSamples": "真实采样",
 		"selectMonitor": "选择监控目标",
+		"previousMonitor": "上一个监控任务",
+		"nextMonitor": "下一个监控任务",
 		"noSuccessfulSample": "暂无成功采样",
 		"currentNormal": "当前正常",
 		"status": "状态",

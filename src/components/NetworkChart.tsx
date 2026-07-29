@@ -1,9 +1,15 @@
 "use client";
 
+import {
+	ChevronLeftIcon,
+	ChevronRightIcon,
+	SignalIcon,
+} from "@heroicons/react/20/solid";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import {
+	Area,
 	CartesianGrid,
 	ComposedChart,
 	Line,
@@ -230,6 +236,10 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 	const [showPeriodLoading, setShowPeriodLoading] = React.useState(false);
 	const [isMobile, setIsMobile] = React.useState(false);
 	const loadingStartedAtRef = React.useRef<number | null>(null);
+	const monitorTrackRef = React.useRef<HTMLDivElement | null>(null);
+	const monitorButtonRefs = React.useRef<
+		Record<string, HTMLButtonElement | null>
+	>({});
 	const timeRangeOptions = React.useMemo<
 		{ value: MonitorPeriod; label: string }[]
 	>(
@@ -352,18 +362,43 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 			date.getMinutes().toString().padStart(2, "0")
 		);
 	};
+	const selectMonitorAt = React.useCallback(
+		(index: number) => {
+			if (index < 0 || index >= chartDataKey.length) return;
+			const monitor = chartDataKey[index];
+			setSelectedMonitor(monitor);
+			window.requestAnimationFrame(() => {
+				monitorButtonRefs.current[monitor]?.scrollIntoView?.({
+					behavior: "smooth",
+					block: "nearest",
+					inline: "center",
+				});
+			});
+		},
+		[chartDataKey],
+	);
+	const handleMonitorWheel = React.useCallback(
+		(event: React.WheelEvent<HTMLDivElement>) => {
+			const track = monitorTrackRef.current;
+			if (!track || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+			if (track.scrollWidth <= track.clientWidth) return;
+			event.preventDefault();
+			track.scrollBy({ left: event.deltaY, behavior: "auto" });
+		},
+		[],
+	);
 
 	return (
-		<div className="flex flex-col gap-3">
+		<div className="flex min-w-0 flex-col gap-4">
 			<div className="flex flex-wrap items-center gap-2 sm:-mt-5 -mt-3">
 				<TooltipProvider delayDuration={120}>
 					<div
 						ref={containerRef}
-						className="relative flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-border/60 bg-muted p-0.5"
+						className="relative flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/70 bg-white/65 p-1 shadow-[0_10px_35px_-20px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/65 dark:ring-white/5"
 					>
 						{indicator && (
 							<div
-								className="active-indicator-fade-in absolute left-0 top-0 z-10 rounded-full bg-white ring-1 ring-border/60 dark:bg-background"
+								className="active-indicator-fade-in absolute left-0 top-0 z-10 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-sm ring-1 ring-slate-950/10 dark:from-slate-700 dark:to-slate-800 dark:ring-white/10"
 								style={{
 									height: indicator.height,
 									transform: `translate(${indicator.x}px, ${indicator.y}px)`,
@@ -386,7 +421,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 										onPeriodChange(option.value);
 									}}
 									className={cn(
-										"relative z-20 min-h-9 shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+										"relative z-20 min-h-9 shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors",
 										period === option.value
 											? "text-foreground"
 											: "text-muted-foreground hover:text-foreground",
@@ -413,224 +448,314 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 						})}
 					</div>
 				</TooltipProvider>
-				<span className="text-xs text-muted-foreground">
-					{t("monitor.trueSamples", "真实采样")} · {chartPoints.length} /{" "}
+				<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/15 bg-emerald-500/8 px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+					<span className="relative flex size-1.5">
+						<span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-50" />
+						<span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+					</span>
+					{t("monitor.trueSamples", "真实采样")} {chartPoints.length} /{" "}
 					{visiblePoints.length}
 				</span>
 			</div>
 
-			<Card className={cn(customBackgroundImage && "bg-card/70")}>
-				<CardHeader className="space-y-0 overflow-hidden rounded-t-lg p-0">
-					<div className="flex flex-col gap-1 border-b px-4 py-4 sm:px-6">
-						<CardTitle className="text-base">{serverName}</CardTitle>
-						<CardDescription className="text-xs">
-							{chartDataKey.length} {t("monitor.monitorCount")}
-						</CardDescription>
-					</div>
-					<fieldset
-						className="flex snap-x snap-mandatory gap-2 overflow-x-auto p-3 sm:p-4"
-						aria-label={t("monitor.selectMonitor", "选择监控目标")}
-					>
-						{chartDataKey.map((key) => {
-							const points = chartData[key];
-							const lastPoint = points[points.length - 1];
-							const failed = lastPoint ? isPointFailed(lastPoint) : false;
-							const delays = points
-								.filter(
-									(point) => !isPointFailed(point) && point.avg_delay !== null,
-								)
-								.map((point) => point.avg_delay as number);
-							return (
-								<button
-									type="button"
-									key={key}
-									onClick={() => setSelectedMonitor(key)}
-									aria-pressed={selectedMonitor === key}
-									className={cn(
-										"min-h-24 min-w-[168px] snap-start rounded-xl border p-3 text-left transition-colors sm:min-w-[190px]",
-										selectedMonitor === key
-											? "border-primary bg-primary/5 ring-1 ring-primary/25"
-											: "border-border bg-muted/20 hover:bg-muted/50",
-									)}
-								>
-									<span className="block truncate text-xs text-muted-foreground">
-										{key}
-									</span>
-									<span
-										className={cn(
-											"mt-2 block text-lg font-semibold",
-											failed && "text-red-500",
-										)}
-									>
-										{failed
-											? errorLabel(lastPoint.error_code, t)
-											: `${(lastPoint?.avg_delay ?? 0).toFixed(2)} ms`}
-									</span>
-									<span className="mt-1 block text-[11px] text-muted-foreground">
-										{delays.length
-											? "最低 " +
-												Math.min(...delays).toFixed(0) +
-												" · 最高 " +
-												Math.max(...delays).toFixed(0) +
-												" ms"
-											: t("monitor.noSuccessfulSample", "暂无成功采样")}
-									</span>
-								</button>
-							);
-						})}
-					</fieldset>
-				</CardHeader>
-
-				<CardContent className="px-1 pb-5 pt-4 sm:px-4 sm:pt-6">
-					<div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-3 sm:px-2">
-						<div>
-							<p className="text-sm font-medium">{selectedMonitor}</p>
-							<p className="text-xs text-muted-foreground">
-								{currentFailed
-									? errorLabel(latestPoint?.error_code, t) +
-										" · " +
-										formatDuration(
-											domainEnd - (activeOutage?.start ?? domainEnd),
-										)
-									: t("monitor.currentNormal", "当前正常")}
-							</p>
+			<Card
+				className={cn(
+					"relative isolate min-w-0 overflow-hidden border border-white/70 bg-white/72 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.6)] ring-1 ring-slate-950/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/72 dark:ring-white/5",
+					customBackgroundImage && "bg-card/60",
+				)}
+			>
+				<div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-52 bg-[radial-gradient(circle_at_12%_0%,rgba(14,165,233,0.16),transparent_42%),radial-gradient(circle_at_88%_10%,rgba(99,102,241,0.13),transparent_36%)] dark:bg-[radial-gradient(circle_at_12%_0%,rgba(14,165,233,0.18),transparent_42%),radial-gradient(circle_at_88%_10%,rgba(99,102,241,0.18),transparent_36%)]" />
+				<CardHeader className="min-w-0 space-y-0 overflow-hidden rounded-t-lg p-0">
+					<div className="flex items-center justify-between gap-4 border-b border-slate-200/70 px-4 py-4 dark:border-white/8 sm:px-6 sm:py-5">
+						<div className="flex min-w-0 items-center gap-3">
+							<div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-sky-500/15 bg-gradient-to-br from-sky-500/15 to-indigo-500/10 text-sky-600 shadow-inner dark:text-sky-300">
+								<SignalIcon className="size-5" />
+							</div>
+							<div className="min-w-0">
+								<CardTitle className="truncate text-base font-bold tracking-tight sm:text-lg">
+									{serverName}
+								</CardTitle>
+								<CardDescription className="mt-0.5 text-xs">
+									{chartDataKey.length} {t("monitor.monitorCount")}
+								</CardDescription>
+							</div>
 						</div>
-						<div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-							<span className="inline-flex items-center gap-1">
-								<i className="size-2 rounded-full bg-red-500" />
-								{t("monitor.outagePeriod", "故障时段")}
+						<div className="flex shrink-0 items-center gap-2">
+							<span className="inline-flex rounded-full border border-slate-200/70 bg-white/65 px-2 py-1 text-[10px] font-semibold tabular-nums text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:px-2.5 sm:text-[11px]">
+								{selectedIndex + 1} / {chartDataKey.length}
 							</span>
-							<span className="inline-flex items-center gap-1">
-								<i className="h-3 w-0.5 bg-green-500" />
-								{t("monitor.recoveryTime", "恢复时间")}
-							</span>
-						</div>
-					</div>
-					<div className="relative">
-						<ChartContainer
-							config={chartConfig}
-							className={cn(
-								"aspect-auto h-[320px] w-full transition-opacity sm:h-[380px]",
-								showPeriodLoading && "opacity-60",
-							)}
-						>
-							<ComposedChart
-								data={chartPoints}
-								margin={{ top: 10, right: 12, bottom: 8, left: 4 }}
+							<button
+								type="button"
+								aria-label={t("monitor.previousMonitor", "上一个监控任务")}
+								disabled={selectedIndex <= 0}
+								onClick={() => selectMonitorAt(selectedIndex - 1)}
+								className="flex size-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/75 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400/50 hover:text-sky-600 hover:shadow-md disabled:pointer-events-none disabled:opacity-30 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-sky-300"
 							>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									type="number"
-									dataKey="created_at"
-									domain={[timeDomain[0], timeDomain[1]]}
-									ticks={timeTicks}
-									scale="time"
-									interval={0}
-									tickLine
-									tickSize={3}
-									axisLine={false}
-									tickMargin={9}
-									tickFormatter={formatTick}
-								/>
-								<YAxis
-									yAxisId="delay"
-									domain={[0, "auto"]}
-									width={isMobile ? 48 : 60}
-									tickLine={false}
-									axisLine={false}
-									tickFormatter={(value) => `${Number(value).toFixed(0)} ms`}
-								/>
-								{outages.map((outage) => {
-									const actualEnd = outage.end ?? domainEnd;
-									const visibleEnd = Math.min(
-										domainEnd,
-										Math.max(actualEnd, outage.start + minimumVisibleOutage),
-									);
+								<ChevronLeftIcon className="size-4" />
+							</button>
+							<button
+								type="button"
+								aria-label={t("monitor.nextMonitor", "下一个监控任务")}
+								disabled={selectedIndex >= chartDataKey.length - 1}
+								onClick={() => selectMonitorAt(selectedIndex + 1)}
+								className="flex size-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/75 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400/50 hover:text-sky-600 hover:shadow-md disabled:pointer-events-none disabled:opacity-30 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-sky-300"
+							>
+								<ChevronRightIcon className="size-4" />
+							</button>
+						</div>
+					</div>
+					<div className="relative min-w-0 w-full">
+						<div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-7 bg-gradient-to-r from-white/90 to-transparent dark:from-slate-950/90" />
+						<div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-7 bg-gradient-to-l from-white/90 to-transparent dark:from-slate-950/90" />
+						<div
+							ref={monitorTrackRef}
+							onWheel={handleMonitorWheel}
+							className="scrollbar-hidden w-full min-w-0 touch-pan-x overflow-x-auto overscroll-x-contain scroll-smooth px-4 py-4 sm:px-6"
+							data-testid="monitor-track"
+						>
+							<fieldset
+								className="flex w-max min-w-full snap-x snap-mandatory gap-3 border-0 p-0"
+								aria-label={t("monitor.selectMonitor", "选择监控目标")}
+							>
+								{chartDataKey.map((key) => {
+									const points = chartData[key];
+									const lastPoint = points[points.length - 1];
+									const failed = lastPoint ? isPointFailed(lastPoint) : false;
+									const delays = points
+										.filter(
+											(point) =>
+												!isPointFailed(point) && point.avg_delay !== null,
+										)
+										.map((point) => point.avg_delay as number);
 									return (
-										<React.Fragment key={outage.start}>
-											<ReferenceArea
-												xAxisId={0}
-												yAxisId="delay"
-												x1={outage.start}
-												x2={visibleEnd}
-												fill="#ef4444"
-												fillOpacity={0.16}
-												stroke="#ef4444"
-												strokeOpacity={0.25}
-											/>
-											{outage.end !== null && (
-												<ReferenceLine
-													xAxisId={0}
-													yAxisId="delay"
-													x={outage.end}
-													stroke="#22c55e"
-													strokeWidth={2}
-												/>
+										<button
+											type="button"
+											key={key}
+											ref={(node) => {
+												monitorButtonRefs.current[key] = node;
+											}}
+											onClick={() => selectMonitorAt(chartDataKey.indexOf(key))}
+											aria-pressed={selectedMonitor === key}
+											className={cn(
+												"group relative min-h-28 w-[178px] shrink-0 snap-center overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 sm:w-[210px]",
+												selectedMonitor === key
+													? "border-sky-400/55 bg-gradient-to-br from-sky-500/14 via-white/88 to-indigo-500/10 shadow-[0_18px_45px_-24px_rgba(14,165,233,0.75)] ring-1 ring-sky-500/20 dark:from-sky-500/18 dark:via-slate-900/90 dark:to-indigo-500/16"
+													: "border-slate-200/80 bg-white/58 shadow-[0_12px_35px_-28px_rgba(15,23,42,0.8)] hover:-translate-y-0.5 hover:border-sky-300/60 hover:bg-white/85 hover:shadow-[0_18px_42px_-28px_rgba(14,165,233,0.65)] dark:border-white/10 dark:bg-white/[0.035] dark:hover:border-sky-400/35 dark:hover:bg-white/[0.065]",
 											)}
-										</React.Fragment>
+										>
+											<div className="flex items-center justify-between gap-2">
+												<span className="block truncate text-xs font-semibold text-slate-600 dark:text-slate-300">
+													{key}
+												</span>
+												<span
+													className={cn(
+														"size-2 shrink-0 rounded-full shadow-[0_0_0_4px_rgba(16,185,129,0.1)]",
+														failed
+															? "bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.1)]"
+															: "bg-emerald-500",
+													)}
+												/>
+											</div>
+											<span
+												className={cn(
+													"mt-3 block text-xl font-bold tracking-tight tabular-nums text-slate-950 dark:text-white",
+													failed && "text-red-500",
+												)}
+											>
+												{failed
+													? errorLabel(lastPoint.error_code, t)
+													: `${(lastPoint?.avg_delay ?? 0).toFixed(2)} ms`}
+											</span>
+											<span className="mt-2 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
+												{delays.length
+													? "最低 " +
+														Math.min(...delays).toFixed(0) +
+														" · 最高 " +
+														Math.max(...delays).toFixed(0) +
+														" ms"
+													: t("monitor.noSuccessfulSample", "暂无成功采样")}
+											</span>
+										</button>
 									);
 								})}
-								<ChartTooltip
-									isAnimationActive={false}
-									content={
-										<ChartTooltipContent
-											indicator="line"
-											labelKey="created_at"
-											labelFormatter={(_, payload) =>
-												payload[0]?.payload?.created_at
-													? formatTime(payload[0].payload.created_at)
-													: ""
-											}
-											formatter={(value, _name, _item, _index, payload) => {
-												const point = payload?.payload as
-													| MonitorChartPoint
-													| undefined;
-												const failed = point ? isPointFailed(point) : false;
-												return (
-													<div className="flex min-w-44 items-center justify-between gap-4">
-														<span className="text-muted-foreground">
-															{failed
-																? t("monitor.status", "状态")
-																: t("monitor.avgDelay", "延迟")}
-														</span>
-														<span
-															className={cn(
-																"font-medium tabular-nums",
-																failed && "text-red-500",
-															)}
-														>
-															{failed
-																? errorLabel(point?.error_code, t)
-																: `${Number(value).toFixed(2)} ms`}
-														</span>
-													</div>
-												);
-											}}
-										/>
-									}
+							</fieldset>
+						</div>
+					</div>
+				</CardHeader>
+
+				<CardContent className="min-w-0 px-2 pb-5 pt-4 sm:px-5 sm:pt-6">
+					<div className="rounded-2xl border border-white/70 bg-white/55 p-3 shadow-[0_16px_45px_-35px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/8 dark:bg-white/[0.025] sm:p-4">
+						<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+							<div className="flex items-center gap-3">
+								<div
+									className={cn(
+										"size-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,0.1),0_0_18px_rgba(16,185,129,0.45)]",
+										currentFailed &&
+											"bg-red-500 shadow-[0_0_0_5px_rgba(239,68,68,0.1),0_0_18px_rgba(239,68,68,0.45)]",
+									)}
 								/>
-								<Line
-									isAnimationActive={false}
-									type="linear"
-									dataKey="avg_delay"
-									name={selectedMonitor}
-									stroke={selectedColor}
-									strokeWidth={2}
-									dot={false}
-									activeDot={{ r: 6, strokeWidth: 2 }}
-									connectNulls={false}
-									yAxisId="delay"
-								/>
-							</ComposedChart>
-						</ChartContainer>
-						{showPeriodLoading && (
-							<div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-md backdrop-blur-[1px]">
-								<div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground/70" />
+								<div>
+									<p className="text-sm font-bold tracking-tight text-slate-950 dark:text-white">
+										{selectedMonitor}
+									</p>
+									<p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+										{currentFailed
+											? errorLabel(latestPoint?.error_code, t) +
+												" · " +
+												formatDuration(
+													domainEnd - (activeOutage?.start ?? domainEnd),
+												)
+											: t("monitor.currentNormal", "当前正常")}
+									</p>
+								</div>
 							</div>
-						)}
+							<div className="flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+								<span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/12 bg-red-500/7 px-2.5 py-1">
+									<i className="size-1.5 rounded-full bg-red-500" />
+									{t("monitor.outagePeriod", "故障时段")}
+								</span>
+								<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/12 bg-emerald-500/7 px-2.5 py-1">
+									<i className="h-3 w-0.5 bg-green-500" />
+									{t("monitor.recoveryTime", "恢复时间")}
+								</span>
+							</div>
+						</div>
+						<div className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/50 to-transparent dark:from-white/[0.02]">
+							<ChartContainer
+								config={chartConfig}
+								className={cn(
+									"aspect-auto h-[320px] w-full transition-opacity sm:h-[380px]",
+									showPeriodLoading && "opacity-60",
+								)}
+							>
+								<ComposedChart
+									data={chartPoints}
+									margin={{ top: 10, right: 12, bottom: 8, left: 4 }}
+								>
+									<CartesianGrid vertical={false} />
+									<XAxis
+										type="number"
+										dataKey="created_at"
+										domain={[timeDomain[0], timeDomain[1]]}
+										ticks={timeTicks}
+										scale="time"
+										interval={0}
+										tickLine
+										tickSize={3}
+										axisLine={false}
+										tickMargin={9}
+										tickFormatter={formatTick}
+									/>
+									<YAxis
+										yAxisId="delay"
+										domain={[0, "auto"]}
+										width={isMobile ? 48 : 60}
+										tickLine={false}
+										axisLine={false}
+										tickFormatter={(value) => `${Number(value).toFixed(0)} ms`}
+									/>
+									{outages.map((outage) => {
+										const actualEnd = outage.end ?? domainEnd;
+										const visibleEnd = Math.min(
+											domainEnd,
+											Math.max(actualEnd, outage.start + minimumVisibleOutage),
+										);
+										return (
+											<React.Fragment key={outage.start}>
+												<ReferenceArea
+													xAxisId={0}
+													yAxisId="delay"
+													x1={outage.start}
+													x2={visibleEnd}
+													fill="#ef4444"
+													fillOpacity={0.16}
+													stroke="#ef4444"
+													strokeOpacity={0.25}
+												/>
+												{outage.end !== null && (
+													<ReferenceLine
+														xAxisId={0}
+														yAxisId="delay"
+														x={outage.end}
+														stroke="#22c55e"
+														strokeWidth={2}
+													/>
+												)}
+											</React.Fragment>
+										);
+									})}
+									<ChartTooltip
+										isAnimationActive={false}
+										content={
+											<ChartTooltipContent
+												indicator="line"
+												labelKey="created_at"
+												labelFormatter={(_, payload) =>
+													payload[0]?.payload?.created_at
+														? formatTime(payload[0].payload.created_at)
+														: ""
+												}
+												formatter={(value, _name, _item, _index, payload) => {
+													const point = payload?.payload as
+														| MonitorChartPoint
+														| undefined;
+													const failed = point ? isPointFailed(point) : false;
+													return (
+														<div className="flex min-w-44 items-center justify-between gap-4">
+															<span className="text-muted-foreground">
+																{failed
+																	? t("monitor.status", "状态")
+																	: t("monitor.avgDelay", "延迟")}
+															</span>
+															<span
+																className={cn(
+																	"font-medium tabular-nums",
+																	failed && "text-red-500",
+																)}
+															>
+																{failed
+																	? errorLabel(point?.error_code, t)
+																	: `${Number(value).toFixed(2)} ms`}
+															</span>
+														</div>
+													);
+												}}
+											/>
+										}
+									/>
+									<Area
+										isAnimationActive={false}
+										type="linear"
+										dataKey="avg_delay"
+										stroke="none"
+										fill={selectedColor}
+										fillOpacity={0.08}
+										connectNulls={false}
+										yAxisId="delay"
+									/>
+									<Line
+										isAnimationActive={false}
+										type="linear"
+										dataKey="avg_delay"
+										name={selectedMonitor}
+										stroke={selectedColor}
+										strokeWidth={2.4}
+										dot={false}
+										activeDot={{ r: 6, strokeWidth: 2 }}
+										connectNulls={false}
+										yAxisId="delay"
+									/>
+								</ComposedChart>
+							</ChartContainer>
+							{showPeriodLoading && (
+								<div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-md backdrop-blur-[1px]">
+									<div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground/70" />
+								</div>
+							)}
+						</div>
 					</div>
 
-					<div className="mt-5 border-t px-3 pt-4 sm:px-2">
+					<div className="mt-4 rounded-2xl border border-slate-200/70 bg-white/45 p-3.5 shadow-[0_14px_40px_-34px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/8 dark:bg-white/[0.02] sm:p-4">
 						<div className="mb-3 flex items-center justify-between gap-2">
 							<h3 className="text-sm font-semibold">
 								{t("monitor.outageRecords", "故障记录")}
@@ -640,7 +765,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 							</span>
 						</div>
 						{recentOutages.length === 0 ? (
-							<div className="rounded-xl border border-dashed px-4 py-5 text-center text-sm text-muted-foreground">
+							<div className="rounded-xl border border-dashed border-slate-300/80 bg-white/35 px-4 py-6 text-center text-sm font-medium text-slate-400 dark:border-white/10 dark:bg-white/[0.015] dark:text-slate-500">
 								{t("monitor.noOutage", "当前时间范围内没有故障")}
 							</div>
 						) : (
@@ -650,7 +775,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									return (
 										<div
 											key={outage.start}
-											className="min-h-24 rounded-xl border border-red-500/20 bg-red-500/5 p-3.5"
+											className="min-h-24 rounded-xl border border-red-500/18 bg-gradient-to-br from-red-500/8 via-white/45 to-amber-500/5 p-3.5 shadow-[0_14px_34px_-28px_rgba(239,68,68,0.6)] dark:via-white/[0.02]"
 										>
 											<div className="flex items-start justify-between gap-3">
 												<div>

@@ -121,6 +121,8 @@
 		"monitorCount": "Services",
 		"trueSamples": "Real samples",
 		"selectMonitor": "Select monitor target",
+		"previousMonitor": "Previous monitor",
+		"nextMonitor": "Next monitor",
 		"noSuccessfulSample": "No successful samples",
 		"currentNormal": "Currently healthy",
 		"status": "Status",

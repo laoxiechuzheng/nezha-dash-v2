@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactElement, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -129,6 +129,28 @@ const clientChartData: ServerMonitorChart = {
 	})),
 };
 
+const manyMonitorNames = [
+	"Alpha",
+	"Beta",
+	"Gamma",
+	"Delta",
+	"Epsilon",
+	"Zeta",
+	"Eta",
+	"Theta",
+];
+
+const manyMonitorData = Object.fromEntries(
+	manyMonitorNames.map((name, monitorIndex) => [
+		name,
+		times.map((created_at, index) => ({
+			created_at,
+			avg_delay: 20 + monitorIndex * 5 + index,
+			status: 1,
+		})),
+	]),
+) satisfies ServerMonitorChart;
+
 const clientFormattedData = times.map((created_at, index) => ({
 	created_at,
 	Alpha: 30 + index,
@@ -242,6 +264,70 @@ describe("NetworkChart", () => {
 });
 
 describe("NetworkChartClient", () => {
+	it("provides explicit navigation for monitor targets outside the viewport", async () => {
+		const user = userEvent.setup();
+
+		render(
+			<NetworkChartClient
+				chartDataKey={manyMonitorNames}
+				chartConfig={chartConfig}
+				chartData={manyMonitorData}
+				serverName="many-monitors"
+				isPeriodLoading={false}
+				period="6h"
+				onPeriodChange={vi.fn()}
+				isLogin={true}
+			/>,
+		);
+
+		const previous = screen.getByRole("button", {
+			name: "monitor.previousMonitor",
+		});
+		const next = screen.getByRole("button", {
+			name: "monitor.nextMonitor",
+		});
+		expect(previous).toBeDisabled();
+		expect(next).toBeEnabled();
+
+		for (let index = 1; index < manyMonitorNames.length; index++) {
+			await user.click(next);
+		}
+
+		expect(screen.getByRole("button", { name: /^Theta/ })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		expect(next).toBeDisabled();
+		expect(previous).toBeEnabled();
+	});
+
+	it("maps a desktop wheel gesture to immediate horizontal monitor scrolling", () => {
+		render(
+			<NetworkChartClient
+				chartDataKey={manyMonitorNames}
+				chartConfig={chartConfig}
+				chartData={manyMonitorData}
+				serverName="many-monitors"
+				isPeriodLoading={false}
+				period="6h"
+				onPeriodChange={vi.fn()}
+				isLogin={true}
+			/>,
+		);
+
+		const track = screen.getByTestId("monitor-track");
+		Object.defineProperties(track, {
+			scrollWidth: { configurable: true, value: 1600 },
+			clientWidth: { configurable: true, value: 600 },
+		});
+		const scrollBy = vi.fn();
+		track.scrollBy = scrollBy;
+
+		fireEvent.wheel(track, { deltaY: 120 });
+
+		expect(scrollBy).toHaveBeenCalledWith({ left: 120, behavior: "auto" });
+	});
+
 	it("locks longer periods and renders one selected monitor with outage intervals", async () => {
 		const user = userEvent.setup();
 		const onPeriodChange = vi.fn();
