@@ -177,35 +177,35 @@ function ServerCard({
 				</section>
 				<section
 					data-testid="server-card-network-metrics"
-					className="grid w-full grid-cols-2 overflow-hidden rounded-2xl border border-sky-500/15 bg-gradient-to-r from-sky-500/10 via-white/40 to-violet-500/10 shadow-[0_14px_32px_-25px_rgba(14,165,233,0.72)] dark:via-white/[0.025]"
+					className="flex w-full flex-col rounded-2xl sm:grid sm:grid-cols-2 border border-sky-500/15 bg-gradient-to-r from-sky-500/10 via-white/40 to-violet-500/10 shadow-[0_14px_32px_-25px_rgba(14,165,233,0.72)] dark:via-white/[0.025]"
 				>
 					<fieldset
 						aria-label={t("serverCard.upload")}
-						className="min-w-0 border-r border-sky-500/15 px-3 py-2.5 sm:px-4"
+						className="min-w-0 border-b border-sky-500/15 px-3.5 py-2 sm:border-b-0 sm:border-r sm:px-4"
 					>
 						<div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-sky-700 dark:text-sky-300">
 							<ArrowUpIcon className="size-3" />
 							实时上传
 						</div>
-						<p className="mt-1 truncate text-[15px] font-black tracking-tight tabular-nums text-slate-950 sm:text-base dark:text-white">
+						<p className="mt-1 whitespace-nowrap text-sm font-black tracking-tight tabular-nums text-slate-950 sm:text-base dark:text-white">
 							{formatMbps(up)}
 						</p>
-						<p className="mt-0.5 truncate text-[10px] font-medium text-muted-foreground">
+						<p className="mt-0.5 whitespace-nowrap text-[10px] font-medium text-muted-foreground">
 							已用 {formatBytes(net_out_transfer)}
 						</p>
 					</fieldset>
 					<fieldset
 						aria-label={t("serverCard.download")}
-						className="min-w-0 px-3 py-2.5 sm:px-4"
+						className="min-w-0 px-3.5 py-2 sm:px-4"
 					>
 						<div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-violet-700 dark:text-violet-300">
 							<ArrowDownIcon className="size-3" />
 							实时下载
 						</div>
-						<p className="mt-1 truncate text-[15px] font-black tracking-tight tabular-nums text-slate-950 sm:text-base dark:text-white">
+						<p className="mt-1 whitespace-nowrap text-sm font-black tracking-tight tabular-nums text-slate-950 sm:text-base dark:text-white">
 							{formatMbps(down)}
 						</p>
-						<p className="mt-0.5 truncate text-[10px] font-medium text-muted-foreground">
+						<p className="mt-0.5 whitespace-nowrap text-[10px] font-medium text-muted-foreground">
 							已用 {formatBytes(net_in_transfer)}
 						</p>
 					</fieldset>
