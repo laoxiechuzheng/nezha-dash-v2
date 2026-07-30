@@ -61,7 +61,7 @@ function ServerCard({
 	return online ? (
 		<Card
 			className={cn(
-				"group relative flex cursor-pointer flex-col items-stretch justify-start gap-3 overflow-hidden border-white/75 bg-gradient-to-br from-white/78 via-white/62 to-sky-500/5 p-4 transition-all hover:-translate-y-1 hover:border-sky-400/45 hover:shadow-[0_28px_70px_-36px_rgba(14,165,233,0.68)] md:px-5 dark:border-white/10 dark:from-slate-950/70 dark:via-slate-950/58 dark:to-sky-500/8",
+				"group relative flex cursor-pointer flex-col items-stretch justify-start gap-3 overflow-hidden border-white/75 bg-gradient-to-br from-white/78 via-white/62 to-sky-500/5 p-3.5 transition-all hover:-translate-y-1 hover:border-sky-400/45 hover:shadow-[0_28px_70px_-36px_rgba(14,165,233,0.68)] sm:p-4 md:px-5 dark:border-white/10 dark:from-slate-950/70 dark:via-slate-950/58 dark:to-sky-500/8",
 				{
 					"flex-col": fixedTopServerName,
 					"lg:flex-row": !fixedTopServerName,
@@ -114,11 +114,15 @@ function ServerCard({
 			>
 				{parsedData?.billingDataMod && <BillingInfo parsedData={parsedData} />}
 			</div>
-			<div className="flex min-w-0 flex-col items-stretch gap-2 lg:items-start">
+			<div className="flex min-w-0 flex-col items-stretch gap-3 lg:items-start">
 				<section
-					className={cn("grid w-full grid-cols-3 items-center gap-3", {
-						"lg:grid-cols-4 lg:gap-4": fixedTopServerName,
-					})}
+					data-testid="server-card-resource-metrics"
+					className={cn(
+						"grid w-full grid-cols-3 items-center gap-2 rounded-2xl border border-slate-200/70 bg-white/45 px-3 py-2.5 shadow-[0_12px_28px_-25px_rgba(15,23,42,0.7)] dark:border-white/8 dark:bg-white/[0.035]",
+						{
+							"lg:grid-cols-4 lg:gap-4": fixedTopServerName,
+						},
+					)}
 				>
 					{fixedTopServerName && (
 						<div
@@ -145,14 +149,14 @@ function ServerCard({
 							</div>
 						</div>
 					)}
-					<div className={"flex w-14 flex-col"}>
+					<div className={"flex min-w-0 flex-col"}>
 						<p className="text-xs text-muted-foreground">{"CPU"}</p>
 						<div className="flex items-center text-xs font-semibold">
 							{cpu.toFixed(2)}%
 						</div>
 						<ServerUsageBar value={cpu} />
 					</div>
-					<div className={"flex w-14 flex-col"}>
+					<div className={"flex min-w-0 flex-col"}>
 						<p className="text-xs text-muted-foreground">
 							{t("serverCard.mem")}
 						</p>
@@ -161,7 +165,7 @@ function ServerCard({
 						</div>
 						<ServerUsageBar value={mem} />
 					</div>
-					<div className={"flex w-14 flex-col"}>
+					<div className={"flex min-w-0 flex-col"}>
 						<p className="text-xs text-muted-foreground">
 							{t("serverCard.stg")}
 						</p>
@@ -171,31 +175,40 @@ function ServerCard({
 						<ServerUsageBar value={stg} />
 					</div>
 				</section>
-				<section className="grid w-full grid-cols-2 gap-2">
-					<div className="rounded-xl border border-sky-500/15 bg-gradient-to-br from-sky-500/10 to-blue-500/4 px-3 py-2">
-						<div className="flex items-center gap-1 text-[10px] font-semibold text-sky-700 dark:text-sky-300">
+				<section
+					data-testid="server-card-network-metrics"
+					className="grid w-full grid-cols-2 overflow-hidden rounded-2xl border border-sky-500/15 bg-gradient-to-r from-sky-500/10 via-white/40 to-violet-500/10 shadow-[0_14px_32px_-25px_rgba(14,165,233,0.72)] dark:via-white/[0.025]"
+				>
+					<fieldset
+						aria-label={t("serverCard.upload")}
+						className="min-w-0 border-r border-sky-500/15 px-3 py-2.5 sm:px-4"
+					>
+						<div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-sky-700 dark:text-sky-300">
 							<ArrowUpIcon className="size-3" />
 							实时上传
 						</div>
-						<p className="mt-1 text-sm font-black tracking-tight tabular-nums text-slate-950 dark:text-white">
+						<p className="mt-1 truncate text-[15px] font-black tracking-tight tabular-nums text-slate-950 sm:text-base dark:text-white">
 							{formatMbps(up)}
 						</p>
-						<p className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+						<p className="mt-0.5 truncate text-[10px] font-medium text-muted-foreground">
 							已用 {formatBytes(net_out_transfer)}
 						</p>
-					</div>
-					<div className="rounded-xl border border-violet-500/15 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/4 px-3 py-2">
-						<div className="flex items-center gap-1 text-[10px] font-semibold text-violet-700 dark:text-violet-300">
+					</fieldset>
+					<fieldset
+						aria-label={t("serverCard.download")}
+						className="min-w-0 px-3 py-2.5 sm:px-4"
+					>
+						<div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-violet-700 dark:text-violet-300">
 							<ArrowDownIcon className="size-3" />
 							实时下载
 						</div>
-						<p className="mt-1 text-sm font-black tracking-tight tabular-nums text-slate-950 dark:text-white">
+						<p className="mt-1 truncate text-[15px] font-black tracking-tight tabular-nums text-slate-950 sm:text-base dark:text-white">
 							{formatMbps(down)}
 						</p>
-						<p className="mt-0.5 text-[10px] font-medium text-muted-foreground">
+						<p className="mt-0.5 truncate text-[10px] font-medium text-muted-foreground">
 							已用 {formatBytes(net_in_transfer)}
 						</p>
-					</div>
+					</fieldset>
 				</section>
 				{parsedData?.planDataMod && <PlanInfo parsedData={parsedData} />}
 			</div>
