@@ -28,12 +28,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import {
-	type ChartConfig,
-	ChartContainer,
-	ChartTooltip,
-	ChartTooltipContent,
-} from "@/components/ui/chart";
+import { type ChartConfig, ChartContainer } from "@/components/ui/chart";
 import {
 	Tooltip,
 	TooltipContent,
@@ -72,6 +67,21 @@ const LIVE_POLL_MIN_MS = 1000;
 const LIVE_POLL_MAX_MS = 10000;
 const DESKTOP_POINT_LIMIT = 720;
 const MOBILE_POINT_LIMIT = 360;
+const DESKTOP_CHART_LEFT_GUTTER = 68;
+const MOBILE_CHART_LEFT_GUTTER = 56;
+const CHART_RIGHT_GUTTER = 12;
+
+type HoveredMonitorPoint = {
+	point: MonitorChartPoint;
+	x: number;
+	y: number;
+};
+
+type PinchGesture = {
+	distance: number;
+	domain: TimeDomain;
+	anchor: number;
+};
 
 const errorLabel = (
 	code: number | undefined,
@@ -96,6 +106,28 @@ const errorLabel = (
 const isPointFailed = (point: MonitorChartPoint) =>
 	(point.status ??
 		(point.avg_delay === null || point.avg_delay === 0 ? 0 : 1)) === 0;
+
+export const findClosestMonitorPoint = (
+	points: MonitorChartPoint[],
+	timestamp: number,
+) => {
+	if (points.length === 0) return undefined;
+
+	let low = 0;
+	let high = points.length - 1;
+	while (low < high) {
+		const middle = Math.floor((low + high) / 2);
+		if (points[middle].created_at < timestamp) low = middle + 1;
+		else high = middle;
+	}
+
+	const after = points[low];
+	const before = points[Math.max(0, low - 1)];
+	return Math.abs(before.created_at - timestamp) <=
+		Math.abs(after.created_at - timestamp)
+		? before
+		: after;
+};
 
 export function NetworkChart({
 	server_id,
@@ -242,9 +274,15 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 	const [showPeriodLoading, setShowPeriodLoading] = React.useState(false);
 	const [isMobile, setIsMobile] = React.useState(false);
 	const [viewDomain, setViewDomain] = React.useState<TimeDomain | null>(null);
+	const [hoveredPoint, setHoveredPoint] =
+		React.useState<HoveredMonitorPoint | null>(null);
 	const loadingStartedAtRef = React.useRef<number | null>(null);
 	const monitorTrackRef = React.useRef<HTMLDivElement | null>(null);
 	const chartViewportRef = React.useRef<HTMLDivElement | null>(null);
+	const activeTouchPointersRef = React.useRef(
+		new Map<number, { x: number; y: number }>(),
+	);
+	const pinchGestureRef = React.useRef<PinchGesture | null>(null);
 	const monitorButtonRefs = React.useRef<
 		Record<string, HTMLButtonElement | null>
 	>({});
@@ -328,6 +366,28 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 		() => buildTimeDomain(period, domainEnd),
 		[period, domainEnd],
 	);
+	// Keep the selected domain anchored to the newest stored probe. If older
+	// history is absent, the empty left side is a truthful storage gap rather
+	// than a cropped 6h/1d timeline.
+	const periodPoints = React.useMemo(
+		() =>
+			selectedPoints.filter(
+				(point) =>
+					point.created_at >= fullTimeDomain[0] &&
+					point.created_at <= fullTimeDomain[1],
+			),
+		[selectedPoints, fullTimeDomain],
+	);
+	const availableHistoryMs = React.useMemo(() => {
+		if (periodPoints.length < 2) return 0;
+		return (
+			periodPoints[periodPoints.length - 1].created_at -
+			periodPoints[0].created_at
+		);
+	}, [periodPoints]);
+	const hasIncompleteHistory =
+		periodPoints.length > 0 &&
+		availableHistoryMs < periodDurationMs(period) * 0.99;
 	const timeDomain = viewDomain ?? fullTimeDomain;
 	const timeTicks = React.useMemo(
 		() => buildAdaptiveTimeTicks(timeDomain, isMobile ? 4 : 6),
@@ -384,6 +444,112 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 			);
 		},
 		[fullTimeDomain, period],
+	);
+	const timeAtClientX = React.useCallback(
+		(clientX: number) => {
+			const viewport = chartViewportRef.current;
+			if (!viewport) return (timeDomain[0] + timeDomain[1]) / 2;
+			const rect = viewport.getBoundingClientRect();
+			const leftGutter = isMobile
+				? MOBILE_CHART_LEFT_GUTTER
+				: DESKTOP_CHART_LEFT_GUTTER;
+			const plotWidth = Math.max(
+				1,
+				rect.width - leftGutter - CHART_RIGHT_GUTTER,
+			);
+			const ratio = Math.min(
+				1,
+				Math.max(0, (clientX - rect.left - leftGutter) / plotWidth),
+			);
+			return timeDomain[0] + visibleSpan * ratio;
+		},
+		[isMobile, timeDomain, visibleSpan],
+	);
+	const updateHoveredPoint = React.useCallback(
+		(clientX: number, clientY: number) => {
+			const viewport = chartViewportRef.current;
+			if (!viewport) return;
+			const point = findClosestMonitorPoint(
+				visiblePoints,
+				timeAtClientX(clientX),
+			);
+			if (!point) return;
+			const rect = viewport.getBoundingClientRect();
+			setHoveredPoint({
+				point,
+				x: Math.max(92, Math.min(rect.width - 92, clientX - rect.left)),
+				y: Math.max(68, clientY - rect.top),
+			});
+		},
+		[timeAtClientX, visiblePoints],
+	);
+	const handleChartMouseMove = React.useCallback(
+		(event: React.MouseEvent<HTMLDivElement>) => {
+			updateHoveredPoint(event.clientX, event.clientY);
+		},
+		[updateHoveredPoint],
+	);
+	const updatePinchGesture = React.useCallback(() => {
+		const pointers = [...activeTouchPointersRef.current.values()];
+		if (pointers.length < 2) return;
+		const [first, second] = pointers;
+		const distance = Math.hypot(second.x - first.x, second.y - first.y);
+		if (distance === 0) return;
+		if (!pinchGestureRef.current) {
+			pinchGestureRef.current = {
+				distance,
+				domain: timeDomain,
+				anchor: timeAtClientX((first.x + second.x) / 2),
+			};
+			return;
+		}
+		const pinch = pinchGestureRef.current;
+		setViewDomain(
+			zoomTimeDomain(
+				pinch.domain,
+				fullTimeDomain,
+				pinch.distance / distance,
+				pinch.anchor,
+				Math.max(60_000, periodDurationMs(period) / 720),
+			),
+		);
+	}, [fullTimeDomain, period, timeAtClientX, timeDomain]);
+	const handleChartPointerDown = React.useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			if (event.pointerType !== "touch") return;
+			event.currentTarget.setPointerCapture(event.pointerId);
+			activeTouchPointersRef.current.set(event.pointerId, {
+				x: event.clientX,
+				y: event.clientY,
+			});
+			if (activeTouchPointersRef.current.size < 2)
+				pinchGestureRef.current = null;
+			updatePinchGesture();
+		},
+		[updatePinchGesture],
+	);
+	const handleChartPointerMove = React.useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			if (event.pointerType !== "touch") return;
+			if (!activeTouchPointersRef.current.has(event.pointerId)) return;
+			activeTouchPointersRef.current.set(event.pointerId, {
+				x: event.clientX,
+				y: event.clientY,
+			});
+			if (activeTouchPointersRef.current.size < 2) return;
+			event.preventDefault();
+			updatePinchGesture();
+		},
+		[updatePinchGesture],
+	);
+	const handleChartPointerEnd = React.useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			if (event.pointerType !== "touch") return;
+			activeTouchPointersRef.current.delete(event.pointerId);
+			if (activeTouchPointersRef.current.size < 2)
+				pinchGestureRef.current = null;
+		},
+		[],
 	);
 	React.useEffect(() => {
 		const viewport = chartViewportRef.current;
@@ -487,6 +653,16 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 					{t("monitor.trueSamples", "真实采样")} {chartPoints.length} /{" "}
 					{visiblePoints.length}
 				</span>
+				{hasIncompleteHistory && (
+					<span
+						data-testid="history-coverage"
+						className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/8 px-3 py-1.5 text-[11px] font-medium tabular-nums text-amber-700 dark:text-amber-300"
+					>
+						{t("monitor.historyCoverage", "历史覆盖")}{" "}
+						{formatDuration(availableHistoryMs)} /{" "}
+						{formatDuration(periodDurationMs(period))}
+					</span>
+				)}
 			</div>
 
 			<Card
@@ -679,11 +855,18 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 						</div>
 						<div
 							ref={chartViewportRef}
-							className="relative min-w-0 overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/50 to-transparent dark:from-white/[0.02]"
+							data-testid="network-chart-viewport"
+							className="relative min-w-0 touch-pan-y overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/50 to-transparent dark:from-white/[0.02]"
 							title={t(
 								"monitor.zoomHint",
 								"滚动鼠标滚轮可围绕指针位置缩放时间线",
 							)}
+							onMouseMove={handleChartMouseMove}
+							onMouseLeave={() => setHoveredPoint(null)}
+							onPointerDown={handleChartPointerDown}
+							onPointerMove={handleChartPointerMove}
+							onPointerUp={handleChartPointerEnd}
+							onPointerCancel={handleChartPointerEnd}
 						>
 							<ChartContainer
 								config={chartConfig}
@@ -748,45 +931,6 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 											</React.Fragment>
 										);
 									})}
-									<ChartTooltip
-										isAnimationActive={false}
-										content={
-											<ChartTooltipContent
-												indicator="line"
-												labelKey="created_at"
-												labelFormatter={(_, payload) =>
-													payload[0]?.payload?.created_at
-														? formatTime(payload[0].payload.created_at)
-														: ""
-												}
-												formatter={(value, _name, _item, _index, payload) => {
-													const point = payload?.payload as
-														| MonitorChartPoint
-														| undefined;
-													const failed = point ? isPointFailed(point) : false;
-													return (
-														<div className="flex min-w-44 items-center justify-between gap-4">
-															<span className="text-muted-foreground">
-																{failed
-																	? t("monitor.status", "状态")
-																	: t("monitor.avgDelay", "延迟")}
-															</span>
-															<span
-																className={cn(
-																	"font-medium tabular-nums",
-																	failed && "text-red-500",
-																)}
-															>
-																{failed
-																	? errorLabel(point?.error_code, t)
-																	: `${Number(value).toFixed(2)} ms`}
-															</span>
-														</div>
-													);
-												}}
-											/>
-										}
-									/>
 									<Area
 										isAnimationActive={false}
 										type="linear"
@@ -811,6 +955,34 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									/>
 								</ComposedChart>
 							</ChartContainer>
+							{hoveredPoint && (
+								<div
+									data-testid="network-chart-hover-tooltip"
+									className="pointer-events-none absolute z-20 min-w-44 -translate-x-1/2 -translate-y-[calc(100%+12px)] rounded-xl border border-slate-200/80 bg-white/95 px-3 py-2.5 text-xs shadow-xl backdrop-blur-md dark:border-white/10 dark:bg-slate-950/90"
+									style={{ left: hoveredPoint.x, top: hoveredPoint.y }}
+								>
+									<div className="mb-1.5 text-[11px] text-muted-foreground">
+										{formatTime(hoveredPoint.point.created_at)}
+									</div>
+									<div className="flex items-center justify-between gap-4">
+										<span className="text-muted-foreground">
+											{isPointFailed(hoveredPoint.point)
+												? t("monitor.status", "状态")
+												: t("monitor.avgDelay", "延迟")}
+										</span>
+										<span
+											className={cn(
+												"font-semibold tabular-nums",
+												isPointFailed(hoveredPoint.point) && "text-red-500",
+											)}
+										>
+											{isPointFailed(hoveredPoint.point)
+												? errorLabel(hoveredPoint.point.error_code, t)
+												: `${Number(hoveredPoint.point.avg_delay).toFixed(2)} ms`}
+										</span>
+									</div>
+								</div>
+							)}
 							{showPeriodLoading && (
 								<div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-md backdrop-blur-[1px]">
 									<div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground/70" />

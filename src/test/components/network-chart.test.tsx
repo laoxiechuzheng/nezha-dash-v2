@@ -1,9 +1,13 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactElement, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NetworkChart, NetworkChartClient } from "@/components/NetworkChart";
+import {
+	findClosestMonitorPoint,
+	NetworkChart,
+	NetworkChartClient,
+} from "@/components/NetworkChart";
 import type { ChartConfig } from "@/components/ui/chart";
 import { createTestQueryClient } from "@/test/utils";
 import type { NezhaMonitor, ServerMonitorChart } from "@/types/nezha-api";
@@ -187,6 +191,13 @@ function renderWithQuery(ui: ReactElement) {
 }
 
 describe("NetworkChart", () => {
+	it("finds the nearest sample for a timestamp between two probes", () => {
+		const points = clientChartData.Alpha;
+		expect(findClosestMonitorPoint(points, times[7] + 10 * 60 * 1000)).toBe(
+			points[7],
+		);
+	});
+
 	beforeEach(() => {
 		apiMocks.fetchLoginUser.mockReset();
 		apiMocks.fetchMonitor.mockReset();
@@ -353,6 +364,126 @@ describe("NetworkChartClient", () => {
 		expect(axis.getAttribute("data-domain")).not.toBe(fullDomain);
 		await user.click(screen.getByRole("button", { name: "monitor.resetZoom" }));
 		expect(axis.getAttribute("data-domain")).toBe(fullDomain);
+	});
+
+	it("shows the nearest interior probe while hovering anywhere across the chart", () => {
+		render(
+			<NetworkChartClient
+				chartDataKey={["Alpha"]}
+				chartConfig={chartConfig}
+				chartData={{ Alpha: clientChartData.Alpha }}
+				serverName="hover-monitor"
+				isPeriodLoading={false}
+				period="6h"
+				onPeriodChange={vi.fn()}
+				isLogin={true}
+			/>,
+		);
+
+		const viewport = screen.getByTestId("network-chart-viewport");
+		vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue({
+			bottom: 320,
+			height: 320,
+			left: 0,
+			right: 600,
+			top: 0,
+			width: 600,
+			x: 0,
+			y: 0,
+			toJSON: () => ({}),
+		});
+
+		fireEvent.mouseMove(viewport, { clientX: 241, clientY: 160 });
+
+		expect(screen.getByTestId("network-chart-hover-tooltip")).toHaveTextContent(
+			"37.00 ms",
+		);
+	});
+
+	it("uses a two-finger pinch to zoom without relying on mouse wheel events", () => {
+		render(
+			<NetworkChartClient
+				chartDataKey={["Alpha"]}
+				chartConfig={chartConfig}
+				chartData={{ Alpha: clientChartData.Alpha }}
+				serverName="pinch-monitor"
+				isPeriodLoading={false}
+				period="6h"
+				onPeriodChange={vi.fn()}
+				isLogin={true}
+			/>,
+		);
+
+		const viewport = screen.getByTestId("network-chart-viewport");
+		vi.spyOn(viewport, "getBoundingClientRect").mockReturnValue({
+			bottom: 320,
+			height: 320,
+			left: 0,
+			right: 600,
+			top: 0,
+			width: 600,
+			x: 0,
+			y: 0,
+			toJSON: () => ({}),
+		});
+		const axis = screen.getByTestId("x-axis");
+		const fullDomain = axis.getAttribute("data-domain");
+		fireEvent.pointerDown(viewport, {
+			clientX: 160,
+			clientY: 160,
+			pointerId: 1,
+			pointerType: "touch",
+		});
+		fireEvent.pointerDown(viewport, {
+			clientX: 360,
+			clientY: 160,
+			pointerId: 2,
+			pointerType: "touch",
+		});
+		fireEvent.pointerMove(viewport, {
+			clientX: 460,
+			clientY: 160,
+			pointerId: 2,
+			pointerType: "touch",
+		});
+
+		expect(axis.getAttribute("data-domain")).not.toBe(fullDomain);
+	});
+
+	it("keeps a partial 6-hour series on the full selected timeline and reports its stored coverage", () => {
+		const end = Date.parse("2026-07-30T09:09:00.000Z");
+		const partialData: ServerMonitorChart = {
+			Alpha: Array.from({ length: 720 }, (_, index) => ({
+				created_at: end - (719 - index) * 6000,
+				avg_delay: 40,
+				status: 1,
+			})),
+		};
+
+		render(
+			<NetworkChartClient
+				chartDataKey={["Alpha"]}
+				chartConfig={chartConfig}
+				chartData={partialData}
+				serverName="partial-history"
+				isPeriodLoading={false}
+				period="6h"
+				onPeriodChange={vi.fn()}
+				isLogin={true}
+			/>,
+		);
+
+		expect(screen.getByTestId("x-axis")).toHaveAttribute(
+			"data-domain",
+			JSON.stringify([end - 6 * 60 * 60 * 1000, end]),
+		);
+		expect(screen.getByTestId("composed-chart")).toHaveAttribute(
+			"data-points",
+			"720",
+		);
+		expect(screen.getByTestId("history-coverage")).toHaveTextContent(
+			"monitor.historyCoverage",
+		);
 	});
 
 	it("locks longer periods and renders one selected monitor with outage intervals", async () => {
