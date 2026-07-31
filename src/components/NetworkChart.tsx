@@ -65,8 +65,10 @@ import NetworkChartLoading from "./NetworkChartLoading";
 const MIN_PERIOD_LOADING_MS = 350;
 const LIVE_POLL_MIN_MS = 1000;
 const LIVE_POLL_MAX_MS = 10000;
+const HISTORY_REFRESH_MS = 60000;
 const DESKTOP_POINT_LIMIT = 1200;
 const MOBILE_POINT_LIMIT = 600;
+const LIVE_POINT_LIMIT_PER_MONITOR = 8192;
 const DESKTOP_CHART_LEFT_GUTTER = 68;
 const MOBILE_CHART_LEFT_GUTTER = 56;
 const CHART_RIGHT_GUTTER = 12;
@@ -169,6 +171,8 @@ export function NetworkChart({
 		placeholderData: keepPreviousData,
 		refetchOnMount: true,
 		refetchOnWindowFocus: true,
+		refetchIntervalInBackground: true,
+		refetchInterval: HISTORY_REFRESH_MS,
 	});
 	const { data: liveData } = useQuery({
 		queryKey: ["monitor-live", server_id],
@@ -1076,7 +1080,7 @@ const transformData = (data: NezhaMonitor[]): ServerMonitorChart => {
 	return monitorData;
 };
 
-const mergeLiveResults = (
+export const mergeLiveResults = (
 	previous: ServiceLatestResult[],
 	incoming: ServiceLatestResult[],
 ) => {
@@ -1084,9 +1088,20 @@ const mergeLiveResults = (
 	for (const item of [...previous, ...incoming]) {
 		byEvent.set(`${item.monitor_id}:${item.created_at}`, item);
 	}
-	return [...byEvent.values()]
-		.sort((a, b) => a.created_at - b.created_at || a.monitor_id - b.monitor_id)
-		.slice(-4096);
+	const byMonitor = new Map<number, ServiceLatestResult[]>();
+	for (const item of byEvent.values()) {
+		const points = byMonitor.get(item.monitor_id) ?? [];
+		points.push(item);
+		byMonitor.set(item.monitor_id, points);
+	}
+	const result: ServiceLatestResult[] = [];
+	for (const points of byMonitor.values()) {
+		points.sort((a, b) => a.created_at - b.created_at);
+		result.push(...points.slice(-LIVE_POINT_LIMIT_PER_MONITOR));
+	}
+	return result.sort(
+		(a, b) => a.created_at - b.created_at || a.monitor_id - b.monitor_id,
+	);
 };
 
 const mergeMonitorData = (

@@ -5,6 +5,7 @@ import type { ReactElement, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	findClosestMonitorPoint,
+	mergeLiveResults,
 	NetworkChart,
 	NetworkChartClient,
 } from "@/components/NetworkChart";
@@ -196,6 +197,28 @@ describe("NetworkChart", () => {
 		expect(findClosestMonitorPoint(points, times[7] + 10 * 60 * 1000)).toBe(
 			points[7],
 		);
+	});
+
+	it("keeps an independent live history window for every monitor", () => {
+		const liveResults = Array.from({ length: 8200 }, (_, index) =>
+			[1, 2].map((monitor_id) => ({
+				monitor_id,
+				monitor_name: String(monitor_id),
+				server_id: 7,
+				server_name: "edge-chart",
+				duration: 4,
+				created_at: index,
+				delay: 20,
+				successful: true,
+				error_code: 0,
+			})),
+		).flat();
+
+		const merged = mergeLiveResults([], liveResults);
+		expect(merged).toHaveLength(8192 * 2);
+		expect(merged.filter((item) => item.monitor_id === 1)).toHaveLength(8192);
+		expect(merged.filter((item) => item.monitor_id === 2)).toHaveLength(8192);
+		expect(merged[0].created_at).toBe(8);
 	});
 
 	beforeEach(() => {
