@@ -17,6 +17,7 @@ import {
 	ComposedChart,
 	Line,
 	ReferenceArea,
+	ReferenceDot,
 	ReferenceLine,
 	XAxis,
 	YAxis,
@@ -38,12 +39,14 @@ import {
 import { useActiveIndicator } from "@/hooks/use-active-indicator";
 import {
 	buildAdaptiveTimeTicks,
+	buildDelayChartScale,
 	buildOutageIntervals,
 	buildTimeDomain,
 	compactMonitorPoints,
 	formatAdaptiveTimeTick,
 	formatDuration,
 	periodDurationMs,
+	selectAnomalyMonitorPoints,
 	type TimeDomain,
 	zoomTimeDomain,
 } from "@/lib/network-chart";
@@ -68,6 +71,8 @@ const LIVE_POLL_MAX_MS = 10000;
 const HISTORY_REFRESH_MS = 60000;
 const DESKTOP_POINT_LIMIT = 1200;
 const MOBILE_POINT_LIMIT = 600;
+const DESKTOP_POINTS_PER_PIXEL = 0.75;
+const MOBILE_POINTS_PER_PIXEL = 0.65;
 const LIVE_POINT_LIMIT_PER_MONITOR = 8192;
 const DESKTOP_CHART_LEFT_GUTTER = 68;
 const MOBILE_CHART_LEFT_GUTTER = 56;
@@ -277,16 +282,20 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 	);
 	const [showPeriodLoading, setShowPeriodLoading] = React.useState(false);
 	const [isMobile, setIsMobile] = React.useState(false);
+	const [chartPixelWidth, setChartPixelWidth] = React.useState(0);
 	const [viewDomain, setViewDomain] = React.useState<TimeDomain | null>(null);
 	const [hoveredPoint, setHoveredPoint] =
 		React.useState<HoveredMonitorPoint | null>(null);
 	const loadingStartedAtRef = React.useRef<number | null>(null);
 	const monitorTrackRef = React.useRef<HTMLDivElement | null>(null);
 	const chartViewportRef = React.useRef<HTMLDivElement | null>(null);
+	const interactionOverlayRef = React.useRef<HTMLDivElement | null>(null);
 	const activeTouchPointersRef = React.useRef(
 		new Map<number, { x: number; y: number }>(),
 	);
 	const pinchGestureRef = React.useRef<PinchGesture | null>(null);
+	const hoverFrameRef = React.useRef<number | null>(null);
+	const pendingHoverRef = React.useRef<{ x: number; y: number } | null>(null);
 	const monitorButtonRefs = React.useRef<
 		Record<string, HTMLButtonElement | null>
 	>({});
@@ -406,13 +415,46 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 			),
 		[selectedPoints, timeDomain],
 	);
+	const chartPointLimit = React.useMemo(() => {
+		if (chartPixelWidth <= 0)
+			return isMobile ? MOBILE_POINT_LIMIT : DESKTOP_POINT_LIMIT;
+		const leftGutter = isMobile
+			? MOBILE_CHART_LEFT_GUTTER
+			: DESKTOP_CHART_LEFT_GUTTER;
+		const plotWidth = Math.max(
+			1,
+			chartPixelWidth - leftGutter - CHART_RIGHT_GUTTER,
+		);
+		const limit = isMobile ? MOBILE_POINT_LIMIT : DESKTOP_POINT_LIMIT;
+		const density = isMobile
+			? MOBILE_POINTS_PER_PIXEL
+			: DESKTOP_POINTS_PER_PIXEL;
+		return Math.min(limit, Math.max(120, Math.floor(plotWidth * density)));
+	}, [chartPixelWidth, isMobile]);
 	const chartPoints = React.useMemo(
+		() => compactMonitorPoints(visiblePoints, chartPointLimit),
+		[visiblePoints, chartPointLimit],
+	);
+	const delayScale = React.useMemo(
+		() => buildDelayChartScale(visiblePoints),
+		[visiblePoints],
+	);
+	const trendPoints = React.useMemo(
 		() =>
-			compactMonitorPoints(
-				visiblePoints,
-				isMobile ? MOBILE_POINT_LIMIT : DESKTOP_POINT_LIMIT,
-			),
-		[visiblePoints, isMobile],
+			chartPoints
+				.filter(
+					(point) =>
+						isPointFailed(point) ||
+						point.avg_delay === null ||
+						point.avg_delay === undefined ||
+						point.avg_delay <= delayScale.maximum,
+				)
+				.map((point) => ({ ...point, trend_delay: point.avg_delay })),
+		[chartPoints, delayScale.maximum],
+	);
+	const anomalyPoints = React.useMemo(
+		() => selectAnomalyMonitorPoints(visiblePoints, delayScale.maximum),
+		[delayScale.maximum, visiblePoints],
 	);
 	const outages = React.useMemo(
 		() => buildOutageIntervals(visiblePoints),
@@ -487,12 +529,28 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 		},
 		[timeAtClientX, visiblePoints],
 	);
-	const handleChartMouseMove = React.useCallback(
-		(event: React.MouseEvent<HTMLDivElement>) => {
-			updateHoveredPoint(event.clientX, event.clientY);
+	const queueHoveredPoint = React.useCallback(
+		(clientX: number, clientY: number) => {
+			pendingHoverRef.current = { x: clientX, y: clientY };
+			if (hoverFrameRef.current !== null) return;
+			hoverFrameRef.current = window.requestAnimationFrame(() => {
+				hoverFrameRef.current = null;
+				const pending = pendingHoverRef.current;
+				if (!pending) return;
+				pendingHoverRef.current = null;
+				updateHoveredPoint(pending.x, pending.y);
+			});
 		},
 		[updateHoveredPoint],
 	);
+	const clearHoveredPoint = React.useCallback(() => {
+		pendingHoverRef.current = null;
+		if (hoverFrameRef.current !== null) {
+			window.cancelAnimationFrame(hoverFrameRef.current);
+			hoverFrameRef.current = null;
+		}
+		setHoveredPoint(null);
+	}, []);
 	const updatePinchGesture = React.useCallback(() => {
 		const pointers = [...activeTouchPointersRef.current.values()];
 		if (pointers.length < 2) return;
@@ -528,23 +586,33 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 			});
 			if (activeTouchPointersRef.current.size < 2)
 				pinchGestureRef.current = null;
+			if (activeTouchPointersRef.current.size === 1)
+				queueHoveredPoint(event.clientX, event.clientY);
+			else clearHoveredPoint();
 			updatePinchGesture();
 		},
-		[updatePinchGesture],
+		[clearHoveredPoint, queueHoveredPoint, updatePinchGesture],
 	);
 	const handleChartPointerMove = React.useCallback(
 		(event: React.PointerEvent<HTMLDivElement>) => {
-			if (event.pointerType !== "touch") return;
+			if (event.pointerType !== "touch") {
+				queueHoveredPoint(event.clientX, event.clientY);
+				return;
+			}
 			if (!activeTouchPointersRef.current.has(event.pointerId)) return;
 			activeTouchPointersRef.current.set(event.pointerId, {
 				x: event.clientX,
 				y: event.clientY,
 			});
-			if (activeTouchPointersRef.current.size < 2) return;
+			if (activeTouchPointersRef.current.size < 2) {
+				queueHoveredPoint(event.clientX, event.clientY);
+				return;
+			}
 			event.preventDefault();
+			clearHoveredPoint();
 			updatePinchGesture();
 		},
-		[updatePinchGesture],
+		[clearHoveredPoint, queueHoveredPoint, updatePinchGesture],
 	);
 	const handleChartPointerEnd = React.useCallback(
 		(event: React.PointerEvent<HTMLDivElement>) => {
@@ -555,6 +623,42 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 		},
 		[],
 	);
+	React.useEffect(() => {
+		const viewport = chartViewportRef.current;
+		if (!viewport) return;
+		const updateWidth = () => {
+			const width = viewport.getBoundingClientRect().width;
+			if (width > 0) setChartPixelWidth(width);
+		};
+		updateWidth();
+		const observer = new ResizeObserver(updateWidth);
+		observer.observe(viewport);
+		return () => observer.disconnect();
+	}, []);
+	React.useEffect(
+		() => () => {
+			if (hoverFrameRef.current !== null)
+				window.cancelAnimationFrame(hoverFrameRef.current);
+		},
+		[],
+	);
+	React.useEffect(() => {
+		const onWindowPointerMove = (event: PointerEvent) => {
+			if (event.pointerType === "touch") return;
+			const overlay = interactionOverlayRef.current;
+			if (!overlay) return;
+			const rect = overlay.getBoundingClientRect();
+			const inside =
+				event.clientX >= rect.left &&
+				event.clientX <= rect.right &&
+				event.clientY >= rect.top &&
+				event.clientY <= rect.bottom;
+			if (!inside) clearHoveredPoint();
+		};
+		window.addEventListener("pointermove", onWindowPointerMove, true);
+		return () =>
+			window.removeEventListener("pointermove", onWindowPointerMove, true);
+	}, [clearHoveredPoint]);
 	React.useEffect(() => {
 		const viewport = chartViewportRef.current;
 		if (!viewport) return;
@@ -865,22 +969,16 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 								"monitor.zoomHint",
 								"滚动鼠标滚轮可围绕指针位置缩放时间线",
 							)}
-							onMouseMove={handleChartMouseMove}
-							onMouseLeave={() => setHoveredPoint(null)}
-							onPointerDown={handleChartPointerDown}
-							onPointerMove={handleChartPointerMove}
-							onPointerUp={handleChartPointerEnd}
-							onPointerCancel={handleChartPointerEnd}
 						>
 							<ChartContainer
 								config={chartConfig}
 								className={cn(
-									"aspect-auto h-[320px] w-full transition-opacity sm:h-[380px]",
+									"pointer-events-none aspect-auto h-[320px] w-full transition-opacity sm:h-[380px]",
 									showPeriodLoading && "opacity-60",
 								)}
 							>
 								<ComposedChart
-									data={chartPoints}
+									data={trendPoints}
 									margin={{ top: 10, right: 12, bottom: 8, left: 4 }}
 								>
 									<CartesianGrid vertical={false} />
@@ -899,7 +997,8 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									/>
 									<YAxis
 										yAxisId="delay"
-										domain={[0, "auto"]}
+										domain={[0, delayScale.maximum]}
+										allowDataOverflow
 										width={isMobile ? 48 : 60}
 										tickLine={false}
 										axisLine={false}
@@ -938,7 +1037,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									<Area
 										isAnimationActive={false}
 										type="linear"
-										dataKey="avg_delay"
+										dataKey="trend_delay"
 										stroke="none"
 										fill={selectedColor}
 										fillOpacity={0.08}
@@ -948,7 +1047,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									<Line
 										isAnimationActive={false}
 										type="linear"
-										dataKey="avg_delay"
+										dataKey="trend_delay"
 										name={selectedMonitor}
 										stroke={selectedColor}
 										strokeWidth={2.4}
@@ -957,8 +1056,38 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 										connectNulls={false}
 										yAxisId="delay"
 									/>
+									{anomalyPoints.map((point) => (
+										<ReferenceDot
+											key={`peak-${point.created_at}`}
+											x={point.created_at}
+											y={delayScale.maximum * 0.97}
+											yAxisId="delay"
+											r={2.5}
+											fill="#ef4444"
+											stroke="#ef4444"
+										/>
+									))}
 								</ComposedChart>
 							</ChartContainer>
+							<div
+								ref={interactionOverlayRef}
+								data-testid="network-chart-interaction-overlay"
+								className="absolute inset-y-2 z-10 touch-pan-y"
+								style={{
+									left: isMobile
+										? MOBILE_CHART_LEFT_GUTTER
+										: DESKTOP_CHART_LEFT_GUTTER,
+									right: CHART_RIGHT_GUTTER,
+								}}
+								onPointerDown={handleChartPointerDown}
+								onPointerMove={handleChartPointerMove}
+								onPointerUp={handleChartPointerEnd}
+								onPointerCancel={handleChartPointerEnd}
+								onMouseLeave={clearHoveredPoint}
+								onPointerLeave={(event) => {
+									if (event.pointerType !== "touch") clearHoveredPoint();
+								}}
+							/>
 							{hoveredPoint && (
 								<div
 									data-testid="network-chart-hover-tooltip"
@@ -970,9 +1099,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									</div>
 									<div className="flex items-center justify-between gap-4">
 										<span className="text-muted-foreground">
-											{isPointFailed(hoveredPoint.point)
-												? t("monitor.status", "状态")
-												: t("monitor.avgDelay", "延迟")}
+											{t("monitor.avgDelay", "延迟")}
 										</span>
 										<span
 											className={cn(
@@ -981,10 +1108,35 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 											)}
 										>
 											{isPointFailed(hoveredPoint.point)
-												? errorLabel(hoveredPoint.point.error_code, t)
+												? "--"
 												: `${Number(hoveredPoint.point.avg_delay).toFixed(2)} ms`}
 										</span>
 									</div>
+									<div className="mt-1 flex items-center justify-between gap-4">
+										<span className="text-muted-foreground">
+											{t("monitor.status", "状态")}
+										</span>
+										<span
+											className={cn(
+												"font-semibold",
+												isPointFailed(hoveredPoint.point) && "text-red-500",
+											)}
+										>
+											{isPointFailed(hoveredPoint.point)
+												? errorLabel(hoveredPoint.point.error_code, t)
+												: t("monitor.currentNormal", "正常")}
+										</span>
+									</div>
+									{hoveredPoint.point.packet_loss !== undefined && (
+										<div className="mt-1 flex items-center justify-between gap-4">
+											<span className="text-muted-foreground">
+												{t("monitor.packetLoss", "丢包率")}
+											</span>
+											<span className="font-semibold tabular-nums">
+												{Number(hoveredPoint.point.packet_loss).toFixed(2)}%
+											</span>
+										</div>
+									)}
 								</div>
 							)}
 							{showPeriodLoading && (

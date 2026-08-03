@@ -37,6 +37,11 @@ export const buildTimeTicks = (
 
 export type TimeDomain = readonly [number, number];
 
+export interface DelayChartScale {
+	maximum: number;
+	hasClippedPeaks: boolean;
+}
+
 export const zoomTimeDomain = (
 	domain: TimeDomain,
 	fullDomain: TimeDomain,
@@ -106,17 +111,75 @@ export const compactMonitorPoints = (
 		for (let bucket = 0; bucket < remaining; bucket++) {
 			const from = Math.floor(bucket * bucketSize);
 			const to = Math.min(points.length, Math.ceil((bucket + 1) * bucketSize));
-			let representative = from;
-			for (let index = from + 1; index < to; index++) {
-				const candidate = points[index].avg_delay ?? -1;
-				const current = points[representative].avg_delay ?? -1;
-				if (candidate > current) representative = index;
-			}
+			const healthyIndices = Array.from(
+				{ length: Math.max(0, to - from) },
+				(_, offset) => from + offset,
+			).filter(
+				(index) =>
+					(points[index].status ?? 1) !== 0 &&
+					points[index].avg_delay !== null &&
+					points[index].avg_delay !== undefined,
+			);
+			healthyIndices.sort(
+				(a, b) => Number(points[a].avg_delay) - Number(points[b].avg_delay),
+			);
+			const representative = healthyIndices.length
+				? healthyIndices[Math.floor((healthyIndices.length - 1) / 2)]
+				: Math.min(points.length - 1, Math.floor((from + to - 1) / 2));
 			mandatory.add(representative);
 		}
 	}
 
 	return [...mandatory].sort((a, b) => a - b).map((index) => points[index]);
+};
+
+export const buildDelayChartScale = (
+	points: MonitorChartPoint[],
+): DelayChartScale => {
+	const delays = points
+		.filter(
+			(point) =>
+				(point.status ?? 1) !== 0 &&
+				point.avg_delay !== null &&
+				point.avg_delay !== undefined &&
+				point.avg_delay > 0,
+		)
+		.map((point) => Number(point.avg_delay))
+		.sort((a, b) => a - b);
+	if (delays.length === 0) return { maximum: 100, hasClippedPeaks: false };
+
+	const rawMaximum = delays[delays.length - 1];
+	const p95 = delays[Math.floor((delays.length - 1) * 0.95)];
+	const hasClippedPeaks = rawMaximum > Math.max(250, p95 * 1.5);
+	const maximum = hasClippedPeaks
+		? Math.max(100, Math.ceil((p95 * 1.25) / 10) * 10)
+		: Math.max(100, Math.ceil((rawMaximum * 1.1) / 10) * 10);
+	return { maximum, hasClippedPeaks };
+};
+
+export const selectAnomalyMonitorPoints = (
+	points: MonitorChartPoint[],
+	maximum: number,
+	maxPoints = 96,
+) => {
+	const anomalies = points.filter(
+		(point) =>
+			(point.status ?? 1) !== 0 &&
+			point.avg_delay !== null &&
+			point.avg_delay !== undefined &&
+			point.avg_delay > maximum,
+	);
+	if (anomalies.length <= maxPoints) return anomalies;
+	return Array.from(
+		{ length: maxPoints },
+		(_, index) =>
+			anomalies[
+				Math.min(
+					anomalies.length - 1,
+					Math.floor((index * anomalies.length) / maxPoints),
+				)
+			],
+	);
 };
 
 export const buildOutageIntervals = (points: MonitorChartPoint[]) => {

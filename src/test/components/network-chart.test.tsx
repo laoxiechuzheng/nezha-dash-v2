@@ -77,6 +77,7 @@ vi.mock("recharts", () => {
 		RadarChart: genericChart,
 		RadialBarChart: genericChart,
 		ReferenceArea: createElement("reference-area"),
+		ReferenceDot: createElement("reference-dot"),
 		ReferenceLine: createElement("reference-line"),
 		ResponsiveContainer: ({ children }: { children?: ReactNode }) => (
 			<div data-testid="responsive-chart">{children}</div>
@@ -389,7 +390,7 @@ describe("NetworkChartClient", () => {
 		expect(axis.getAttribute("data-domain")).toBe(fullDomain);
 	});
 
-	it("shows the nearest interior probe while hovering anywhere across the chart", () => {
+	it("shows and continuously updates the nearest probe from pointer movement without a click", async () => {
 		render(
 			<NetworkChartClient
 				chartDataKey={["Alpha"]}
@@ -416,11 +417,38 @@ describe("NetworkChartClient", () => {
 			toJSON: () => ({}),
 		});
 
-		fireEvent.mouseMove(viewport, { clientX: 241, clientY: 160 });
+		const overlay = screen.getByTestId("network-chart-interaction-overlay");
+		fireEvent.pointerMove(overlay, {
+			clientX: 241,
+			clientY: 160,
+			pointerType: "mouse",
+		});
 
+		expect(
+			await screen.findByTestId("network-chart-hover-tooltip"),
+		).toHaveTextContent("37.00 ms");
 		expect(screen.getByTestId("network-chart-hover-tooltip")).toHaveTextContent(
-			"37.00 ms",
+			"monitor.currentNormal",
 		);
+		expect(screen.getByTestId("network-chart-hover-tooltip")).toHaveTextContent(
+			"7.00%",
+		);
+
+		fireEvent.pointerMove(overlay, {
+			clientX: 496,
+			clientY: 160,
+			pointerType: "mouse",
+		});
+		await waitFor(() =>
+			expect(
+				screen.getByTestId("network-chart-hover-tooltip"),
+			).toHaveTextContent("40.00 ms"),
+		);
+
+		fireEvent.mouseLeave(overlay);
+		expect(
+			screen.queryByTestId("network-chart-hover-tooltip"),
+		).not.toBeInTheDocument();
 	});
 
 	it("uses a two-finger pinch to zoom without relying on mouse wheel events", () => {
@@ -451,19 +479,20 @@ describe("NetworkChartClient", () => {
 		});
 		const axis = screen.getByTestId("x-axis");
 		const fullDomain = axis.getAttribute("data-domain");
-		fireEvent.pointerDown(viewport, {
+		const overlay = screen.getByTestId("network-chart-interaction-overlay");
+		fireEvent.pointerDown(overlay, {
 			clientX: 160,
 			clientY: 160,
 			pointerId: 1,
 			pointerType: "touch",
 		});
-		fireEvent.pointerDown(viewport, {
+		fireEvent.pointerDown(overlay, {
 			clientX: 360,
 			clientY: 160,
 			pointerId: 2,
 			pointerType: "touch",
 		});
-		fireEvent.pointerMove(viewport, {
+		fireEvent.pointerMove(overlay, {
 			clientX: 460,
 			clientY: 160,
 			pointerId: 2,
