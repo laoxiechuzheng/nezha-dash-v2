@@ -20,7 +20,7 @@ const MapTooltip = memo(function MapTooltip() {
 
 	return (
 		<div
-			className="glass-panel tooltip-animate absolute z-50 hidden rounded-xl px-3 py-2 text-sm lg:block"
+			className="tooltip-animate absolute z-50 hidden min-w-40 rounded-lg border border-border bg-popover px-3 py-2.5 text-[13px] text-popover-foreground shadow-popover lg:block"
 			data-testid="map-tooltip"
 			key={tooltipData.country}
 			style={{
@@ -38,12 +38,12 @@ const MapTooltip = memo(function MapTooltip() {
 						? "Mainland China"
 						: tooltipData.country}
 				</p>
-				<p className="text-neutral-600 dark:text-neutral-400 text-xs font-light mb-1">
+				<p className="mb-1.5 text-xs text-muted-foreground tabular-nums">
 					{tooltipData.count} {t("map.Servers")}
 				</p>
 			</div>
 			<div
-				className="border-t dark:border-neutral-700 pt-1"
+				className="border-t border-border pt-1.5"
 				style={{
 					maxHeight: "200px",
 					overflowY: "auto",
@@ -53,14 +53,15 @@ const MapTooltip = memo(function MapTooltip() {
 					<button
 						key={server.id}
 						type="button"
-						className="flex items-center gap-1.5 py-0.5 text-neutral-500 transition-colors hover:text-black dark:text-neutral-400 dark:hover:text-white"
+						className="flex w-full items-center gap-2 rounded-[4px] px-1 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 						onClick={() => {
 							saveMainPageScrollPosition();
 							navigate(`/server/${server.id}`);
 						}}
 					>
 						<span
-							className={`h-1.5 w-1.5 shrink-0 rounded-full ${server.status ? "bg-green-500" : "bg-red-500"}`}
+							className="status-dot"
+							data-status={server.status ? "online" : "offline"}
 						/>
 						<span className="text-xs">{server.name}</span>
 					</button>

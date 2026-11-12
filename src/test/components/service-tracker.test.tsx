@@ -214,10 +214,15 @@ describe("ServiceTrackerClient and CycleTransferStatsClient", () => {
 			/>,
 		);
 
-		expect(screen.getByText("99.9% serviceTracker.uptime")).toHaveClass(
-			"text-emerald-500",
+		expect(screen.getByText("99.9% serviceTracker.uptime")).toHaveAttribute(
+			"data-level",
+			"good",
 		);
-		expect(screen.getByText("80ms")).toHaveClass("text-emerald-500");
+		expect(screen.getByText("99.9% serviceTracker.uptime")).toHaveClass(
+			"text-success",
+		);
+		expect(screen.getByText("80ms")).toHaveAttribute("data-level", "good");
+		expect(screen.getByText("80ms")).toHaveClass("text-success");
 
 		rerender(
 			<ServiceTrackerClient
@@ -228,10 +233,15 @@ describe("ServiceTrackerClient and CycleTransferStatsClient", () => {
 			/>,
 		);
 
-		expect(screen.getByText("97.0% serviceTracker.uptime")).toHaveClass(
-			"text-amber-500",
+		expect(screen.getByText("97.0% serviceTracker.uptime")).toHaveAttribute(
+			"data-level",
+			"warn",
 		);
-		expect(screen.getByText("180ms")).toHaveClass("text-amber-500");
+		expect(screen.getByText("97.0% serviceTracker.uptime")).toHaveClass(
+			"text-warning",
+		);
+		expect(screen.getByText("180ms")).toHaveAttribute("data-level", "warn");
+		expect(screen.getByText("180ms")).toHaveClass("text-warning");
 
 		rerender(
 			<ServiceTrackerClient
@@ -242,10 +252,15 @@ describe("ServiceTrackerClient and CycleTransferStatsClient", () => {
 			/>,
 		);
 
-		expect(screen.getByText("94.0% serviceTracker.uptime")).toHaveClass(
-			"text-rose-500",
+		expect(screen.getByText("94.0% serviceTracker.uptime")).toHaveAttribute(
+			"data-level",
+			"bad",
 		);
-		expect(screen.getByText("320ms")).toHaveClass("text-rose-500");
+		expect(screen.getByText("94.0% serviceTracker.uptime")).toHaveClass(
+			"text-danger",
+		);
+		expect(screen.getByText("320ms")).toHaveAttribute("data-level", "bad");
+		expect(screen.getByText("320ms")).toHaveClass("text-danger");
 	});
 
 	it("caps cycle transfer progress at one hundred percent", () => {

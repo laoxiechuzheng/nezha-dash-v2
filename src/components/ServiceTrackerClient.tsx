@@ -8,8 +8,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-import { Separator } from "./ui/separator";
-
 interface ServiceTrackerProps {
 	days: Array<{
 		completed: boolean;
@@ -25,6 +23,34 @@ interface ServiceTrackerProps {
 	currentStatus?: "healthy" | "degraded" | "unknown";
 }
 
+type Level = "good" | "warn" | "bad";
+
+/** Uptime severity: >= 99% good, >= 95% warning, otherwise bad. */
+const getUptimeLevel = (uptime: number): Level => {
+	if (uptime >= 99) return "good";
+	if (uptime >= 95) return "warn";
+	return "bad";
+};
+
+/** Latency severity: < 100ms good, < 300ms warning, otherwise bad. */
+const getDelayLevel = (delay: number): Level => {
+	if (delay < 100) return "good";
+	if (delay < 300) return "warn";
+	return "bad";
+};
+
+const levelText: Record<Level, string> = {
+	good: "text-success",
+	warn: "text-warning",
+	bad: "text-danger",
+};
+
+const levelFill: Record<Level, string> = {
+	good: "bg-success",
+	warn: "bg-warning",
+	bad: "bg-danger",
+};
+
 export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 	days,
 	className,
@@ -34,155 +60,133 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 	currentStatus = "unknown",
 }) => {
 	const { t } = useTranslation();
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
-
-	const getUptimeColor = (uptime: number) => {
-		if (uptime >= 99) return "text-emerald-500";
-		if (uptime >= 95) return "text-amber-500";
-		return "text-rose-500";
-	};
-
-	const getDelayColor = (delay: number) => {
-		if (delay < 100) return "text-emerald-500";
-		if (delay < 300) return "text-amber-500";
-		return "text-rose-500";
-	};
+	const uptimeLevel = getUptimeLevel(uptime);
+	const delayLevel = getDelayLevel(avgDelay);
 
 	const incidentDays = days.filter(
 		(day) => day.hasData !== false && day.uptime < 99,
 	).length;
 	const statusLabel =
 		currentStatus === "healthy"
-			? "当前正常"
+			? t("serviceTracker.statusHealthy")
 			: currentStatus === "degraded"
-				? "当前异常"
-				: "等待采样";
+				? t("serviceTracker.statusDegraded")
+				: t("serviceTracker.statusUnknown");
 
 	return (
 		<div
 			className={cn(
-				"glass-panel w-full space-y-4 rounded-2xl px-4 py-4 text-card-foreground sm:px-5",
+				"flex flex-col gap-2.5 px-4 py-3 lg:flex-row lg:items-center lg:gap-8",
 				className,
-				{
-					"bg-card/70": customBackgroundImage,
-				},
 			)}
 		>
-			<div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-				<div className="flex items-center gap-2">
-					<div
-						className={cn(
-							"w-2.5 h-2.5 rounded-full transition-colors",
-							currentStatus === "healthy"
-								? "bg-emerald-500"
-								: currentStatus === "degraded"
-									? "bg-rose-500"
-									: "bg-slate-400",
-						)}
+			<div className="flex min-w-0 items-start justify-between gap-3 lg:w-[40%] lg:shrink-0">
+				<div className="flex min-w-0 items-start gap-2.5">
+					<span
+						className="status-dot mt-[5px]"
+						data-status={currentStatus}
+						aria-hidden="true"
 					/>
-					<div>
-						<span className="block text-sm font-bold">{title}</span>
-						<span className="mt-0.5 block text-[10px] font-medium text-muted-foreground">
-							{statusLabel} · 过去 30 天 ·{" "}
-							{incidentDays ? `${incidentDays} 天发生异常` : "无异常记录"}
+					<div className="min-w-0">
+						<span className="block truncate text-[13px] font-medium">
+							{title}
+						</span>
+						<span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+							<span
+								className={cn(currentStatus === "degraded" && "text-danger")}
+							>
+								{statusLabel}
+							</span>
+							{" · "}
+							{incidentDays
+								? t("serviceTracker.incidentDays", { count: incidentDays })
+								: t("serviceTracker.noIncident")}
 						</span>
 					</div>
 				</div>
-				<div className="flex flex-wrap items-center gap-2 sm:gap-3">
+				<div className="flex shrink-0 flex-col items-end gap-0.5 text-xs tabular-nums sm:flex-row sm:items-center sm:gap-4">
 					<span
-						className={cn(
-							"font-medium text-sm transition-colors",
-							getDelayColor(avgDelay),
-						)}
-					>
-						{avgDelay.toFixed(0)}ms
-					</span>
-					<Separator className="h-4" orientation="vertical" />
-					<span
-						className={cn(
-							"font-medium text-sm transition-colors",
-							getUptimeColor(uptime),
-						)}
+						data-level={uptimeLevel}
+						className={cn("font-medium", levelText[uptimeLevel])}
 					>
 						{uptime.toFixed(1)}% {t("serviceTracker.uptime")}
+					</span>
+					<span
+						data-level={delayLevel}
+						className={cn("font-medium", levelText[delayLevel])}
+					>
+						{avgDelay.toFixed(0)}ms
 					</span>
 				</div>
 			</div>
 
-			<div
-				className="flex gap-1 rounded-xl border border-white/60 bg-white/35 p-1.5 dark:border-white/5 dark:bg-white/[0.025]"
-				role="img"
-				aria-label="30 天服务可用性时间线"
-			>
-				{days.map((day, index) => (
-					<TooltipProvider delayDuration={50} key={index}>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<div
-									className={cn(
-										"relative flex-1 h-7 rounded-[8px] transition-all duration-200 cursor-help",
-										"before:absolute before:inset-0 before:rounded-[4px] before:opacity-0 hover:before:opacity-100 before:bg-white/10 before:transition-opacity",
-										"after:absolute after:inset-0 after:rounded-[4px] after:shadow-[inset_0_1px_--theme(--color-white/10%)]",
-										day.hasData === false
-											? "bg-slate-300 dark:bg-slate-700"
-											: day.uptime >= 99
-												? "bg-linear-to-b from-emerald-400 to-emerald-600 shadow-[0_1px_2px_--theme(--color-green-600/30%)]"
-												: day.uptime >= 95
-													? "bg-linear-to-b from-amber-400 to-amber-500"
-													: "bg-linear-to-b from-rose-400 to-rose-600",
-									)}
-								/>
-							</TooltipTrigger>
-							<TooltipContent className="p-0 overflow-hidden rounded-[10px]">
-								<div className="px-3 py-2 bg-popover">
-									<p className="font-medium text-sm mb-2">
-										{day.date?.toLocaleDateString()}
-									</p>
-									<div className="space-y-1.5">
-										<div className="flex items-center justify-between gap-3">
-											<span className="text-xs text-muted-foreground">
-												{t("serviceTracker.uptime")}:
-											</span>
-											<span
-												className={cn(
-													"text-xs font-medium",
-													day.uptime > 95 ? "text-green-500" : "text-red-500",
-												)}
-											>
-												{day.uptime.toFixed(1)}%
-											</span>
+			<div className="min-w-0 flex-1">
+				<div
+					className="flex h-6 items-stretch gap-[3px]"
+					role="img"
+					aria-label={t("serviceTracker.timelineLabel")}
+				>
+					{days.map((day, index) => {
+						const dayLevel =
+							day.hasData === false ? null : getUptimeLevel(day.uptime);
+						return (
+							<TooltipProvider delayDuration={50} key={index}>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div
+											data-level={dayLevel ?? "none"}
+											className={cn(
+												"min-w-0 flex-1 cursor-help rounded-[2px] transition-opacity duration-150 hover:opacity-70",
+												dayLevel
+													? levelFill[dayLevel]
+													: "bg-muted dark:bg-foreground/[0.08]",
+											)}
+										/>
+									</TooltipTrigger>
+									<TooltipContent className="p-0">
+										<div className="px-3 py-2">
+											<p className="mb-1.5 text-xs font-medium">
+												{day.date?.toLocaleDateString()}
+											</p>
+											<div className="space-y-1">
+												<div className="flex items-center justify-between gap-4">
+													<span className="text-xs text-muted-foreground">
+														{t("serviceTracker.uptime")}
+													</span>
+													<span
+														className={cn(
+															"text-xs font-medium tabular-nums",
+															day.uptime > 95 ? "text-success" : "text-danger",
+														)}
+													>
+														{day.uptime.toFixed(1)}%
+													</span>
+												</div>
+												<div className="flex items-center justify-between gap-4">
+													<span className="text-xs text-muted-foreground">
+														{t("serviceTracker.delay")}
+													</span>
+													<span
+														className={cn(
+															"text-xs font-medium tabular-nums",
+															levelText[getDelayLevel(day.delay)],
+														)}
+													>
+														{day.delay.toFixed(0)}ms
+													</span>
+												</div>
+											</div>
 										</div>
-										<div className="flex items-center justify-between gap-3">
-											<span className="text-xs text-muted-foreground">
-												{t("serviceTracker.delay")}:
-											</span>
-											<span
-												className={cn(
-													"text-xs font-medium",
-													day.delay < 100
-														? "text-green-500"
-														: day.delay < 300
-															? "text-yellow-500"
-															: "text-red-500",
-												)}
-											>
-												{day.delay.toFixed(0)}ms
-											</span>
-										</div>
-									</div>
-								</div>
-							</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
-				))}
-			</div>
-
-			<div className="flex justify-between text-xs text-stone-500 dark:text-stone-400">
-				<span>30 {t("serviceTracker.daysAgo")}</span>
-				<span>{t("serviceTracker.today")}</span>
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+						);
+					})}
+				</div>
+				<div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
+					<span>30 {t("serviceTracker.daysAgo")}</span>
+					<span>{t("serviceTracker.today")}</span>
+				</div>
 			</div>
 		</div>
 	);

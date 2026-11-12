@@ -1,22 +1,24 @@
+import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/20/solid";
+import type { MouseEvent } from "react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import ServerFlag from "@/components/ServerFlag";
-import ServerUsageBar from "@/components/ServerUsageBar";
+import ServerPlatform from "@/components/ServerPlatform";
+import UsageCell from "@/components/UsageCell";
 import { formatBytes } from "@/lib/format";
-import {
-	GetFontLogoClass,
-	GetOsName,
-	MageMicrosoftWindows,
-} from "@/lib/logo-class";
 import { saveMainPageScrollPosition } from "@/lib/navigation";
 import { cn, formatMbps, formatNezhaInfo, parsePublicNote } from "@/lib/utils";
 import type { NezhaServer } from "@/types/nezha-api";
 import BillingInfo from "./billingInfo";
 import PlanInfo from "./PlanInfo";
-import { Card } from "./ui/card";
-import { Separator } from "./ui/separator";
+import { Badge } from "./ui/badge";
 
+/**
+ * One server in the list view (the default home view). The same DOM renders
+ * as a table row from md up and as a compact card on phones; see
+ * `.server-row` in index.css for the grid areas.
+ */
 function ServerCardInline({
 	now,
 	serverInfo,
@@ -37,199 +39,156 @@ function ServerCardInline({
 		stg,
 		platform,
 		uptime,
+		load_1,
 		net_in_transfer,
 		net_out_transfer,
 		public_note,
+		last_active_time_string,
 	} = formatNezhaInfo(now, serverInfo);
 
-	const cardClick = () => {
+	const href = `/server/${serverInfo.id}`;
+	const rowClick = (event: MouseEvent<HTMLAnchorElement>) => {
+		if (event.metaKey || event.ctrlKey || event.shiftKey || event.button) {
+			return;
+		}
+		event.preventDefault();
 		saveMainPageScrollPosition();
-		navigate(`/server/${serverInfo.id}`);
+		navigate(href);
 	};
 
-	const showFlag = true;
-
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
-
 	const parsedData = parsePublicNote(public_note);
+	const hasBilling = Boolean(parsedData?.billingDataMod);
+	const hasPlan = Boolean(parsedData?.planDataMod);
 
-	return online ? (
-		<section>
-			<Card
-				className={cn(
-					"group flex w-full min-w-[900px] cursor-pointer items-center justify-start gap-3 overflow-hidden border-white/75 bg-gradient-to-r from-white/78 via-white/62 to-sky-500/5 p-4 transition-all hover:-translate-y-0.5 hover:border-sky-400/45 hover:shadow-[0_24px_60px_-36px_rgba(14,165,233,0.62)] md:px-5 lg:flex-row dark:border-white/10 dark:from-slate-950/70 dark:via-slate-950/58 dark:to-sky-500/8",
-					{
-						"bg-card/70": customBackgroundImage,
-					},
-				)}
-				onClick={cardClick}
-			>
-				<section
-					className={cn("grid items-center gap-2 lg:w-36")}
-					style={{ gridTemplateColumns: "auto auto 1fr" }}
-				>
-					<span className="h-2 w-2 shrink-0 rounded-full bg-green-500 self-center"></span>
-					<div
-						className={cn(
-							"flex items-center justify-center",
-							showFlag ? "min-w-[17px]" : "min-w-0",
-						)}
-					>
-						{showFlag ? <ServerFlag country_code={country_code} /> : null}
-					</div>
-					<div className="relative w-28 flex flex-col">
-						<p
-							className={cn(
-								"break-normal font-bold tracking-tight",
-								showFlag ? "text-xs " : "text-sm",
-							)}
-						>
-							{name}
-						</p>
-						{parsedData?.billingDataMod && (
-							<BillingInfo parsedData={parsedData} />
-						)}
-					</div>
-				</section>
-				<Separator orientation="vertical" className="h-8 mx-0 ml-2" />
-				<div className="flex flex-col gap-1">
-					<section className={cn("grid grid-cols-9 items-center gap-3 flex-1")}>
-						<div
-							className={"items-center flex flex-row gap-2 whitespace-nowrap"}
-						>
-							<div className="text-xs font-semibold">
-								{platform.includes("Windows") ? (
-									<MageMicrosoftWindows className="size-[10px]" />
-								) : (
-									<p className={`fl-${GetFontLogoClass(platform)}`} />
-								)}
-							</div>
-							<div className={"flex w-14 flex-col"}>
-								<p className="text-xs text-muted-foreground">
-									{t("serverCard.system")}
-								</p>
-								<div className="flex items-center text-[10.5px] font-semibold">
-									{platform.includes("Windows")
-										? "Windows"
-										: GetOsName(platform)}
-								</div>
-							</div>
-						</div>
-						<div className={"flex w-20 flex-col"}>
-							<p className="text-xs text-muted-foreground">
-								{t("serverCard.uptime")}
-							</p>
-							<div className="flex items-center text-xs font-semibold">
-								{uptime / 86400 >= 1
-									? `${(uptime / 86400).toFixed(0)} ${t("serverCard.days")}`
-									: `${(uptime / 3600).toFixed(0)} ${t("serverCard.hours")}`}
-							</div>
-						</div>
-						<div className={"flex w-14 flex-col"}>
-							<p className="text-xs text-muted-foreground">{"CPU"}</p>
-							<div className="flex items-center text-xs font-semibold">
-								{cpu.toFixed(2)}%
-							</div>
-							<ServerUsageBar value={cpu} />
-						</div>
-						<div className={"flex w-14 flex-col"}>
-							<p className="text-xs text-muted-foreground">
-								{t("serverCard.mem")}
-							</p>
-							<div className="flex items-center text-xs font-semibold">
-								{mem.toFixed(2)}%
-							</div>
-							<ServerUsageBar value={mem} />
-						</div>
-						<div className={"flex w-14 flex-col"}>
-							<p className="text-xs text-muted-foreground">
-								{t("serverCard.stg")}
-							</p>
-							<div className="flex items-center text-xs font-semibold">
-								{stg.toFixed(2)}%
-							</div>
-							<ServerUsageBar value={stg} />
-						</div>
-						<div className="flex w-24 flex-col rounded-xl border border-sky-500/15 bg-sky-500/8 px-2 py-1.5">
-							<p className="text-xs text-muted-foreground">
-								{t("serverCard.upload")}
-							</p>
-							<div className="flex items-center text-xs font-semibold">
-								{formatMbps(up)}
-							</div>
-						</div>
-						<div className="flex w-24 flex-col rounded-xl border border-violet-500/15 bg-violet-500/8 px-2 py-1.5">
-							<p className="text-xs text-muted-foreground">
-								{t("serverCard.download")}
-							</p>
-							<div className="flex items-center text-xs font-semibold">
-								{formatMbps(down)}
-							</div>
-						</div>
-						<div className="flex w-24 flex-col rounded-xl border border-sky-500/10 bg-white/40 px-2 py-1.5 dark:bg-white/[0.025]">
-							<p className="text-xs text-muted-foreground">
-								{t("serverCard.totalUpload")}
-							</p>
-							<div className="flex items-center text-xs font-semibold">
-								{formatBytes(net_out_transfer)}
-							</div>
-						</div>
-						<div className="flex w-24 flex-col rounded-xl border border-violet-500/10 bg-white/40 px-2 py-1.5 dark:bg-white/[0.025]">
-							<p className="text-xs text-muted-foreground">
-								{t("serverCard.totalDownload")}
-							</p>
-							<div className="flex items-center text-xs font-semibold">
-								{formatBytes(net_in_transfer)}
-							</div>
-						</div>
-					</section>
-					{parsedData?.planDataMod && <PlanInfo parsedData={parsedData} />}
-				</div>
-			</Card>
-		</section>
-	) : (
-		<Card
-			className={cn(
-				"flex  min-h-[61px] min-w-[900px] items-center justify-start p-3 md:px-5 flex-row cursor-pointer hover:bg-accent/50 transition-colors",
-				{
-					"bg-card/70": customBackgroundImage,
-				},
-			)}
-			onClick={cardClick}
-		>
-			<section
-				className={cn("grid items-center gap-2 w-40")}
-				style={{ gridTemplateColumns: "auto auto 1fr" }}
-			>
-				<span className="h-2 w-2 shrink-0 rounded-full bg-red-500 self-center"></span>
-				<div
+	const nameCell = (
+		<div className="flex min-w-0 flex-col gap-1 [grid-area:name]">
+			<div className="flex min-w-0 items-center gap-2">
+				<span
+					className="status-dot"
+					data-status={online ? "online" : "offline"}
+				/>
+				<ServerFlag
+					country_code={country_code}
+					className="shrink-0 leading-none"
+				/>
+				<span
 					className={cn(
-						"flex items-center justify-center",
-						showFlag ? "min-w-[17px]" : "min-w-0",
+						"truncate text-[13px] font-medium",
+						!online && "text-muted-foreground",
 					)}
 				>
-					{showFlag ? <ServerFlag country_code={country_code} /> : null}
+					{name}
+				</span>
+			</div>
+			{(online || hasBilling) && (
+				<div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 pl-4 text-[11px] text-muted-foreground [&_p]:text-[11px] [&>div]:text-[11px]">
+					{online && (
+						<span className="flex min-w-0 items-center">
+							<span className="sr-only">{t("serverCard.system")}</span>
+							<ServerPlatform platform={platform} />
+						</span>
+					)}
+					{hasBilling && parsedData && <BillingInfo parsedData={parsedData} />}
 				</div>
-				<div className="relative flex flex-col">
-					<p
-						className={cn(
-							"break-normal font-bold w-28 tracking-tight",
-							showFlag ? "text-xs" : "text-sm",
-						)}
-					>
-						{name}
-					</p>
-					{parsedData?.billingDataMod && (
-						<BillingInfo parsedData={parsedData} />
+			)}
+			{hasPlan && parsedData && (
+				<div className="pl-4">
+					<PlanInfo parsedData={parsedData} />
+				</div>
+			)}
+		</div>
+	);
+
+	if (!online) {
+		return (
+			<a
+				href={href}
+				onClick={rowClick}
+				data-online="false"
+				className="server-row group px-4 py-3 text-muted-foreground transition-colors duration-150 hover:bg-muted/60 dark:hover:bg-foreground/[0.03]"
+			>
+				{nameCell}
+				<div className="flex min-w-0 flex-wrap items-center gap-2 pl-4 text-xs [grid-area:info] md:pl-0">
+					<Badge variant="destructive">{t("serverList.offline")}</Badge>
+					{last_active_time_string && (
+						<span className="truncate">
+							{t("serverDetail.lastActive")}{" "}
+							<span className="font-mono tabular-nums">
+								{last_active_time_string}
+							</span>
+						</span>
 					)}
 				</div>
-			</section>
-			<Separator orientation="vertical" className="h-8 ml-3 lg:ml-1 mr-3" />
-			{parsedData?.planDataMod && <PlanInfo parsedData={parsedData} />}
-		</Card>
+			</a>
+		);
+	}
+
+	const uptimeLabel =
+		uptime / 86400 >= 1
+			? `${(uptime / 86400).toFixed(0)} ${t("serverCard.days")}`
+			: `${(uptime / 3600).toFixed(0)} ${t("serverCard.hours")}`;
+
+	return (
+		<a
+			href={href}
+			onClick={rowClick}
+			data-online="true"
+			className="server-row group px-4 py-3 transition-colors duration-150 hover:bg-muted/60 md:py-2.5 dark:hover:bg-foreground/[0.03]"
+		>
+			{nameCell}
+			<UsageCell
+				label="CPU"
+				value={cpu}
+				className="[grid-area:cpu]"
+				labelClassName="md:hidden"
+				valueRowClassName="md:justify-end"
+			/>
+			<UsageCell
+				label={t("serverCard.mem")}
+				value={mem}
+				className="[grid-area:mem]"
+				labelClassName="md:hidden"
+				valueRowClassName="md:justify-end"
+			/>
+			<UsageCell
+				label={t("serverCard.stg")}
+				value={stg}
+				className="[grid-area:disk]"
+				labelClassName="md:hidden"
+				valueRowClassName="md:justify-end"
+			/>
+			<div className="flex min-w-0 items-center gap-3 text-xs tabular-nums [grid-area:speed] md:flex-col md:items-end md:gap-0.5">
+				<span className="flex items-center gap-1 whitespace-nowrap">
+					<ArrowUpIcon aria-hidden="true" className="size-3 text-chart-1" />
+					<span className="sr-only">{t("serverCard.upload")}</span>
+					<span className="font-medium">{formatMbps(up)}</span>
+				</span>
+				<span className="flex items-center gap-1 whitespace-nowrap">
+					<ArrowDownIcon aria-hidden="true" className="size-3 text-chart-2" />
+					<span className="sr-only">{t("serverCard.download")}</span>
+					<span className="font-medium">{formatMbps(down)}</span>
+				</span>
+			</div>
+			<div className="flex min-w-0 flex-col items-end gap-0.5 text-xs text-muted-foreground tabular-nums [grid-area:traffic]">
+				<span className="flex items-center gap-1 whitespace-nowrap">
+					<ArrowUpIcon aria-hidden="true" className="size-3" />
+					<span className="sr-only">{t("serverCard.totalUpload")}</span>
+					<span>{formatBytes(net_out_transfer)}</span>
+				</span>
+				<span className="flex items-center gap-1 whitespace-nowrap">
+					<ArrowDownIcon aria-hidden="true" className="size-3" />
+					<span className="sr-only">{t("serverCard.totalDownload")}</span>
+					<span>{formatBytes(net_in_transfer)}</span>
+				</span>
+			</div>
+			<span className="hidden text-right text-xs tabular-nums [grid-area:load] xl:block">
+				{load_1}
+			</span>
+			<span className="self-start text-right text-xs text-muted-foreground tabular-nums [grid-area:uptime] md:hidden xl:block xl:self-center xl:text-foreground">
+				<span className="sr-only">{t("serverCard.uptime")} </span>
+				{uptimeLabel}
+			</span>
+		</a>
 	);
 }
 

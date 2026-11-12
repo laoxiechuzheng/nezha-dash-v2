@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchService } from "@/lib/nezha-api";
+import { cn } from "@/lib/utils";
 import type { NezhaServer, ServiceData } from "@/types/nezha-api";
 
 import { CycleTransferStatsCard } from "./CycleTransferStats";
@@ -71,6 +72,10 @@ export function ServiceTracker({ serverList }: { serverList: NezhaServer[] }) {
 	const healthyCount = serviceSummaries.filter(
 		(service) => service.currentStatus === "healthy",
 	).length;
+	const customBackgroundImage =
+		(window.CustomBackgroundImage as string) !== ""
+			? window.CustomBackgroundImage
+			: undefined;
 	const averageUptime = serviceSummaries.length
 		? serviceSummaries.reduce((total, service) => total + service.uptime, 0) /
 			serviceSummaries.length
@@ -78,7 +83,7 @@ export function ServiceTracker({ serverList }: { serverList: NezhaServer[] }) {
 
 	if (isLoading) {
 		return (
-			<div className="mt-4 text-sm font-medium flex items-center gap-1">
+			<div className="flex items-center gap-2 text-[13px] text-muted-foreground">
 				<Loader visible={true} />
 				{t("serviceTracker.loading")}
 			</div>
@@ -90,86 +95,116 @@ export function ServiceTracker({ serverList }: { serverList: NezhaServer[] }) {
 		!serviceData?.data?.cycle_transfer_stats
 	) {
 		return (
-			<div className="mt-4 text-sm font-medium flex items-center gap-1">
-				<ExclamationTriangleIcon className="w-4 h-4" />
+			<div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+				<ExclamationTriangleIcon className="size-4 text-warning" />
 				{t("serviceTracker.noService")}
 			</div>
 		);
 	}
 
+	const attentionCount = serviceSummaries.length - healthyCount;
+
 	return (
-		<div className="mt-4 w-full mx-auto ">
+		<div className="flex w-full flex-col gap-3">
 			{serviceData.data.cycle_transfer_stats && (
-				<div>
-					<CycleTransferStatsCard
-						serverList={serverList}
-						cycleStats={serviceData.data.cycle_transfer_stats}
-					/>
-				</div>
+				<CycleTransferStatsCard
+					serverList={serverList}
+					cycleStats={serviceData.data.cycle_transfer_stats}
+				/>
 			)}
 			{serviceSummaries.length > 0 && (
-				<>
-					<section className="glass-panel mt-4 flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-						<div>
-							<p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-								服务运行中心
-							</p>
-							<h2 className="mt-1 text-lg font-black tracking-tight">
-								{healthyCount === serviceSummaries.length
-									? "全部服务运行正常"
-									: `${serviceSummaries.length - healthyCount} 项服务需要关注`}
+				<section
+					className={cn(
+						"overflow-hidden rounded-lg border border-border bg-card",
+						{ "bg-card/85": customBackgroundImage },
+					)}
+				>
+					<header className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">
+						<div className="min-w-0">
+							<h2 className="text-sm font-semibold">
+								{t("serviceTracker.title")}
 							</h2>
-						</div>
-						<div className="grid grid-cols-3 gap-2">
-							<div className="rounded-xl border border-slate-200/70 bg-white/50 px-3 py-2 text-center dark:border-white/8 dark:bg-white/[0.03]">
-								<b className="block text-lg tabular-nums">
-									{serviceSummaries.length}
-								</b>
-								<span className="text-[10px] text-muted-foreground">
-									监控服务
-								</span>
-							</div>
-							<div className="rounded-xl border border-emerald-500/15 bg-emerald-500/7 px-3 py-2 text-center">
-								<b className="block text-lg text-emerald-600 tabular-nums dark:text-emerald-300">
-									{healthyCount}
-								</b>
-								<span className="text-[10px] text-muted-foreground">
-									健康服务
-								</span>
-							</div>
-							<div className="rounded-xl border border-sky-500/15 bg-sky-500/7 px-3 py-2 text-center">
-								<b className="block text-lg text-sky-600 tabular-nums dark:text-sky-300">
-									{averageUptime.toFixed(1)}%
-								</b>
-								<span className="text-[10px] text-muted-foreground">
-									平均可用率
-								</span>
-							</div>
-						</div>
-						<button
-							type="button"
-							aria-pressed={onlyUnhealthy}
-							onClick={() => setOnlyUnhealthy((value) => !value)}
-							className="rounded-full border border-slate-200/80 bg-white/65 px-3 py-2 text-xs font-semibold shadow-sm transition hover:border-rose-400/40 hover:text-rose-600 dark:border-white/10 dark:bg-white/5"
-						>
-							{onlyUnhealthy ? "查看全部" : "仅看异常"}
-						</button>
-					</section>
-					<section className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-						{visibleServices.map(
-							({ avgDelay, currentStatus, days, name, title, uptime }) => (
-								<ServiceTrackerClient
-									key={name}
-									days={days}
-									title={title}
-									uptime={uptime}
-									avgDelay={avgDelay}
-									currentStatus={currentStatus}
+							<p
+								className={cn(
+									"mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground",
+									attentionCount > 0 && "text-warning",
+								)}
+							>
+								<span
+									className="status-dot"
+									data-status={attentionCount > 0 ? "degraded" : "healthy"}
 								/>
-							),
-						)}
-					</section>
-				</>
+								{attentionCount === 0
+									? t("serviceTracker.allHealthy")
+									: t("serviceTracker.needsAttention", {
+											count: attentionCount,
+										})}
+							</p>
+						</div>
+						<div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
+							<dl className="flex items-center gap-5 text-xs">
+								<div className="flex flex-col">
+									<dt className="text-muted-foreground">
+										{t("serviceTracker.monitored")}
+									</dt>
+									<dd className="text-base font-semibold tabular-nums">
+										{serviceSummaries.length}
+									</dd>
+								</div>
+								<div className="flex flex-col">
+									<dt className="text-muted-foreground">
+										{t("serviceTracker.healthy")}
+									</dt>
+									<dd className="text-base font-semibold text-success tabular-nums">
+										{healthyCount}
+									</dd>
+								</div>
+								<div className="flex flex-col">
+									<dt className="text-muted-foreground">
+										{t("serviceTracker.avgUptime")}
+									</dt>
+									<dd className="text-base font-semibold tabular-nums">
+										{averageUptime.toFixed(1)}%
+									</dd>
+								</div>
+							</dl>
+							<button
+								type="button"
+								aria-pressed={onlyUnhealthy}
+								onClick={() => setOnlyUnhealthy((value) => !value)}
+								className={cn(
+									"h-8 rounded-md border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+									onlyUnhealthy &&
+										"border-primary/40 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
+								)}
+							>
+								{onlyUnhealthy
+									? t("serviceTracker.showAll")
+									: t("serviceTracker.onlyIssues")}
+							</button>
+						</div>
+					</header>
+					{visibleServices.length === 0 ? (
+						<p className="px-4 py-8 text-center text-[13px] text-muted-foreground">
+							{t("serviceTracker.noIssues")}
+						</p>
+					) : (
+						<div className="divide-y divide-border">
+							{visibleServices.map(
+								({ avgDelay, currentStatus, days, name, title, uptime }) => (
+									<ServiceTrackerClient
+										key={name}
+										days={days}
+										title={title}
+										uptime={uptime}
+										avgDelay={avgDelay}
+										currentStatus={currentStatus}
+									/>
+								),
+							)}
+						</div>
+					)}
+				</section>
 			)}
 		</div>
 	);

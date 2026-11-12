@@ -28,55 +28,64 @@ export const CycleTransferStatsClient: React.FC<
 	return (
 		<div
 			className={cn(
-				"glass-panel w-full rounded-2xl px-4 py-4 text-card-foreground transition-all duration-200 hover:border-sky-400/30",
+				"w-full rounded-lg border border-border bg-card px-4 py-3.5 text-card-foreground",
 				className,
 				{
-					"bg-card/70": customBackgroundImage,
+					"bg-card/80": customBackgroundImage,
 				},
 			)}
 		>
 			{serverStats.map(({ serverId, serverName, transfer, nextUpdate }) => {
 				const progress = (transfer / max) * 100;
+				const level = progress >= 90 ? "bad" : progress >= 70 ? "warn" : "good";
 
 				return (
-					<div key={serverId} className="space-y-3">
-						{/* Header */}
-						<div className="flex items-center justify-between">
-							<span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
+					<div key={serverId} className="space-y-2.5">
+						<div className="flex items-center justify-between gap-3">
+							<span className="truncate text-[13px] font-medium">
 								{serverName}
 							</span>
-							<div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-medium">
+							<span className="inline-flex h-5 shrink-0 items-center rounded-[4px] bg-muted px-1.5 text-[11px] font-medium text-muted-foreground dark:bg-foreground/[0.06]">
 								{name}
-							</div>
+							</span>
 						</div>
 
-						{/* Progress Section */}
 						<div className="space-y-1.5">
-							<div className="flex items-center justify-between">
+							<div className="flex items-baseline justify-between gap-2 tabular-nums">
 								<div className="flex items-baseline gap-1">
-									<span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
+									<span className="text-base font-semibold">
 										{formatBytes(transfer)}
 									</span>
-									<span className="text-xs text-neutral-500 dark:text-neutral-400">
+									<span className="text-xs text-muted-foreground">
 										/ {formatBytes(max)}
 									</span>
 								</div>
-								<span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+								<span
+									data-level={level}
+									className={cn(
+										"text-xs font-medium",
+										level === "warn" && "text-warning",
+										level === "bad" && "text-danger",
+									)}
+								>
 									{progress.toFixed(1)}%
 								</span>
 							</div>
 
-							<div className="relative h-1.5">
-								<div className="absolute inset-0 bg-neutral-100 dark:bg-neutral-800 rounded-full" />
+							<div className="relative h-1 overflow-hidden rounded-[2px] bg-muted dark:bg-foreground/10">
 								<div
-									className="absolute inset-0 bg-emerald-500 rounded-full transition-all duration-300"
+									className={cn(
+										"absolute inset-y-0 left-0 rounded-[2px] transition-[width] duration-150",
+										level === "good" && "bg-primary",
+										level === "warn" && "bg-warning",
+										level === "bad" && "bg-danger",
+									)}
 									style={{ width: `${Math.min(progress, 100)}%` }}
 								/>
 							</div>
 						</div>
 
-						{/* Footer */}
-						<div className="flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400">
+						<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground tabular-nums">
 							<span>
 								{new Date(from).toLocaleDateString()} -{" "}
 								{new Date(to).toLocaleDateString()}

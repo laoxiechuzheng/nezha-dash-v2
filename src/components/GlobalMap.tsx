@@ -75,16 +75,19 @@ export default function GlobalMap({
 	return (
 		<section
 			className={cn(
-				"glass-panel mt-5 flex flex-col gap-4 overflow-hidden rounded-2xl p-4 sm:p-5",
+				"flex flex-col overflow-hidden rounded-lg border border-border bg-card",
 				{
-					"bg-card/70 rounded-lg  p-4": customBackgroundImage,
+					"bg-card/70": customBackgroundImage,
 				},
 			)}
 		>
-			<p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-				{t("map.Distributions")} {countryList.length} {t("map.Regions")}
-			</p>
-			<div className="w-full overflow-x-auto rounded-xl bg-gradient-to-b from-sky-500/5 to-transparent">
+			<header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+				<h2 className="text-sm font-semibold">{t("map.title")}</h2>
+				<p className="text-xs text-muted-foreground tabular-nums">
+					{t("map.Distributions")} {countryList.length} {t("map.Regions")}
+				</p>
+			</header>
+			<div className="w-full overflow-hidden px-2 py-3 sm:px-4">
 				<InteractiveMap
 					countries={countryList}
 					serverCounts={serverCounts}
@@ -185,10 +188,11 @@ export function InteractiveMap({
 							<path
 								key={index}
 								d={path(feature) || ""}
+								data-highlighted={isHighlighted ? "true" : undefined}
 								className={
 									isHighlighted
-										? "fill-green-700 hover:fill-green-600    dark:fill-green-900 dark:hover:fill-green-700 transition-all cursor-pointer"
-										: "fill-neutral-200/50 dark:fill-neutral-800 stroke-neutral-300/40 dark:stroke-neutral-700 stroke-[0.5]"
+										? "cursor-pointer fill-primary/65 stroke-card stroke-[0.5] transition-colors duration-150 hover:fill-primary"
+										: "fill-muted-foreground/15 stroke-card stroke-[0.5]"
 								}
 								onMouseEnter={() => {
 									if (!isHighlighted) {
@@ -242,7 +246,8 @@ export function InteractiveMap({
 									cx={x}
 									cy={y}
 									r={4}
-									className="fill-sky-700 stroke-white hover:fill-sky-600 dark:fill-sky-900 dark:hover:fill-sky-700 transition-all"
+									data-marker="true"
+									className="fill-primary stroke-card stroke-[1.5] transition-colors duration-150 hover:fill-primary/80"
 								/>
 							</g>
 						);

@@ -38,7 +38,7 @@ export default function BillingInfo({
 			} catch (error) {
 				console.error(error);
 				return (
-					<div className={cn("text-[10px] text-muted-foreground text-red-600")}>
+					<div className={cn("text-[10px] text-danger")}>
 						{t("billingInfo.remaining")}: {t("billingInfo.error")}
 					</div>
 				);
@@ -51,16 +51,16 @@ export default function BillingInfo({
 			{parsedData.billingDataMod.amount &&
 			parsedData.billingDataMod.amount !== "0" &&
 			parsedData.billingDataMod.amount !== "-1" ? (
-				<p className={cn("text-[10px] text-muted-foreground ")}>
+				<p className={cn("text-[10px] text-muted-foreground")}>
 					{t("billingInfo.price")}: {parsedData.billingDataMod.amount}/
 					{parsedData.billingDataMod.cycle}
 				</p>
 			) : parsedData.billingDataMod.amount === "0" ? (
-				<p className={cn("text-[10px] text-green-600 ")}>
+				<p className={cn("text-[10px] text-success")}>
 					{t("billingInfo.free")}
 				</p>
 			) : parsedData.billingDataMod.amount === "-1" ? (
-				<p className={cn("text-[10px] text-pink-600 ")}>
+				<p className={cn("text-[10px] text-primary")}>
 					{t("billingInfo.usage-baseed")}
 				</p>
 			) : null}
@@ -84,20 +84,20 @@ export default function BillingInfo({
 			{parsedData.billingDataMod.amount &&
 			parsedData.billingDataMod.amount !== "0" &&
 			parsedData.billingDataMod.amount !== "-1" ? (
-				<p className={cn("text-[10px] text-muted-foreground ")}>
+				<p className={cn("text-[10px] text-muted-foreground")}>
 					{t("billingInfo.price")}: {parsedData.billingDataMod.amount}/
 					{parsedData.billingDataMod.cycle}
 				</p>
 			) : parsedData.billingDataMod.amount === "0" ? (
-				<p className={cn("text-[10px] text-green-600 ")}>
+				<p className={cn("text-[10px] text-success")}>
 					{t("billingInfo.free")}
 				</p>
 			) : parsedData.billingDataMod.amount === "-1" ? (
-				<p className={cn("text-[10px] text-pink-600 ")}>
+				<p className={cn("text-[10px] text-primary")}>
 					{t("billingInfo.usage-baseed")}
 				</p>
 			) : null}
-			<p className={cn("text-[10px] text-muted-foreground text-red-600")}>
+			<p className={cn("text-[10px] text-danger")}>
 				{t("billingInfo.expired")}: {daysLeftObject.days * -1}{" "}
 				{t("billingInfo.days")}
 			</p>

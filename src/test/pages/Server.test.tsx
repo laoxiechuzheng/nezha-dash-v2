@@ -218,6 +218,7 @@ describe("Servers page", () => {
 	});
 
 	it("summarizes online and offline servers from websocket data", async () => {
+		localStorage.setItem("inline", "0");
 		const online = createServer({ id: 1, name: "alpha" });
 		const offline = createServer({
 			id: 2,
@@ -302,6 +303,7 @@ describe("Servers page", () => {
 	});
 
 	it("sorts server cards by selected metrics and direction", async () => {
+		localStorage.setItem("inline", "0");
 		const lowCpu = createServer({
 			id: 1,
 			name: "alpha",
@@ -327,6 +329,7 @@ describe("Servers page", () => {
 	});
 
 	it("keeps name sorting independent from online status", async () => {
+		localStorage.setItem("inline", "0");
 		const onlineAlpha = createServer({
 			id: 1,
 			name: "alpha",
@@ -354,6 +357,7 @@ describe("Servers page", () => {
 	});
 
 	it("sorts by system even when a platform value is missing", async () => {
+		localStorage.setItem("inline", "0");
 		const missingPlatform = createServer({
 			id: 1,
 			name: "alpha",
@@ -425,6 +429,7 @@ describe("Servers page", () => {
 	});
 
 	it("renders every card in large server lists without virtualization", () => {
+		localStorage.setItem("inline", "0");
 		const servers = Array.from({ length: 2000 }, (_, index) =>
 			createServer({ id: index + 1, name: `server-${index + 1}` }),
 		);
@@ -467,38 +472,130 @@ describe("Servers page", () => {
 			last_active: "2024-12-31T23:00:00.000Z",
 		});
 
-		const { container } = renderServerPage({
+		renderServerPage({
 			connected: true,
 			lastData: websocketPayload([online, offline]),
 		});
 
 		await waitFor(() => {
 			expect(apiMocks.fetchService).toHaveBeenCalled();
-			expect(
-				container.querySelectorAll(
-					".server-overview-controls section > button",
-				),
-			).toHaveLength(3);
 		});
+		const servicesToggle = await screen.findByRole("button", {
+			name: "serviceTracker.toggleLabel",
+		});
+		const mapView = screen.getByRole("button", { name: "view.map" });
 
-		const controls = container.querySelectorAll(
-			".server-overview-controls section > button",
-		);
-		await user.click(controls[0]);
+		await user.click(mapView);
 		expect(screen.getByTestId("global-map")).toHaveTextContent("2");
 		expect(localStorage.getItem("showMap")).toBe("1");
 
-		await user.click(controls[1]);
+		await user.click(servicesToggle);
 		expect(screen.getByTestId("service-tracker")).toHaveTextContent("2");
 		expect(localStorage.getItem("showServices")).toBe("1");
 	});
 
-	it("does not enable inline cards from storage on mobile widths", () => {
-		localStorage.setItem("inline", "1");
+	it("respects the stored layout preference on phone widths", () => {
 		Object.defineProperty(window, "innerWidth", {
 			configurable: true,
-			value: 500,
+			value: 390,
 		});
+		const online = createServer({ id: 1, name: "alpha" });
+		const payload = websocketPayload([online]);
+
+		localStorage.setItem("inline", "0");
+		const cardView = renderServerPage({ connected: true, lastData: payload });
+		expect(screen.getByTestId("server-card")).toHaveTextContent("alpha");
+		expect(screen.queryByTestId("server-card-inline")).not.toBeInTheDocument();
+		cardView.unmount();
+
+		localStorage.setItem("inline", "1");
+		const listView = renderServerPage({ connected: true, lastData: payload });
+		expect(screen.getByTestId("server-card-inline")).toHaveTextContent("alpha");
+		expect(screen.queryByTestId("server-card")).not.toBeInTheDocument();
+		listView.unmount();
+
+		localStorage.removeItem("inline");
+		renderServerPage({ connected: true, lastData: payload });
+		expect(screen.getByTestId("server-card-inline")).toHaveTextContent("alpha");
+		expect(screen.queryByTestId("server-card")).not.toBeInTheDocument();
+	});
+
+	it("defaults to the list view when no layout preference is stored", () => {
+		const online = createServer({ id: 1, name: "alpha" });
+		const offline = createServer({
+			id: 2,
+			name: "beta",
+			last_active: "2024-12-31T23:00:00.000Z",
+		});
+
+		renderServerPage({
+			connected: true,
+			lastData: websocketPayload([online, offline]),
+		});
+
+		expect(localStorage.getItem("inline")).toBeNull();
+		expect(screen.getAllByTestId("server-card-inline")).toHaveLength(2);
+		expect(screen.queryByTestId("server-card")).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "view.list" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+	});
+
+	it("sorts the list view exactly like the card view", async () => {
+		const lowCpu = createServer({
+			id: 1,
+			name: "alpha",
+			state: { cpu: 10 },
+		});
+		const highCpu = createServer({
+			id: 2,
+			name: "beta",
+			state: { cpu: 90 },
+		});
+		const user = userEvent.setup();
+
+		renderServerPage({
+			connected: true,
+			lastData: websocketPayload([lowCpu, highCpu]),
+		});
+
+		await user.selectOptions(screen.getByLabelText("Sort metric"), "cpu");
+		expect(screen.getAllByTestId("server-card-inline")[0]).toHaveTextContent(
+			"beta",
+		);
+
+		await user.click(screen.getByLabelText("Toggle sort direction"));
+		expect(screen.getAllByTestId("server-card-inline")[0]).toHaveTextContent(
+			"alpha",
+		);
+
+		await user.click(screen.getByRole("button", { name: "view.card" }));
+		expect(screen.getAllByTestId("server-card")[0]).toHaveTextContent("alpha");
+		expect(screen.queryByTestId("server-card-inline")).not.toBeInTheDocument();
+	});
+
+	it("renders every row of a 2000 server list view", () => {
+		const servers = Array.from({ length: 2000 }, (_, index) =>
+			createServer({ id: index + 1, name: `server-${index + 1}` }),
+		);
+
+		renderServerPage({
+			connected: true,
+			lastData: websocketPayload(servers),
+		});
+
+		expect(screen.getByTestId("server-overview")).toHaveTextContent(
+			"2000:2000:0",
+		);
+		expect(screen.getAllByTestId("server-card-inline")).toHaveLength(2000);
+		expect(
+			screen.getByRole("region", { name: "serverList.count" }),
+		).toBeInTheDocument();
+	});
+
+	it("switches and persists list, card, and map views", async () => {
+		const user = userEvent.setup();
 		const online = createServer({ id: 1, name: "alpha" });
 
 		renderServerPage({
@@ -506,8 +603,90 @@ describe("Servers page", () => {
 			lastData: websocketPayload([online]),
 		});
 
-		expect(screen.getByTestId("server-card")).toHaveTextContent("alpha");
-		expect(screen.queryByTestId("server-card-inline")).not.toBeInTheDocument();
+		const listView = screen.getByRole("button", { name: "view.list" });
+		const cardView = screen.getByRole("button", { name: "view.card" });
+		const mapView = screen.getByRole("button", { name: "view.map" });
+
+		await user.click(cardView);
+		expect(localStorage.getItem("inline")).toBe("0");
+		expect(cardView).toHaveAttribute("aria-pressed", "true");
+		expect(listView).toHaveAttribute("aria-pressed", "false");
+		expect(screen.getByTestId("server-card")).toBeInTheDocument();
+
+		await user.click(mapView);
+		expect(localStorage.getItem("showMap")).toBe("1");
+		expect(mapView).toHaveAttribute("aria-pressed", "true");
+		expect(screen.getByTestId("global-map")).toHaveTextContent("1");
+		expect(screen.getByTestId("server-card")).toBeInTheDocument();
+
+		await user.click(listView);
+		expect(localStorage.getItem("showMap")).toBe("0");
+		expect(localStorage.getItem("inline")).toBe("1");
+		expect(listView).toHaveAttribute("aria-pressed", "true");
+		expect(screen.queryByTestId("global-map")).not.toBeInTheDocument();
+		expect(screen.getByTestId("server-card-inline")).toBeInTheDocument();
+	});
+
+	it("filters by status from the segmented status control", async () => {
+		const user = userEvent.setup();
+		const online = createServer({ id: 1, name: "alpha" });
+		const offline = createServer({
+			id: 2,
+			name: "beta",
+			last_active: "2024-12-31T23:00:00.000Z",
+		});
+
+		renderServerPage({
+			connected: true,
+			lastData: websocketPayload([online, offline]),
+		});
+
+		const offlineFilter = screen.getByRole("button", {
+			name: "filter.offline",
+		});
+		await user.click(offlineFilter);
+
+		expect(offlineFilter).toHaveAttribute("aria-pressed", "true");
+		expect(screen.getByRole("button", { name: "filter.all" })).toHaveAttribute(
+			"aria-pressed",
+			"false",
+		);
+		expect(screen.getAllByTestId("server-card-inline")).toHaveLength(1);
+		expect(screen.getByText("beta")).toBeInTheDocument();
+		expect(screen.queryByText("alpha")).not.toBeInTheDocument();
+	});
+
+	it("keeps the services panel open across reloads once enabled", async () => {
+		apiMocks.fetchService.mockResolvedValue({
+			success: true,
+			data: {
+				services: {
+					http: {
+						service_name: "HTTP",
+						current_up: 1,
+						current_down: 0,
+						total_up: 1,
+						total_down: 0,
+						delay: [10],
+						up: [1],
+						down: [0],
+					},
+				},
+				cycle_transfer_stats: {},
+			},
+		});
+		localStorage.setItem("showServices", "1");
+
+		renderServerPage({
+			connected: true,
+			lastData: websocketPayload([createServer({ id: 1, name: "alpha" })]),
+		});
+
+		expect(await screen.findByTestId("service-tracker")).toHaveTextContent("1");
+		expect(
+			screen.getByRole("button", { name: "serviceTracker.toggleLabel" }),
+		).toHaveAttribute("aria-pressed", "true");
+		expect(localStorage.getItem("showServices")).toBe("1");
 	});
 
 	it("applies external status filters and inline card preferences", async () => {

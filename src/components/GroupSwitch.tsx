@@ -85,54 +85,44 @@ export default function GroupSwitch({
 	return (
 		<div
 			ref={scrollRef}
-			className="scrollbar-hidden z-50 flex min-w-0 flex-col items-start overflow-x-auto overscroll-x-contain rounded-2xl"
+			className="scrollbar-hidden flex min-w-0 max-w-full overflow-x-auto overscroll-x-contain"
 		>
 			<div
 				ref={containerRef}
-				className={cn(
-					"glass-control relative flex items-center gap-1 rounded-2xl p-1",
-					{
-						"bg-stone-100/70 dark:bg-stone-800/70": customBackgroundImage,
-					},
-				)}
+				data-indicator="true"
+				className={cn("segmented relative flex items-center", {
+					"bg-card/80": customBackgroundImage,
+				})}
 			>
 				{indicator && (
 					<div
-						className="active-indicator-fade-in absolute left-0 top-0 z-10 content-center bg-gradient-to-br from-white to-sky-50 shadow-[0_8px_24px_-12px_rgba(14,165,233,0.65)] ring-1 ring-sky-500/15 dark:from-slate-700 dark:to-slate-800 dark:ring-white/10"
+						className="active-indicator-fade-in absolute left-0 top-0 z-0 rounded-[5px] bg-muted dark:bg-foreground/[0.08]"
 						style={{
-							borderRadius: 46,
 							height: indicator.height,
 							transform: `translate(${indicator.x}px, ${indicator.y}px)`,
 							transition: indicator.shouldAnimate
-								? "transform 0.5s var(--timing), width 0.5s var(--timing), height 0.5s var(--timing)"
+								? "transform 0.16s ease-out, width 0.16s ease-out, height 0.16s ease-out"
 								: "none",
 							width: indicator.width,
 						}}
 					/>
 				)}
 				{tabs.map((tab: string, index: number) => (
-					<div
+					<button
+						type="button"
 						key={tab}
 						ref={setItemRef(index)}
+						aria-pressed={currentTab === tab}
 						onClick={() => {
 							if (currentTab !== tab) {
 								enableIndicatorAnimation();
 							}
 							setCurrentTab(tab);
 						}}
-						className={cn(
-							"relative cursor-pointer rounded-xl px-3.5 py-2 text-[13px] font-semibold transition-all duration-300 ease-out hover:text-sky-700 hover:dark:text-sky-300",
-							currentTab === tab
-								? "text-black dark:text-white"
-								: "text-stone-400 dark:text-stone-500",
-						)}
+						className="relative z-10"
 					>
-						<div className="relative z-20 flex items-center gap-1">
-							<p className="whitespace-nowrap">
-								{tab === "All" ? t("group.all", { defaultValue: "All" }) : tab}
-							</p>
-						</div>
-					</div>
+						{tab === "All" ? t("group.all", { defaultValue: "All" }) : tab}
+					</button>
 				))}
 			</div>
 		</div>

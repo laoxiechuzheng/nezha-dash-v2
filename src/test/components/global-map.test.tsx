@@ -111,8 +111,13 @@ describe("InteractiveMap", () => {
 			/>,
 		);
 
-		const highlightedCountry = container.querySelector("path.fill-green-700");
+		const highlightedCountry = container.querySelector(
+			'path[data-highlighted="true"]',
+		);
 		expect(highlightedCountry).toBeInTheDocument();
+		expect(
+			container.querySelectorAll('path[data-highlighted="true"]'),
+		).toHaveLength(1);
 
 		fireEvent.mouseEnter(highlightedCountry as SVGPathElement);
 
@@ -123,7 +128,9 @@ describe("InteractiveMap", () => {
 		expect(sessionStorage.getItem("fromMainPage")).toBe("true");
 		expect(screen.getByText("/server/12")).toBeInTheDocument();
 
-		const fallbackMarker = container.querySelector("circle.fill-sky-700");
+		const fallbackMarker = container.querySelector(
+			'circle[data-marker="true"]',
+		);
 		expect(fallbackMarker).toBeInTheDocument();
 
 		fireEvent.mouseEnter(fallbackMarker as SVGCircleElement);
