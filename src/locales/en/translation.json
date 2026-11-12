@@ -230,7 +230,8 @@
 	"header": {
 		"searchPlaceholder": "Search servers or commands",
 		"viewers": "Viewers online",
-		"toggleBackground": "Toggle background image"
+		"toggleBackground": "Toggle background image",
+		"menu": "Menu"
 	},
 	"filter": {
 		"status": "Status",

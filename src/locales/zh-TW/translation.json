@@ -204,7 +204,8 @@
 	"header": {
 		"searchPlaceholder": "搜尋伺服器或指令",
 		"viewers": "線上訪客",
-		"toggleBackground": "切換背景圖"
+		"toggleBackground": "切換背景圖",
+		"menu": "選單"
 	},
 	"filter": {
 		"status": "狀態",

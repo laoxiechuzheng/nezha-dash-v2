@@ -1,10 +1,18 @@
+import { Bars3Icon } from "@heroicons/react/20/solid";
 import { useQuery } from "@tanstack/react-query";
 import { ImageMinus } from "lucide-react";
 import { DateTime } from "luxon";
-import { useEffect, useRef, useState } from "react";
+import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ModeToggle } from "@/components/ThemeSwitcher";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBackground } from "@/hooks/use-background";
 import { useWebSocketContext } from "@/hooks/use-websocket-context";
@@ -198,14 +206,9 @@ function Header() {
 							{connected ? t("online") : t("offline")}
 						</p>
 					</Button>
+					<MobileNavMenu />
 				</section>
 			</div>
-			<nav className="flex h-10 items-center justify-between gap-4 border-t border-border px-4 sm:hidden">
-				<DashboardLink />
-				<div className="scrollbar-hidden min-w-0 overflow-x-auto">
-					<Links />
-				</div>
-			</nav>
 		</header>
 	);
 }
@@ -234,11 +237,13 @@ function parseCustomLinks(customLinks: string | undefined): links[] | null {
 	}
 }
 
-function Links() {
+function getCustomLinks() {
 	// @ts-expect-error CustomLinks is a global variable
-	const customLinks = window.CustomLinks as string;
+	return parseCustomLinks(window.CustomLinks as string);
+}
 
-	const links = parseCustomLinks(customLinks);
+function Links() {
+	const links = getCustomLinks();
 
 	if (!links) return null;
 
@@ -286,7 +291,50 @@ export function RefreshToast() {
 	);
 }
 
-function DashboardLink() {
+/**
+ * Phone-only navigation: the dashboard/login entry and any custom links share
+ * one menu on the first header row instead of a second row.
+ */
+function MobileNavMenu() {
+	const { t } = useTranslation();
+	const links = getCustomLinks() ?? [];
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button
+					variant="ghost"
+					size="sm"
+					aria-label={t("header.menu")}
+					title={t("header.menu")}
+					className={cn(headerControlClass, "sm:hidden")}
+				>
+					<Bars3Icon className="size-4" aria-hidden="true" />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="min-w-40">
+				<DropdownMenuItem asChild>
+					<DashboardLink className="w-full cursor-pointer text-popover-foreground hover:text-popover-foreground" />
+				</DropdownMenuItem>
+				{links.length > 0 && <DropdownMenuSeparator />}
+				{links.map((link, index) => (
+					<DropdownMenuItem key={index} asChild>
+						<a
+							href={link.link}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="w-full cursor-pointer"
+						>
+							{link.name}
+						</a>
+					</DropdownMenuItem>
+				))}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+}
+
+function DashboardLink({ className, ...props }: ComponentProps<"a">) {
 	const { t } = useTranslation();
 	const { setNeedReconnect } = useWebSocketContext();
 	const previousLoginState = useRef<boolean | null>(null);
@@ -335,9 +383,13 @@ function DashboardLink() {
 
 	return (
 		<a
+			{...props}
 			href={"/dashboard"}
 			rel="noopener noreferrer"
-			className="whitespace-nowrap text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+			className={cn(
+				"whitespace-nowrap text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground",
+				className,
+			)}
 		>
 			{!isLogin && t("login")}
 			{isLogin && t("dashboard")}

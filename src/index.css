@@ -553,12 +553,16 @@
 	text-align: center;
 }
 
+/*
+  Digits swap in sequence: the old digit fades out first, then the new one
+  fades in, so the two glyphs never overlap mid-transition.
+*/
 [data-issues-count-exit].animate {
-	animation: fadeOut 160ms ease-out forwards;
+	animation: fadeOut 80ms ease-in forwards;
 }
 
 [data-issues-count-enter].animate {
-	animation: fadeIn 160ms ease-out forwards;
+	animation: fadeIn 120ms ease-out 80ms both;
 }
 
 [data-issues-count-plural] {

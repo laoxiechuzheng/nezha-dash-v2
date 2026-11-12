@@ -231,7 +231,8 @@
 	"header": {
 		"searchPlaceholder": "搜索服务器或命令",
 		"viewers": "在线访客",
-		"toggleBackground": "切换背景图"
+		"toggleBackground": "切换背景图",
+		"menu": "菜单"
 	},
 	"filter": {
 		"status": "状态",
