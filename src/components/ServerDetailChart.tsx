@@ -9,6 +9,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import {
 	createContext,
+	type ReactNode,
 	useContext,
 	useEffect,
 	useMemo,
@@ -25,7 +26,6 @@ import {
 	XAxis,
 	YAxis,
 } from "recharts";
-import { Card, CardContent } from "@/components/ui/card";
 import {
 	type ChartConfig,
 	ChartContainer,
@@ -62,7 +62,7 @@ import type {
 
 import ChartSkeleton from "./loading/ChartSkeleton";
 import { ServerDetailChartLoading } from "./loading/ServerDetailLoading";
-import AnimatedCircularProgressBar from "./ui/animated-circular-progress-bar";
+import { getUsageLevel } from "./ServerUsageBar";
 
 type ChartPeriod = "realtime" | MetricPeriod;
 const PersistentMetricsContext = createContext(true);
@@ -111,59 +111,119 @@ const sleep = (ms: number) =>
 		setTimeout(resolve, ms);
 	});
 
-function MetricTitle({
+type MetricType =
+	| "cpu"
+	| "gpu"
+	| "memory"
+	| "disk"
+	| "process"
+	| "network"
+	| "connection";
+
+const metricIcons: Record<MetricType, typeof SignalIcon> = {
+	cpu: CpuChipIcon,
+	gpu: CpuChipIcon,
+	memory: Square3Stack3DIcon,
+	disk: CircleStackIcon,
+	process: QueueListIcon,
+	network: SignalIcon,
+	connection: SignalIcon,
+};
+
+/** Current reading for a usage metric, coloured by the shared usage thresholds. */
+function UsageValue({ value, digits = 2 }: { value: number; digits?: number }) {
+	const level = getUsageLevel(value);
+	return (
+		<span
+			data-level={level}
+			className={cn(
+				level === "warn" && "text-warning",
+				level === "bad" && "text-danger",
+			)}
+		>
+			{value.toFixed(digits)}%
+		</span>
+	);
+}
+
+function LegendItem({
+	color,
+	label,
+	value,
+}: {
+	color: string;
+	label: string;
+	value: ReactNode;
+}) {
+	return (
+		<span className="inline-flex min-w-0 items-center gap-1.5">
+			<span
+				aria-hidden="true"
+				className="size-2 shrink-0 rounded-[2px]"
+				style={{ backgroundColor: color }}
+			/>
+			<span>{label}</span>
+			<span className="font-medium text-foreground tabular-nums">{value}</span>
+		</span>
+	);
+}
+
+/** Shared "metric card" shell: title, current value, optional legend, chart. */
+function MetricCard({
 	title,
-	tone = "sky",
 	type,
+	value,
+	legend,
+	meta,
+	children,
 }: {
 	title: string;
-	tone?: "sky" | "violet" | "emerald" | "amber" | "rose";
-	type:
-		| "cpu"
-		| "gpu"
-		| "memory"
-		| "disk"
-		| "process"
-		| "network"
-		| "connection";
+	type: MetricType;
+	value?: ReactNode;
+	legend?: ReactNode;
+	meta?: ReactNode;
+	children: ReactNode;
 }) {
-	const Icon =
-		type === "cpu" || type === "gpu"
-			? CpuChipIcon
-			: type === "memory"
-				? Square3Stack3DIcon
-				: type === "disk"
-					? CircleStackIcon
-					: type === "process"
-						? QueueListIcon
-						: SignalIcon;
-	const tones = {
-		sky: "border-sky-500/15 bg-sky-500/10 text-sky-600 dark:text-sky-300",
-		violet:
-			"border-violet-500/15 bg-violet-500/10 text-violet-600 dark:text-violet-300",
-		emerald:
-			"border-emerald-500/15 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
-		amber:
-			"border-amber-500/15 bg-amber-500/10 text-amber-600 dark:text-amber-300",
-		rose: "border-rose-500/15 bg-rose-500/10 text-rose-600 dark:text-rose-300",
-	};
+	const Icon = metricIcons[type];
+	const customBackgroundImage =
+		(window.CustomBackgroundImage as string) !== ""
+			? window.CustomBackgroundImage
+			: undefined;
+
 	return (
-		<div className="flex items-center gap-2">
-			<span
-				className={cn(
-					"flex size-8 items-center justify-center rounded-xl border shadow-inner",
-					tones[tone],
+		<article
+			data-metric={type}
+			className={cn(
+				"metric-card flex min-w-0 flex-col rounded-lg border border-border bg-card",
+				customBackgroundImage && "bg-card/70",
+			)}
+		>
+			<header className="flex items-start justify-between gap-3 px-4 pt-3.5">
+				<div className="flex min-w-0 items-center gap-2">
+					<Icon
+						aria-hidden="true"
+						className="size-4 shrink-0 text-muted-foreground"
+					/>
+					<h3 className="truncate text-[13px] font-medium">{title}</h3>
+				</div>
+				{value !== undefined && (
+					<div className="shrink-0 text-right text-lg font-semibold leading-5 tabular-nums">
+						{value}
+					</div>
 				)}
-			>
-				<Icon className="size-4" />
-			</span>
-			<div>
-				<p className="text-sm font-black tracking-tight">{title}</p>
-				<p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-					实时遥测
-				</p>
-			</div>
-		</div>
+			</header>
+			{(legend || meta) && (
+				<div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 pt-2 text-xs text-muted-foreground tabular-nums">
+					{legend && (
+						<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+							{legend}
+						</div>
+					)}
+					{meta && <span>{meta}</span>}
+				</div>
+			)}
+			<div className="px-2 pt-1 pb-2">{children}</div>
+		</article>
 	);
 }
 
@@ -198,86 +258,91 @@ function PeriodSelector({
 
 	return (
 		<TooltipProvider delayDuration={120}>
-			<div
-				ref={containerRef}
-				className="glass-control scrollbar-hidden relative mb-3 flex max-w-full gap-1 overflow-x-auto overscroll-x-contain rounded-2xl p-1 sm:-mt-5 -mt-3"
-			>
-				{indicator && (
-					<div
-						className="active-indicator-fade-in absolute left-0 top-0 z-10 rounded-xl bg-gradient-to-br from-white to-sky-50 shadow-sm ring-1 ring-sky-500/15 dark:from-slate-700 dark:to-slate-800 dark:ring-white/10"
-						style={{
-							height: indicator.height,
-							transform: `translate(${indicator.x}px, ${indicator.y}px)`,
-							transition: indicator.shouldAnimate
-								? "transform 0.5s var(--timing), width 0.5s var(--timing), height 0.5s var(--timing)"
-								: "none",
-							width: indicator.width,
-						}}
-					/>
-				)}
-				{periods.map((period, index) => {
-					const isHistoryPeriod = period.value !== "realtime";
-					const isLockedByTsdb = !isTsdbEnabled && isHistoryPeriod;
-					// Only realtime and 1d are available for non-logged-in users
-					const isLockedByLogin =
-						!isLockedByTsdb &&
-						!isLogin &&
-						period.value !== "realtime" &&
-						period.value !== "1d";
-					const isLocked = isLockedByTsdb || isLockedByLogin;
-
-					const periodItem = (
+			<div className="scrollbar-hidden flex min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
+				<div
+					ref={containerRef}
+					data-indicator="true"
+					className="segmented relative flex items-center"
+				>
+					{indicator && (
 						<div
-							ref={setItemRef(index)}
-							onClick={() => {
-								if (!isLocked) {
-									if (selectedPeriod !== period.value) {
-										enableIndicatorAnimation();
-									}
-									onPeriodChange(period.value);
-								}
+							aria-hidden="true"
+							className="active-indicator-fade-in absolute left-0 top-0 z-0 rounded-[5px] bg-muted dark:bg-foreground/[0.08]"
+							style={{
+								height: indicator.height,
+								transform: `translate(${indicator.x}px, ${indicator.y}px)`,
+								transition: indicator.shouldAnimate
+									? "transform 0.16s ease-out, width 0.16s ease-out, height 0.16s ease-out"
+									: "none",
+								width: indicator.width,
 							}}
-							className={cn(
-								"relative shrink-0 cursor-pointer rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors duration-300",
-								selectedPeriod === period.value
-									? "text-foreground"
-									: "text-muted-foreground hover:text-foreground",
-								isLocked && "cursor-not-allowed opacity-40 grayscale",
-							)}
-						>
-							<div className="relative z-20 flex items-center gap-1.5">
-								{period.value === "realtime" && (
-									<span className="inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 dark:bg-emerald-400"></span>
+						/>
+					)}
+					{periods.map((period, index) => {
+						const isHistoryPeriod = period.value !== "realtime";
+						const isLockedByTsdb = !isTsdbEnabled && isHistoryPeriod;
+						// Only realtime and 1d are available for non-logged-in users
+						const isLockedByLogin =
+							!isLockedByTsdb &&
+							!isLogin &&
+							period.value !== "realtime" &&
+							period.value !== "1d";
+						const isLocked = isLockedByTsdb || isLockedByLogin;
+						const isSelected = selectedPeriod === period.value;
+
+						const periodItem = (
+							<button
+								type="button"
+								ref={setItemRef(index)}
+								aria-pressed={isSelected}
+								aria-disabled={isLocked || undefined}
+								onClick={() => {
+									if (!isLocked) {
+										if (selectedPeriod !== period.value) {
+											enableIndicatorAnimation();
+										}
+										onPeriodChange(period.value);
+									}
+								}}
+								className={cn(
+									"relative z-10",
+									isLocked && "cursor-not-allowed opacity-40",
 								)}
-								{period.value !== "realtime" && (
-									<ClockIcon className="size-3.5" />
+							>
+								{period.value === "realtime" ? (
+									<span
+										aria-hidden="true"
+										className="size-1.5 rounded-full bg-success"
+									/>
+								) : (
+									<ClockIcon aria-hidden="true" className="size-3.5" />
 								)}
 								{period.label}
-							</div>
-						</div>
-					);
-
-					if (isLockedByTsdb || isLockedByLogin) {
-						return (
-							<Tooltip key={period.value}>
-								<TooltipTrigger asChild>{periodItem}</TooltipTrigger>
-								<TooltipContent>
-									{isLockedByTsdb
-										? t(
-												"serverDetailChart.tsdbRequired",
-												"Enable TSDB to use historical data",
-											)
-										: t(
-												"serverDetailChart.loginRequired",
-												"Please login to view",
-											)}
-								</TooltipContent>
-							</Tooltip>
+							</button>
 						);
-					}
 
-					return <div key={period.value}>{periodItem}</div>;
-				})}
+						if (isLockedByTsdb || isLockedByLogin) {
+							return (
+								<Tooltip key={period.value}>
+									<TooltipTrigger asChild>{periodItem}</TooltipTrigger>
+									<TooltipContent>
+										{isLockedByTsdb
+											? t(
+													"serverDetailChart.tsdbRequired",
+													"Enable TSDB to use historical data",
+												)
+											: t(
+													"serverDetailChart.loginRequired",
+													"Please login to view",
+												)}
+									</TooltipContent>
+								</Tooltip>
+							);
+						}
+
+						return <div key={period.value}>{periodItem}</div>;
+					})}
+				</div>
 			</div>
 		</TooltipProvider>
 	);
@@ -353,7 +418,7 @@ export default function ServerDetailChart({
 	const gpuList = server.host.gpu || [];
 
 	return (
-		<section className="server-detail-charts flex min-w-0 flex-col">
+		<section className="server-detail-charts flex min-w-0 flex-col gap-3">
 			<PeriodSelector
 				selectedPeriod={selectedPeriod}
 				onPeriodChange={setSelectedPeriod}
@@ -516,11 +581,6 @@ function GpuChart({
 	const hasInitialized = useRef(false);
 	const [historyLoaded, setHistoryLoaded] = useState(false);
 
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
-
 	const transformGpuData = useMemo(
 		() => (timestamp: number, value: number) => ({
 			timeStamp: timestamp.toString(),
@@ -608,104 +668,78 @@ function GpuChart({
 	const displayData = period === "realtime" ? gpuChartData : gpuHistoricalData;
 
 	return (
-		<Card
-			className={cn({
-				"bg-card/70": customBackgroundImage,
-			})}
+		<MetricCard
+			title={gpuName ? `GPU · ${gpuName}` : "GPU"}
+			type="gpu"
+			value={<UsageValue value={gpuStat} />}
 		>
-			<CardContent className="px-6 py-3">
-				<section className="flex flex-col gap-1">
-					<div className="flex items-center justify-between">
-						<section className="flex flex-col items-center gap-2">
-							<MetricTitle
-								title={gpuName ? `GPU · ${gpuName}` : "GPU"}
-								type="gpu"
-								tone="violet"
-							/>
-						</section>
-						<section className="flex items-center gap-2">
-							<p className="text-xs text-end w-10 font-medium">
-								{gpuStat.toFixed(2)}%
-							</p>
-							<AnimatedCircularProgressBar
-								className="size-3 text-[0px]"
-								max={100}
-								min={0}
-								value={gpuStat}
-								primaryColor="hsl(var(--chart-3))"
-							/>
-						</section>
-					</div>
-					<ChartContainer
-						config={chartConfig}
-						className="aspect-auto h-[130px] w-full"
+			<ChartContainer
+				config={chartConfig}
+				className="aspect-auto h-[130px] w-full"
+			>
+				{isLoading ? (
+					<ChartSkeleton />
+				) : (
+					<AreaChart
+						syncId="serverDetailCharts"
+						accessibilityLayer
+						data={displayData}
+						margin={{
+							top: 12,
+							left: 12,
+							right: 12,
+						}}
 					>
-						{isLoading ? (
-							<ChartSkeleton />
-						) : (
-							<AreaChart
-								syncId="serverDetailCharts"
-								accessibilityLayer
-								data={displayData}
-								margin={{
-									top: 12,
-									left: 12,
-									right: 12,
-								}}
-							>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="timeStamp"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-									minTickGap={200}
-									interval="preserveStartEnd"
-									tickFormatter={(value) => formatRelativeTime(value)}
+						<CartesianGrid vertical={false} />
+						<XAxis
+							dataKey="timeStamp"
+							tickLine={false}
+							axisLine={false}
+							tickMargin={8}
+							minTickGap={200}
+							interval="preserveStartEnd"
+							tickFormatter={(value) => formatRelativeTime(value)}
+						/>
+						<YAxis
+							tickLine={false}
+							axisLine={false}
+							mirror={true}
+							tickMargin={-15}
+							domain={[0, 100]}
+							tickFormatter={(value) => `${value}%`}
+						/>
+						<ChartTooltip
+							isAnimationActive={false}
+							content={
+								<ChartTooltipContent
+									indicator="dot"
+									labelFormatter={(_, payload) => {
+										return formatTime(Number(payload[0]?.payload?.timeStamp));
+									}}
+									formatter={(value) => (
+										<div className="flex flex-1 items-center justify-between leading-none">
+											<span className="text-muted-foreground">GPU</span>
+											<span className="ml-2 font-medium text-foreground tabular-nums">
+												{Number(value).toFixed(1)}%
+											</span>
+										</div>
+									)}
 								/>
-								<YAxis
-									tickLine={false}
-									axisLine={false}
-									mirror={true}
-									tickMargin={-15}
-									domain={[0, 100]}
-									tickFormatter={(value) => `${value}%`}
-								/>
-								<ChartTooltip
-									isAnimationActive={false}
-									content={
-										<ChartTooltipContent
-											indicator="dot"
-											labelFormatter={(_, payload) => {
-												return formatTime(
-													Number(payload[0]?.payload?.timeStamp),
-												);
-											}}
-											formatter={(value) => (
-												<div className="flex flex-1 items-center justify-between leading-none">
-													<span className="text-muted-foreground">GPU</span>
-													<span className="ml-2 font-medium text-foreground tabular-nums">
-														{Number(value).toFixed(1)}%
-													</span>
-												</div>
-											)}
-										/>
-									}
-								/>
-								<Area
-									isAnimationActive={false}
-									dataKey="gpu"
-									type="monotone"
-									fill="hsl(var(--chart-3))"
-									fillOpacity={0.3}
-									stroke="hsl(var(--chart-3))"
-								/>
-							</AreaChart>
-						)}
-					</ChartContainer>
-				</section>
-			</CardContent>
-		</Card>
+							}
+						/>
+						<Area
+							isAnimationActive={false}
+							dataKey="gpu"
+							type="monotone"
+							fill="hsl(var(--chart-1))"
+							fillOpacity={0.12}
+							strokeWidth={1.5}
+							stroke="hsl(var(--chart-1))"
+						/>
+					</AreaChart>
+				)}
+			</ChartContainer>
+		</MetricCard>
 	);
 }
 
@@ -725,11 +759,6 @@ function CpuChart({
 	const [historyLoaded, setHistoryLoaded] = useState(false);
 
 	const { cpu } = formatNezhaInfo(now, data);
-
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
 
 	const transformCpuData = useMemo(
 		() => (timestamp: number, value: number) => ({
@@ -819,98 +848,74 @@ function CpuChart({
 	const displayData = period === "realtime" ? cpuChartData : cpuHistoricalData;
 
 	return (
-		<Card
-			className={cn({
-				"bg-card/70": customBackgroundImage,
-			})}
-		>
-			<CardContent className="px-6 py-3">
-				<section className="flex flex-col gap-1">
-					<div className="flex items-center justify-between">
-						<MetricTitle title="CPU" type="cpu" tone="sky" />
-						<section className="flex items-center gap-2">
-							<p className="text-xs text-end w-10 font-medium">
-								{cpu.toFixed(2)}%
-							</p>
-							<AnimatedCircularProgressBar
-								className="size-3 text-[0px]"
-								max={100}
-								min={0}
-								value={cpu}
-								primaryColor="hsl(var(--chart-1))"
-							/>
-						</section>
-					</div>
-					<ChartContainer
-						config={chartConfig}
-						className="aspect-auto h-[130px] w-full"
+		<MetricCard title="CPU" type="cpu" value={<UsageValue value={cpu} />}>
+			<ChartContainer
+				config={chartConfig}
+				className="aspect-auto h-[130px] w-full"
+			>
+				{isLoading ? (
+					<ChartSkeleton />
+				) : (
+					<AreaChart
+						syncId="serverDetailCharts"
+						accessibilityLayer
+						data={displayData}
+						margin={{
+							top: 12,
+							left: 12,
+							right: 12,
+						}}
 					>
-						{isLoading ? (
-							<ChartSkeleton />
-						) : (
-							<AreaChart
-								syncId="serverDetailCharts"
-								accessibilityLayer
-								data={displayData}
-								margin={{
-									top: 12,
-									left: 12,
-									right: 12,
-								}}
-							>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="timeStamp"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-									minTickGap={200}
-									interval="preserveStartEnd"
-									tickFormatter={(value) => formatRelativeTime(value)}
+						<CartesianGrid vertical={false} />
+						<XAxis
+							dataKey="timeStamp"
+							tickLine={false}
+							axisLine={false}
+							tickMargin={8}
+							minTickGap={200}
+							interval="preserveStartEnd"
+							tickFormatter={(value) => formatRelativeTime(value)}
+						/>
+						<YAxis
+							tickLine={false}
+							axisLine={false}
+							mirror={true}
+							tickMargin={-15}
+							domain={[0, 100]}
+							tickFormatter={(value) => `${value}%`}
+						/>
+						<ChartTooltip
+							isAnimationActive={false}
+							content={
+								<ChartTooltipContent
+									indicator="dot"
+									labelFormatter={(_, payload) => {
+										return formatTime(Number(payload[0]?.payload?.timeStamp));
+									}}
+									formatter={(value) => (
+										<div className="flex flex-1 items-center justify-between leading-none">
+											<span className="text-muted-foreground">CPU</span>
+											<span className="ml-2 font-medium text-foreground tabular-nums">
+												{Number(value).toFixed(1)}%
+											</span>
+										</div>
+									)}
 								/>
-								<YAxis
-									tickLine={false}
-									axisLine={false}
-									mirror={true}
-									tickMargin={-15}
-									domain={[0, 100]}
-									tickFormatter={(value) => `${value}%`}
-								/>
-								<ChartTooltip
-									isAnimationActive={false}
-									content={
-										<ChartTooltipContent
-											indicator="dot"
-											labelFormatter={(_, payload) => {
-												return formatTime(
-													Number(payload[0]?.payload?.timeStamp),
-												);
-											}}
-											formatter={(value) => (
-												<div className="flex flex-1 items-center justify-between leading-none">
-													<span className="text-muted-foreground">CPU</span>
-													<span className="ml-2 font-medium text-foreground tabular-nums">
-														{Number(value).toFixed(1)}%
-													</span>
-												</div>
-											)}
-										/>
-									}
-								/>
-								<Area
-									isAnimationActive={false}
-									dataKey="cpu"
-									type="monotone"
-									fill="hsl(var(--chart-1))"
-									fillOpacity={0.3}
-									stroke="hsl(var(--chart-1))"
-								/>
-							</AreaChart>
-						)}
-					</ChartContainer>
-				</section>
-			</CardContent>
-		</Card>
+							}
+						/>
+						<Area
+							isAnimationActive={false}
+							dataKey="cpu"
+							type="monotone"
+							fill="hsl(var(--chart-1))"
+							fillOpacity={0.12}
+							strokeWidth={1.5}
+							stroke="hsl(var(--chart-1))"
+						/>
+					</AreaChart>
+				)}
+			</ChartContainer>
+		</MetricCard>
 	);
 }
 
@@ -931,11 +936,6 @@ function ProcessChart({
 	);
 	const hasInitialized = useRef(false);
 	const [historyLoaded, setHistoryLoaded] = useState(false);
-
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
 
 	const { process } = formatNezhaInfo(now, data);
 
@@ -1033,93 +1033,78 @@ function ProcessChart({
 		period === "realtime" ? processChartData : processHistoricalData;
 
 	return (
-		<Card
-			className={cn({
-				"bg-card/70": customBackgroundImage,
-			})}
+		<MetricCard
+			title={t("serverDetailChart.process")}
+			type="process"
+			value={process}
 		>
-			<CardContent className="px-6 py-3">
-				<section className="flex flex-col gap-1">
-					<div className="flex items-center justify-between">
-						<MetricTitle
-							title={t("serverDetailChart.process")}
-							type="process"
-							tone="rose"
-						/>
-						<section className="flex items-center gap-2">
-							<p className="text-xs text-end w-10 font-medium">{process}</p>
-						</section>
-					</div>
-					<ChartContainer
-						config={chartConfig}
-						className="aspect-auto h-[130px] w-full"
+			<ChartContainer
+				config={chartConfig}
+				className="aspect-auto h-[130px] w-full"
+			>
+				{isLoading ? (
+					<ChartSkeleton />
+				) : (
+					<AreaChart
+						syncId="serverDetailCharts"
+						accessibilityLayer
+						data={displayData}
+						margin={{
+							top: 12,
+							left: 12,
+							right: 12,
+						}}
 					>
-						{isLoading ? (
-							<ChartSkeleton />
-						) : (
-							<AreaChart
-								syncId="serverDetailCharts"
-								accessibilityLayer
-								data={displayData}
-								margin={{
-									top: 12,
-									left: 12,
-									right: 12,
-								}}
-							>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="timeStamp"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-									minTickGap={200}
-									interval="preserveStartEnd"
-									tickFormatter={(value) => formatRelativeTime(value)}
+						<CartesianGrid vertical={false} />
+						<XAxis
+							dataKey="timeStamp"
+							tickLine={false}
+							axisLine={false}
+							tickMargin={8}
+							minTickGap={200}
+							interval="preserveStartEnd"
+							tickFormatter={(value) => formatRelativeTime(value)}
+						/>
+						<YAxis
+							tickLine={false}
+							axisLine={false}
+							mirror={true}
+							tickMargin={-15}
+						/>
+						<ChartTooltip
+							isAnimationActive={false}
+							content={
+								<ChartTooltipContent
+									indicator={"dot"}
+									labelFormatter={(_, payload) => {
+										return formatTime(Number(payload[0]?.payload?.timeStamp));
+									}}
+									formatter={(value) => (
+										<div className="flex flex-1 items-center justify-between leading-none">
+											<span className="text-muted-foreground">
+												{t("serverDetailChart.process")}
+											</span>
+											<span className="ml-2 font-medium text-foreground tabular-nums">
+												{Number(value).toFixed(0)}
+											</span>
+										</div>
+									)}
 								/>
-								<YAxis
-									tickLine={false}
-									axisLine={false}
-									mirror={true}
-									tickMargin={-15}
-								/>
-								<ChartTooltip
-									isAnimationActive={false}
-									content={
-										<ChartTooltipContent
-											indicator={"dot"}
-											labelFormatter={(_, payload) => {
-												return formatTime(
-													Number(payload[0]?.payload?.timeStamp),
-												);
-											}}
-											formatter={(value) => (
-												<div className="flex flex-1 items-center justify-between leading-none">
-													<span className="text-muted-foreground">
-														{t("serverDetailChart.process")}
-													</span>
-													<span className="ml-2 font-medium text-foreground tabular-nums">
-														{Number(value).toFixed(0)}
-													</span>
-												</div>
-											)}
-										/>
-									}
-								/>
-								<Area
-									isAnimationActive={false}
-									dataKey="process"
-									type="monotone"
-									fill="hsl(var(--chart-2))"
-									fillOpacity={0.3}
-									stroke="hsl(var(--chart-2))"
-								/>
-							</AreaChart>
-						)}
-					</ChartContainer>
-				</section>
-			</CardContent>
-		</Card>
+							}
+						/>
+						<Area
+							isAnimationActive={false}
+							dataKey="process"
+							type="monotone"
+							fill="hsl(var(--chart-1))"
+							fillOpacity={0.12}
+							strokeWidth={1.5}
+							stroke="hsl(var(--chart-1))"
+						/>
+					</AreaChart>
+				)}
+			</ChartContainer>
+		</MetricCard>
 	);
 }
 
@@ -1139,11 +1124,6 @@ function MemChart({
 	const [memChartData, setMemChartData] = useState([] as memChartData[]);
 	const hasInitialized = useRef(false);
 	const [historyLoaded, setHistoryLoaded] = useState(false);
-
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
 
 	const { mem, swap } = formatNezhaInfo(now, data);
 
@@ -1310,154 +1290,122 @@ function MemChart({
 		period !== "realtime" && (isLoadingMem || loadedPeriodMem !== period);
 
 	return (
-		<Card
-			className={cn({
-				"bg-card/70": customBackgroundImage,
-			})}
+		<MetricCard
+			title={t("serverDetailChart.mem")}
+			type="memory"
+			value={
+				<span className="text-xs font-normal text-muted-foreground">
+					{formatBytes(data.state.mem_used)} /{" "}
+					{formatBytes(data.host.mem_total)}
+				</span>
+			}
+			legend={
+				<>
+					<LegendItem
+						color="hsl(var(--chart-1))"
+						label={t("serverDetailChart.mem")}
+						value={`${mem.toFixed(0)}%`}
+					/>
+					<LegendItem
+						color="hsl(var(--chart-2))"
+						label={t("serverDetailChart.swap")}
+						value={`${swap.toFixed(0)}%`}
+					/>
+				</>
+			}
+			meta={
+				data.host.swap_total ? (
+					<>
+						swap: {formatBytes(data.state.swap_used)} /{" "}
+						{formatBytes(data.host.swap_total)}
+					</>
+				) : (
+					t("serverDetailChart.noSwap")
+				)
+			}
 		>
-			<CardContent className="px-6 py-3">
-				<section className="flex flex-col gap-1">
-					<div className="flex items-start justify-between gap-3">
-						<section className="flex items-center gap-4">
-							<MetricTitle
-								title={t("serverDetailChart.mem")}
-								type="memory"
-								tone="violet"
-							/>
-							<div className="flex flex-col">
-								<p className=" text-xs text-muted-foreground">
-									{t("serverDetailChart.mem")}
-								</p>
-								<div className="flex items-center gap-2">
-									<AnimatedCircularProgressBar
-										className="size-3 text-[0px]"
-										max={100}
-										min={0}
-										value={mem}
-										primaryColor="hsl(var(--chart-8))"
-									/>
-									<p className="text-xs font-medium">{mem.toFixed(0)}%</p>
-								</div>
-							</div>
-							<div className="flex flex-col">
-								<p className=" text-xs text-muted-foreground">
-									{t("serverDetailChart.swap")}
-								</p>
-								<div className="flex items-center gap-2">
-									<AnimatedCircularProgressBar
-										className="size-3 text-[0px]"
-										max={100}
-										min={0}
-										value={swap}
-										primaryColor="hsl(var(--chart-10))"
-									/>
-									<p className="text-xs font-medium">{swap.toFixed(0)}%</p>
-								</div>
-							</div>
-						</section>
-						<section className="flex flex-col items-end gap-0.5">
-							<div className="flex text-[11px] font-medium items-center gap-2">
-								{formatBytes(data.state.mem_used)} /{" "}
-								{formatBytes(data.host.mem_total)}
-							</div>
-							<div className="flex text-[11px] font-medium items-center gap-2">
-								{data.host.swap_total ? (
-									<>
-										swap: {formatBytes(data.state.swap_used)} /{" "}
-										{formatBytes(data.host.swap_total)}
-									</>
-								) : (
-									<>no swap</>
-								)}
-							</div>
-						</section>
-					</div>
-					<ChartContainer
-						config={chartConfig}
-						className="aspect-auto h-[130px] w-full"
+			<ChartContainer
+				config={chartConfig}
+				className="aspect-auto h-[130px] w-full"
+			>
+				{isMemLoading ? (
+					<ChartSkeleton />
+				) : (
+					<AreaChart
+						syncId="serverDetailCharts"
+						accessibilityLayer
+						data={displayData}
+						margin={{
+							top: 12,
+							left: 12,
+							right: 12,
+						}}
 					>
-						{isMemLoading ? (
-							<ChartSkeleton />
-						) : (
-							<AreaChart
-								syncId="serverDetailCharts"
-								accessibilityLayer
-								data={displayData}
-								margin={{
-									top: 12,
-									left: 12,
-									right: 12,
-								}}
-							>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="timeStamp"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-									minTickGap={200}
-									interval="preserveStartEnd"
-									tickFormatter={(value) => formatRelativeTime(value)}
+						<CartesianGrid vertical={false} />
+						<XAxis
+							dataKey="timeStamp"
+							tickLine={false}
+							axisLine={false}
+							tickMargin={8}
+							minTickGap={200}
+							interval="preserveStartEnd"
+							tickFormatter={(value) => formatRelativeTime(value)}
+						/>
+						<YAxis
+							tickLine={false}
+							axisLine={false}
+							mirror={true}
+							tickMargin={-15}
+							domain={[0, 100]}
+							tickFormatter={(value) => `${value}%`}
+						/>
+						<ChartTooltip
+							isAnimationActive={false}
+							content={
+								<ChartTooltipContent
+									indicator="dot"
+									labelFormatter={(_, payload) => {
+										return formatTime(Number(payload[0]?.payload?.timeStamp));
+									}}
+									formatter={(value, name) => {
+										const label =
+											name === "mem"
+												? t("serverDetailChart.mem")
+												: t("serverDetailChart.swap");
+										return (
+											<div className="flex flex-1 items-center justify-between leading-none">
+												<span className="text-muted-foreground">{label}</span>
+												<span className="ml-2 font-medium text-foreground tabular-nums">
+													{Number(value).toFixed(1)}%
+												</span>
+											</div>
+										);
+									}}
 								/>
-								<YAxis
-									tickLine={false}
-									axisLine={false}
-									mirror={true}
-									tickMargin={-15}
-									domain={[0, 100]}
-									tickFormatter={(value) => `${value}%`}
-								/>
-								<ChartTooltip
-									isAnimationActive={false}
-									content={
-										<ChartTooltipContent
-											indicator="dot"
-											labelFormatter={(_, payload) => {
-												return formatTime(
-													Number(payload[0]?.payload?.timeStamp),
-												);
-											}}
-											formatter={(value, name) => {
-												const label =
-													name === "mem"
-														? t("serverDetailChart.mem")
-														: t("serverDetailChart.swap");
-												return (
-													<div className="flex flex-1 items-center justify-between leading-none">
-														<span className="text-muted-foreground">
-															{label}
-														</span>
-														<span className="ml-2 font-medium text-foreground tabular-nums">
-															{Number(value).toFixed(1)}%
-														</span>
-													</div>
-												);
-											}}
-										/>
-									}
-								/>
-								<Area
-									isAnimationActive={false}
-									dataKey="mem"
-									type="monotone"
-									fill="hsl(var(--chart-8))"
-									fillOpacity={0.3}
-									stroke="hsl(var(--chart-8))"
-								/>
-								<Area
-									isAnimationActive={false}
-									dataKey="swap"
-									type="monotone"
-									fill="hsl(var(--chart-10))"
-									fillOpacity={0.3}
-									stroke="hsl(var(--chart-10))"
-								/>
-							</AreaChart>
-						)}
-					</ChartContainer>
-				</section>
-			</CardContent>
-		</Card>
+							}
+						/>
+						<Area
+							isAnimationActive={false}
+							dataKey="mem"
+							type="monotone"
+							fill="hsl(var(--chart-1))"
+							fillOpacity={0.12}
+							strokeWidth={1.5}
+							stroke="hsl(var(--chart-1))"
+						/>
+						<Area
+							isAnimationActive={false}
+							dataKey="swap"
+							type="monotone"
+							fill="hsl(var(--chart-2))"
+							fillOpacity={0.12}
+							strokeWidth={1.5}
+							stroke="hsl(var(--chart-2))"
+						/>
+					</AreaChart>
+				)}
+			</ChartContainer>
+		</MetricCard>
 	);
 }
 
@@ -1476,11 +1424,6 @@ function DiskChart({
 	const [diskChartData, setDiskChartData] = useState([] as diskChartData[]);
 	const hasInitialized = useRef(false);
 	const [historyLoaded, setHistoryLoaded] = useState(false);
-
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
 
 	const { disk } = formatNezhaInfo(now, data);
 
@@ -1583,110 +1526,86 @@ function DiskChart({
 		period === "realtime" ? diskChartData : diskHistoricalData;
 
 	return (
-		<Card
-			className={cn({
-				"bg-card/70": customBackgroundImage,
-			})}
+		<MetricCard
+			title={t("serverDetailChart.disk")}
+			type="disk"
+			value={<UsageValue value={disk} digits={0} />}
+			meta={
+				<>
+					{formatBytes(data.state.disk_used)} /{" "}
+					{formatBytes(data.host.disk_total)}
+				</>
+			}
 		>
-			<CardContent className="px-6 py-3">
-				<section className="flex flex-col gap-1">
-					<div className="flex items-center justify-between">
-						<MetricTitle
-							title={t("serverDetailChart.disk")}
-							type="disk"
-							tone="amber"
-						/>
-						<section className="flex flex-col items-end gap-0.5">
-							<section className="flex items-center gap-2">
-								<p className="text-xs text-end w-10 font-medium">
-									{disk.toFixed(0)}%
-								</p>
-								<AnimatedCircularProgressBar
-									className="size-3 text-[0px]"
-									max={100}
-									min={0}
-									value={disk}
-									primaryColor="hsl(var(--chart-5))"
-								/>
-							</section>
-							<div className="flex text-[11px] font-medium items-center gap-2">
-								{formatBytes(data.state.disk_used)} /{" "}
-								{formatBytes(data.host.disk_total)}
-							</div>
-						</section>
-					</div>
-					<ChartContainer
-						config={chartConfig}
-						className="aspect-auto h-[130px] w-full"
+			<ChartContainer
+				config={chartConfig}
+				className="aspect-auto h-[130px] w-full"
+			>
+				{isLoading ? (
+					<ChartSkeleton />
+				) : (
+					<AreaChart
+						syncId="serverDetailCharts"
+						accessibilityLayer
+						data={displayData}
+						margin={{
+							top: 12,
+							left: 12,
+							right: 12,
+						}}
 					>
-						{isLoading ? (
-							<ChartSkeleton />
-						) : (
-							<AreaChart
-								syncId="serverDetailCharts"
-								accessibilityLayer
-								data={displayData}
-								margin={{
-									top: 12,
-									left: 12,
-									right: 12,
-								}}
-							>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="timeStamp"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-									minTickGap={200}
-									interval="preserveStartEnd"
-									tickFormatter={(value) => formatRelativeTime(value)}
+						<CartesianGrid vertical={false} />
+						<XAxis
+							dataKey="timeStamp"
+							tickLine={false}
+							axisLine={false}
+							tickMargin={8}
+							minTickGap={200}
+							interval="preserveStartEnd"
+							tickFormatter={(value) => formatRelativeTime(value)}
+						/>
+						<YAxis
+							tickLine={false}
+							axisLine={false}
+							mirror={true}
+							tickMargin={-15}
+							domain={[0, 100]}
+							tickFormatter={(value) => `${value}%`}
+						/>
+						<ChartTooltip
+							isAnimationActive={false}
+							content={
+								<ChartTooltipContent
+									indicator="dot"
+									labelFormatter={(_, payload) => {
+										return formatTime(Number(payload[0]?.payload?.timeStamp));
+									}}
+									formatter={(value) => (
+										<div className="flex flex-1 items-center justify-between leading-none">
+											<span className="text-muted-foreground">
+												{t("serverDetailChart.disk")}
+											</span>
+											<span className="ml-2 font-medium text-foreground tabular-nums">
+												{Number(value).toFixed(1)}%
+											</span>
+										</div>
+									)}
 								/>
-								<YAxis
-									tickLine={false}
-									axisLine={false}
-									mirror={true}
-									tickMargin={-15}
-									domain={[0, 100]}
-									tickFormatter={(value) => `${value}%`}
-								/>
-								<ChartTooltip
-									isAnimationActive={false}
-									content={
-										<ChartTooltipContent
-											indicator="dot"
-											labelFormatter={(_, payload) => {
-												return formatTime(
-													Number(payload[0]?.payload?.timeStamp),
-												);
-											}}
-											formatter={(value) => (
-												<div className="flex flex-1 items-center justify-between leading-none">
-													<span className="text-muted-foreground">
-														{t("serverDetailChart.disk")}
-													</span>
-													<span className="ml-2 font-medium text-foreground tabular-nums">
-														{Number(value).toFixed(1)}%
-													</span>
-												</div>
-											)}
-										/>
-									}
-								/>
-								<Area
-									isAnimationActive={false}
-									dataKey="disk"
-									type="monotone"
-									fill="hsl(var(--chart-5))"
-									fillOpacity={0.3}
-									stroke="hsl(var(--chart-5))"
-								/>
-							</AreaChart>
-						)}
-					</ChartContainer>
-				</section>
-			</CardContent>
-		</Card>
+							}
+						/>
+						<Area
+							isAnimationActive={false}
+							dataKey="disk"
+							type="monotone"
+							fill="hsl(var(--chart-1))"
+							fillOpacity={0.12}
+							strokeWidth={1.5}
+							stroke="hsl(var(--chart-1))"
+						/>
+					</AreaChart>
+				)}
+			</ChartContainer>
+		</MetricCard>
 	);
 }
 
@@ -1708,11 +1627,6 @@ function NetworkChart({
 	);
 	const hasInitialized = useRef(false);
 	const [historyLoaded, setHistoryLoaded] = useState(false);
-
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
 
 	const { up, down } = formatNezhaInfo(now, data);
 
@@ -1872,125 +1786,107 @@ function NetworkChart({
 	} satisfies ChartConfig;
 
 	return (
-		<Card
-			className={cn({
-				"bg-card/70": customBackgroundImage,
-			})}
+		<MetricCard
+			title={t("serverDetailChart.network")}
+			type="network"
+			legend={
+				<>
+					<LegendItem
+						color="hsl(var(--chart-1))"
+						label={t("serverDetailChart.upload")}
+						value={formatMbps(up)}
+					/>
+					<LegendItem
+						color="hsl(var(--chart-2))"
+						label={t("serverDetailChart.download")}
+						value={formatMbps(down)}
+					/>
+				</>
+			}
 		>
-			<CardContent className="px-6 py-3">
-				<section className="flex flex-col gap-1">
-					<div className="flex flex-wrap items-center justify-between gap-3">
-						<MetricTitle title="网络吞吐" type="network" tone="emerald" />
-						<section className="flex items-center gap-4">
-							<div className="flex flex-col w-20">
-								<p className="text-xs text-muted-foreground">
-									{t("serverDetailChart.upload")}
-								</p>
-								<div className="flex items-center gap-1">
-									<span className="relative inline-flex  size-1.5 rounded-full bg-[hsl(var(--chart-1))]" />
-									<p className="text-xs font-medium">{formatMbps(up)}</p>
-								</div>
-							</div>
-							<div className="flex flex-col w-20">
-								<p className=" text-xs text-muted-foreground">
-									{t("serverDetailChart.download")}
-								</p>
-								<div className="flex items-center gap-1">
-									<span className="relative inline-flex  size-1.5 rounded-full bg-[hsl(var(--chart-4))]" />
-									<p className="text-xs font-medium">{formatMbps(down)}</p>
-								</div>
-							</div>
-						</section>
-					</div>
-					<ChartContainer
-						config={chartConfig}
-						className="aspect-auto h-[130px] w-full"
+			<ChartContainer
+				config={chartConfig}
+				className="aspect-auto h-[130px] w-full"
+			>
+				{isNetworkLoading ? (
+					<ChartSkeleton />
+				) : (
+					<LineChart
+						syncId="serverDetailCharts"
+						accessibilityLayer
+						data={displayData}
+						margin={{
+							top: 12,
+							left: 12,
+							right: 12,
+						}}
 					>
-						{isNetworkLoading ? (
-							<ChartSkeleton />
-						) : (
-							<LineChart
-								syncId="serverDetailCharts"
-								accessibilityLayer
-								data={displayData}
-								margin={{
-									top: 12,
-									left: 12,
-									right: 12,
-								}}
-							>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="timeStamp"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-									minTickGap={200}
-									interval="preserveStartEnd"
-									tickFormatter={(value) => formatRelativeTime(value)}
+						<CartesianGrid vertical={false} />
+						<XAxis
+							dataKey="timeStamp"
+							tickLine={false}
+							axisLine={false}
+							tickMargin={8}
+							minTickGap={200}
+							interval="preserveStartEnd"
+							tickFormatter={(value) => formatRelativeTime(value)}
+						/>
+						<YAxis
+							tickLine={false}
+							axisLine={false}
+							mirror={true}
+							tickMargin={-15}
+							type="number"
+							minTickGap={50}
+							interval="preserveStartEnd"
+							domain={[1, maxDownload]}
+							tickFormatter={(value) => formatMbps(Number(value))}
+						/>
+						<ChartTooltip
+							isAnimationActive={false}
+							content={
+								<ChartTooltipContent
+									indicator="dot"
+									labelFormatter={(_, payload) => {
+										return formatTime(Number(payload[0]?.payload?.timeStamp));
+									}}
+									formatter={(value, name) => {
+										const label =
+											name === "upload"
+												? t("serverDetailChart.upload")
+												: t("serverDetailChart.download");
+										return (
+											<div className="flex flex-1 items-center justify-between leading-none">
+												<span className="text-muted-foreground">{label}</span>
+												<span className="ml-2 font-medium text-foreground tabular-nums">
+													{formatMbps(Number(value))}
+												</span>
+											</div>
+										);
+									}}
 								/>
-								<YAxis
-									tickLine={false}
-									axisLine={false}
-									mirror={true}
-									tickMargin={-15}
-									type="number"
-									minTickGap={50}
-									interval="preserveStartEnd"
-									domain={[1, maxDownload]}
-									tickFormatter={(value) => formatMbps(Number(value))}
-								/>
-								<ChartTooltip
-									isAnimationActive={false}
-									content={
-										<ChartTooltipContent
-											indicator="dot"
-											labelFormatter={(_, payload) => {
-												return formatTime(
-													Number(payload[0]?.payload?.timeStamp),
-												);
-											}}
-											formatter={(value, name) => {
-												const label =
-													name === "upload"
-														? t("serverDetailChart.upload")
-														: t("serverDetailChart.download");
-												return (
-													<div className="flex flex-1 items-center justify-between leading-none">
-														<span className="text-muted-foreground">
-															{label}
-														</span>
-														<span className="ml-2 font-medium text-foreground tabular-nums">
-															{formatMbps(Number(value))}
-														</span>
-													</div>
-												);
-											}}
-										/>
-									}
-								/>
-								<Line
-									isAnimationActive={false}
-									dataKey="upload"
-									type="linear"
-									stroke="hsl(var(--chart-1))"
-									strokeWidth={2.4}
-									dot={false}
-								/>
-								<Line
-									isAnimationActive={false}
-									dataKey="download"
-									type="linear"
-									stroke="hsl(var(--chart-4))"
-									strokeWidth={2.4}
-									dot={false}
-								/>
-							</LineChart>
-						)}
-					</ChartContainer>
-				</section>
-			</CardContent>
-		</Card>
+							}
+						/>
+						<Line
+							isAnimationActive={false}
+							dataKey="upload"
+							type="linear"
+							stroke="hsl(var(--chart-1))"
+							strokeWidth={1.5}
+							dot={false}
+						/>
+						<Line
+							isAnimationActive={false}
+							dataKey="download"
+							type="linear"
+							stroke="hsl(var(--chart-2))"
+							strokeWidth={1.5}
+							dot={false}
+						/>
+					</LineChart>
+				)}
+			</ChartContainer>
+		</MetricCard>
 	);
 }
 
@@ -2012,11 +1908,7 @@ function ConnectChart({
 	const hasInitialized = useRef(false);
 	const [historyLoaded, setHistoryLoaded] = useState(false);
 
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
-
+	const { t } = useTranslation();
 	const { tcp, udp } = formatNezhaInfo(now, data);
 
 	// For connections, we fetch TCP and UDP separately and combine them
@@ -2166,114 +2058,92 @@ function ConnectChart({
 		(isLoadingConnect || loadedPeriodConnect !== period);
 
 	return (
-		<Card
-			className={cn({
-				"bg-card/70": customBackgroundImage,
-			})}
+		<MetricCard
+			title={t("serverDetailChart.connections")}
+			type="connection"
+			legend={
+				<>
+					<LegendItem color="hsl(var(--chart-1))" label="TCP" value={tcp} />
+					<LegendItem color="hsl(var(--chart-2))" label="UDP" value={udp} />
+				</>
+			}
 		>
-			<CardContent className="px-6 py-3">
-				<section className="flex flex-col gap-1">
-					<div className="flex flex-wrap items-center justify-between gap-3">
-						<MetricTitle title="连接会话" type="connection" tone="sky" />
-						<section className="flex items-center gap-4">
-							<div className="flex flex-col w-12">
-								<p className="text-xs text-muted-foreground">TCP</p>
-								<div className="flex items-center gap-1">
-									<span className="relative inline-flex  size-1.5 rounded-full bg-[hsl(var(--chart-1))]" />
-									<p className="text-xs font-medium">{tcp}</p>
-								</div>
-							</div>
-							<div className="flex flex-col w-12">
-								<p className=" text-xs text-muted-foreground">UDP</p>
-								<div className="flex items-center gap-1">
-									<span className="relative inline-flex  size-1.5 rounded-full bg-[hsl(var(--chart-4))]" />
-									<p className="text-xs font-medium">{udp}</p>
-								</div>
-							</div>
-						</section>
-					</div>
-					<ChartContainer
-						config={chartConfig}
-						className="aspect-auto h-[130px] w-full"
+			<ChartContainer
+				config={chartConfig}
+				className="aspect-auto h-[130px] w-full"
+			>
+				{isConnectLoading ? (
+					<ChartSkeleton />
+				) : (
+					<LineChart
+						syncId="serverDetailCharts"
+						accessibilityLayer
+						data={displayData}
+						margin={{
+							top: 12,
+							left: 12,
+							right: 12,
+						}}
 					>
-						{isConnectLoading ? (
-							<ChartSkeleton />
-						) : (
-							<LineChart
-								syncId="serverDetailCharts"
-								accessibilityLayer
-								data={displayData}
-								margin={{
-									top: 12,
-									left: 12,
-									right: 12,
-								}}
-							>
-								<CartesianGrid vertical={false} />
-								<XAxis
-									dataKey="timeStamp"
-									tickLine={false}
-									axisLine={false}
-									tickMargin={8}
-									minTickGap={200}
-									interval="preserveStartEnd"
-									tickFormatter={(value) => formatRelativeTime(value)}
+						<CartesianGrid vertical={false} />
+						<XAxis
+							dataKey="timeStamp"
+							tickLine={false}
+							axisLine={false}
+							tickMargin={8}
+							minTickGap={200}
+							interval="preserveStartEnd"
+							tickFormatter={(value) => formatRelativeTime(value)}
+						/>
+						<YAxis
+							tickLine={false}
+							axisLine={false}
+							mirror={true}
+							tickMargin={-15}
+							type="number"
+							interval="preserveStartEnd"
+						/>
+						<ChartTooltip
+							isAnimationActive={false}
+							content={
+								<ChartTooltipContent
+									indicator="dot"
+									labelFormatter={(_, payload) => {
+										return formatTime(Number(payload[0]?.payload?.timeStamp));
+									}}
+									formatter={(value, name) => {
+										const label = name === "tcp" ? "TCP" : "UDP";
+										return (
+											<div className="flex flex-1 items-center justify-between leading-none">
+												<span className="text-muted-foreground">{label}</span>
+												<span className="ml-2 font-medium text-foreground tabular-nums">
+													{Number(value).toFixed(0)}
+												</span>
+											</div>
+										);
+									}}
 								/>
-								<YAxis
-									tickLine={false}
-									axisLine={false}
-									mirror={true}
-									tickMargin={-15}
-									type="number"
-									interval="preserveStartEnd"
-								/>
-								<ChartTooltip
-									isAnimationActive={false}
-									content={
-										<ChartTooltipContent
-											indicator="dot"
-											labelFormatter={(_, payload) => {
-												return formatTime(
-													Number(payload[0]?.payload?.timeStamp),
-												);
-											}}
-											formatter={(value, name) => {
-												const label = name === "tcp" ? "TCP" : "UDP";
-												return (
-													<div className="flex flex-1 items-center justify-between leading-none">
-														<span className="text-muted-foreground">
-															{label}
-														</span>
-														<span className="ml-2 font-medium text-foreground tabular-nums">
-															{Number(value).toFixed(0)}
-														</span>
-													</div>
-												);
-											}}
-										/>
-									}
-								/>
-								<Line
-									isAnimationActive={false}
-									dataKey="tcp"
-									type="linear"
-									stroke="hsl(var(--chart-1))"
-									strokeWidth={2.4}
-									dot={false}
-								/>
-								<Line
-									isAnimationActive={false}
-									dataKey="udp"
-									type="linear"
-									stroke="hsl(var(--chart-4))"
-									strokeWidth={2.4}
-									dot={false}
-								/>
-							</LineChart>
-						)}
-					</ChartContainer>
-				</section>
-			</CardContent>
-		</Card>
+							}
+						/>
+						<Line
+							isAnimationActive={false}
+							dataKey="tcp"
+							type="linear"
+							stroke="hsl(var(--chart-1))"
+							strokeWidth={1.5}
+							dot={false}
+						/>
+						<Line
+							isAnimationActive={false}
+							dataKey="udp"
+							type="linear"
+							stroke="hsl(var(--chart-2))"
+							strokeWidth={1.5}
+							dot={false}
+						/>
+					</LineChart>
+				)}
+			</ChartContainer>
+		</MetricCard>
 	);
 }

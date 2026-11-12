@@ -5,16 +5,14 @@ import { BackIcon } from "../Icon";
 
 export function ServerDetailChartLoading() {
 	return (
-		<div>
-			<section className="grid md:grid-cols-2 lg:grid-cols-3 grid-cols-1 gap-3">
-				<Skeleton className="h-[182px] w-full rounded-[5px] bg-muted-foreground/10 animate-none"></Skeleton>
-				<Skeleton className="h-[182px] w-full rounded-[5px] bg-muted-foreground/10 animate-none"></Skeleton>
-				<Skeleton className="h-[182px] w-full rounded-[5px] bg-muted-foreground/10 animate-none"></Skeleton>
-				<Skeleton className="h-[182px] w-full rounded-[5px] bg-muted-foreground/10 animate-none"></Skeleton>
-				<Skeleton className="h-[182px] w-full rounded-[5px] bg-muted-foreground/10 animate-none"></Skeleton>
-				<Skeleton className="h-[182px] w-full rounded-[5px] bg-muted-foreground/10 animate-none"></Skeleton>
-			</section>
-		</div>
+		<section className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+			{Array.from({ length: 6 }, (_, index) => (
+				<Skeleton
+					key={index}
+					className="h-[182px] w-full rounded-lg border border-border bg-card animate-none dark:bg-card"
+				/>
+			))}
+		</section>
 	);
 }
 
@@ -22,17 +20,27 @@ export function ServerDetailLoading() {
 	const navigate = useNavigate();
 
 	return (
-		<div className="glass-panel mx-auto w-full max-w-6xl rounded-2xl p-5">
-			<div
+		<div className="flex w-full flex-col gap-4" aria-busy="true">
+			<button
+				type="button"
 				onClick={() => {
 					navigate("/");
 				}}
-				className="flex flex-none cursor-pointer font-semibold leading-none items-center break-all tracking-tight gap-0.5 text-xl"
+				className="flex w-fit items-center gap-2.5"
 			>
-				<BackIcon />
-				<Skeleton className="h-[20px] w-24 rounded-[5px] bg-muted-foreground/10 animate-none"></Skeleton>
+				<span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-card [&_img]:mr-0! [&_img]:size-4">
+					<BackIcon />
+				</span>
+				<Skeleton className="h-6 w-40" />
+			</button>
+			<div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4 lg:grid-cols-6">
+				{Array.from({ length: 6 }, (_, index) => (
+					<div key={index} className="flex flex-col gap-2 bg-card px-4 py-3">
+						<Skeleton className="h-3 w-12" />
+						<Skeleton className="h-4 w-20" />
+					</div>
+				))}
 			</div>
-			<Skeleton className="flex flex-wrap gap-2 h-[81px] w-1/2 mt-3 rounded-[5px] bg-muted-foreground/10 animate-none"></Skeleton>
 		</div>
 	);
 }

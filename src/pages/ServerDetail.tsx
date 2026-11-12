@@ -4,7 +4,6 @@ import NetworkChartLoading from "@/components/NetworkChartLoading";
 import ServerDetailChart from "@/components/ServerDetailChart";
 import ServerDetailOverview from "@/components/ServerDetailOverview";
 import TabSwitch from "@/components/TabSwitch";
-import { Separator } from "@/components/ui/separator";
 
 const NetworkChart = lazy(() =>
 	import("@/components/NetworkChart").then((module) => ({
@@ -27,23 +26,13 @@ export default function ServerDetail() {
 	}
 
 	return (
-		<div className="server-info mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-5 px-0">
+		<div className="server-info flex w-full min-w-0 flex-col gap-5">
 			<ServerDetailOverview server_id={server_id} />
-			<section className="relative my-1 flex w-full items-center justify-center">
-				<Separator className="absolute inset-x-0 top-1/2 -z-10" />
-				<div className="flex justify-center rounded-3xl bg-background/70 p-1 backdrop-blur-xl">
-					<TabSwitch
-						tabs={tabs}
-						currentTab={currentTab}
-						setCurrentTab={setCurrentTab}
-					/>
-				</div>
-			</section>
-
-			{/* <section>
-				<ServerDetailSummary server_id={Number(server_id)} />
-			</section> */}
-
+			<TabSwitch
+				tabs={tabs}
+				currentTab={currentTab}
+				setCurrentTab={setCurrentTab}
+			/>
 			{currentTab === tabs[0] && <ServerDetailChart server_id={server_id} />}
 			{currentTab === tabs[1] && (
 				<Suspense fallback={<NetworkChartLoading />}>

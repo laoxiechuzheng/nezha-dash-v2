@@ -1,23 +1,22 @@
 import { Loader } from "@/components/loading/Loader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NetworkChartLoading() {
 	return (
-		<Card className="overflow-hidden border-white/70 bg-white/68 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/58">
-			<CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
-				<div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5">
-					<CardTitle className="flex items-center gap-0.5 text-xl">
-						<div className="aspect-auto h-[20px] w-24 bg-muted"></div>
-					</CardTitle>
-					<div className="mt-[2px] aspect-auto h-[14px] w-32 bg-muted"></div>
+		<section
+			className="network-chart-panel overflow-hidden rounded-lg border border-border bg-card"
+			aria-busy="true"
+		>
+			<header className="flex items-center justify-between gap-4 border-b border-border px-4 py-3">
+				<div className="flex flex-col gap-2">
+					<Skeleton className="h-4 w-24" />
+					<Skeleton className="h-3 w-36" />
 				</div>
-				<div className="hidden pr-4 pt-4 sm:block">
-					<Loader visible={true} />
-				</div>
-			</CardHeader>
-			<CardContent className="px-2 sm:p-6">
-				<div className="aspect-auto h-[250px] w-full"></div>
-			</CardContent>
-		</Card>
+				<Loader visible={true} />
+			</header>
+			<div className="px-2 py-4 sm:px-4">
+				<div className="aspect-auto h-[250px] w-full" />
+			</div>
+		</section>
 	);
 }

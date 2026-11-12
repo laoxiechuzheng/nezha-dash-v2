@@ -70,8 +70,12 @@ describe("Tab and group switches", () => {
 
 		expect(setCurrentTab).toHaveBeenCalledWith("Network");
 		expect(
-			screen.getByText("tabSwitch.Detail").parentElement?.parentElement,
-		).toHaveClass("text-black");
+			screen.getByRole("tab", { name: "tabSwitch.Detail" }),
+		).toHaveAttribute("aria-selected", "true");
+		expect(
+			screen.getByRole("tab", { name: "tabSwitch.Network" }),
+		).toHaveAttribute("aria-selected", "false");
+		expect(screen.getByRole("tablist")).toBeInTheDocument();
 	});
 
 	it("restores saved groups and hides itself when only All exists", async () => {
@@ -129,7 +133,7 @@ describe("Tab and group switches", () => {
 		expect(scrollIntoView).not.toHaveBeenCalled();
 		expect(
 			container.querySelector(".relative.flex.items-center")?.className,
-		).toContain("bg-stone-100/70");
+		).toContain("bg-card/80");
 	});
 });
 

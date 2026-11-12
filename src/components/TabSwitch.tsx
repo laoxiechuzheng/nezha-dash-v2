@@ -15,63 +15,59 @@ export default function TabSwitch({
 	const { t } = useTranslation();
 	const { containerRef, enableIndicatorAnimation, indicator, setItemRef } =
 		useActiveIndicator(tabs, currentTab);
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
+
 	return (
-		<div className="server-info-tab z-50 flex flex-col items-start rounded-2xl">
+		<div className="server-info-tab w-full border-b border-border">
 			<div
 				ref={containerRef}
-				className={cn(
-					"glass-control relative flex items-center gap-1 rounded-2xl p-1",
-					{
-						"bg-stone-100/70 dark:bg-stone-800/70": customBackgroundImage,
-					},
-				)}
+				role="tablist"
+				className="relative -mb-px flex items-center gap-1"
 			>
 				{indicator && (
 					<div
-						className="active-indicator-fade-in absolute left-0 top-0 z-10 content-center bg-gradient-to-br from-white to-sky-50 shadow-[0_8px_24px_-12px_rgba(14,165,233,0.65)] ring-1 ring-sky-500/15 dark:from-slate-700 dark:to-slate-800 dark:ring-white/10"
+						aria-hidden="true"
+						className="active-indicator-fade-in absolute bottom-0 left-0 z-10 h-0.5 rounded-full bg-primary"
 						style={{
-							borderRadius: 46,
-							height: indicator.height,
-							transform: `translate(${indicator.x}px, ${indicator.y}px)`,
+							transform: `translateX(${indicator.x}px)`,
 							transition: indicator.shouldAnimate
-								? "transform 0.5s var(--timing), width 0.5s var(--timing), height 0.5s var(--timing)"
+								? "transform 0.2s var(--timing), width 0.2s var(--timing)"
 								: "none",
 							width: indicator.width,
 						}}
 					/>
 				)}
-				{tabs.map((tab: string, index: number) => (
-					<button
-						type="button"
-						key={tab}
-						ref={setItemRef(index)}
-						onClick={() => {
-							if (currentTab !== tab) {
-								enableIndicatorAnimation();
-							}
-							setCurrentTab(tab);
-						}}
-						className={cn(
-							"relative min-w-28 cursor-pointer rounded-xl px-4 py-2.5 text-[13px] font-semibold transition-all duration-300 ease-out hover:text-sky-700 hover:dark:text-sky-300",
-							currentTab === tab
-								? "text-black dark:text-white"
-								: "text-stone-400 dark:text-stone-500",
-						)}
-					>
-						<div className="relative z-20 flex items-center justify-center gap-2">
-							{tab === "Detail" ? (
-								<ChartBarIcon className="size-4" />
-							) : (
-								<SignalIcon className="size-4" />
+				{tabs.map((tab: string, index: number) => {
+					const selected = currentTab === tab;
+					return (
+						<button
+							type="button"
+							role="tab"
+							aria-selected={selected}
+							data-state={selected ? "active" : "inactive"}
+							key={tab}
+							ref={setItemRef(index)}
+							onClick={() => {
+								if (currentTab !== tab) {
+									enableIndicatorAnimation();
+								}
+								setCurrentTab(tab);
+							}}
+							className={cn(
+								"relative flex h-10 cursor-pointer items-center gap-2 px-3 text-[13px] font-medium transition-colors duration-150",
+								selected
+									? "text-foreground"
+									: "text-muted-foreground hover:text-foreground",
 							)}
-							<p className="whitespace-nowrap">{t(`tabSwitch.${tab}`)}</p>
-						</div>
-					</button>
-				))}
+						>
+							{tab === "Detail" ? (
+								<ChartBarIcon className="size-4" aria-hidden="true" />
+							) : (
+								<SignalIcon className="size-4" aria-hidden="true" />
+							)}
+							<span className="whitespace-nowrap">{t(`tabSwitch.${tab}`)}</span>
+						</button>
+					);
+				})}
 			</div>
 		</div>
 	);

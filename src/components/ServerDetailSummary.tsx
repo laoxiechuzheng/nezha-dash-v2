@@ -96,13 +96,9 @@ function UsageBar({ value }: UsageBarProps) {
 			aria-labelledby={"Server Usage Bar"}
 			value={value}
 			indicatorClassName={
-				value > 90
-					? "bg-red-500"
-					: value > 70
-						? "bg-orange-400"
-						: "bg-green-500"
+				value > 90 ? "bg-danger" : value > 70 ? "bg-warning" : "bg-primary"
 			}
-			className={"h-1 rounded-full bg-slate-200/70 dark:bg-white/10"}
+			className={"h-1"}
 		/>
 	);
 }

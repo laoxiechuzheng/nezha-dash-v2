@@ -693,78 +693,78 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 		[chartDataKey],
 	);
 	return (
-		<div className="flex min-w-0 flex-col gap-4">
-			<div className="flex flex-wrap items-center gap-2 sm:-mt-5 -mt-3">
+		<div className="flex min-w-0 flex-col gap-3">
+			<div className="flex flex-wrap items-center gap-2">
 				<TooltipProvider delayDuration={120}>
-					<div
-						ref={containerRef}
-						className="relative flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/70 bg-white/65 p-1 shadow-[0_10px_35px_-20px_rgba(15,23,42,0.55)] ring-1 ring-slate-950/5 backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/65 dark:ring-white/5"
-					>
-						{indicator && (
-							<div
-								className="active-indicator-fade-in absolute left-0 top-0 z-10 rounded-full bg-gradient-to-b from-white to-slate-100 shadow-sm ring-1 ring-slate-950/10 dark:from-slate-700 dark:to-slate-800 dark:ring-white/10"
-								style={{
-									height: indicator.height,
-									transform: `translate(${indicator.x}px, ${indicator.y}px)`,
-									transition: indicator.shouldAnimate
-										? "transform 0.35s var(--timing), width 0.35s var(--timing), height 0.35s var(--timing)"
-										: "none",
-									width: indicator.width,
-								}}
-							/>
-						)}
-						{timeRangeOptions.map((option, index) => {
-							const locked =
-								!isLogin && option.value !== "1d" && option.value !== "6h";
-							const item = (
-								<button
-									type="button"
-									disabled={locked}
-									onClick={() => {
-										if (period !== option.value) enableIndicatorAnimation();
-										setViewDomain(null);
-										onPeriodChange(option.value);
+					<div className="scrollbar-hidden flex min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
+						<div
+							ref={containerRef}
+							data-indicator="true"
+							className="segmented relative flex items-center"
+						>
+							{indicator && (
+								<div
+									aria-hidden="true"
+									className="active-indicator-fade-in absolute left-0 top-0 z-0 rounded-[5px] bg-muted dark:bg-foreground/[0.08]"
+									style={{
+										height: indicator.height,
+										transform: `translate(${indicator.x}px, ${indicator.y}px)`,
+										transition: indicator.shouldAnimate
+											? "transform 0.16s ease-out, width 0.16s ease-out, height 0.16s ease-out"
+											: "none",
+										width: indicator.width,
 									}}
-									className={cn(
-										"relative z-20 min-h-9 shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors",
-										period === option.value
-											? "text-foreground"
-											: "text-muted-foreground hover:text-foreground",
-										locked && "cursor-not-allowed opacity-40 grayscale",
-									)}
-								>
-									{option.label}
-								</button>
-							);
-							return (
-								<div key={option.value} ref={setItemRef(index)}>
-									{locked ? (
-										<Tooltip>
-											<TooltipTrigger asChild>{item}</TooltipTrigger>
-											<TooltipContent>
-												{t("monitor.loginRequired", "请登录后查看")}
-											</TooltipContent>
-										</Tooltip>
-									) : (
-										item
-									)}
-								</div>
-							);
-						})}
+								/>
+							)}
+							{timeRangeOptions.map((option, index) => {
+								const locked =
+									!isLogin && option.value !== "1d" && option.value !== "6h";
+								const item = (
+									<button
+										type="button"
+										disabled={locked}
+										aria-pressed={period === option.value}
+										onClick={() => {
+											if (period !== option.value) enableIndicatorAnimation();
+											setViewDomain(null);
+											onPeriodChange(option.value);
+										}}
+										className="relative z-10"
+									>
+										{option.label}
+									</button>
+								);
+								return (
+									<div key={option.value} ref={setItemRef(index)}>
+										{locked ? (
+											<Tooltip>
+												<TooltipTrigger asChild>{item}</TooltipTrigger>
+												<TooltipContent>
+													{t("monitor.loginRequired", "请登录后查看")}
+												</TooltipContent>
+											</Tooltip>
+										) : (
+											item
+										)}
+									</div>
+								);
+							})}
+						</div>
 					</div>
 				</TooltipProvider>
-				<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/15 bg-emerald-500/8 px-3 py-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-					<span className="relative flex size-1.5">
-						<span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-50" />
-						<span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-					</span>
+				<span className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs text-muted-foreground tabular-nums">
+					<span
+						className="status-dot"
+						data-status="online"
+						aria-hidden="true"
+					/>
 					{t("monitor.trueSamples", "真实采样")} {chartPoints.length} /{" "}
 					{visiblePoints.length}
 				</span>
 				{hasIncompleteHistory && (
 					<span
 						data-testid="history-coverage"
-						className="inline-flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/8 px-3 py-1.5 text-[11px] font-medium tabular-nums text-amber-700 dark:text-amber-300"
+						className="inline-flex h-7 items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-2.5 text-xs tabular-nums text-warning"
 					>
 						{t("monitor.historyCoverage", "历史覆盖")}{" "}
 						{formatDuration(availableHistoryMs)} /{" "}
@@ -775,28 +775,28 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 
 			<Card
 				className={cn(
-					"relative isolate min-w-0 overflow-hidden border border-white/70 bg-white/72 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.6)] ring-1 ring-slate-950/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/72 dark:ring-white/5",
-					customBackgroundImage && "bg-card/60",
+					"network-chart-panel min-w-0 overflow-hidden",
+					customBackgroundImage && "bg-card/70",
 				)}
 			>
-				<div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-52 bg-[radial-gradient(circle_at_12%_0%,rgba(14,165,233,0.16),transparent_42%),radial-gradient(circle_at_88%_10%,rgba(99,102,241,0.13),transparent_36%)] dark:bg-[radial-gradient(circle_at_12%_0%,rgba(14,165,233,0.18),transparent_42%),radial-gradient(circle_at_88%_10%,rgba(99,102,241,0.18),transparent_36%)]" />
-				<CardHeader className="min-w-0 space-y-0 overflow-hidden rounded-t-lg p-0">
-					<div className="flex items-center justify-between gap-4 border-b border-slate-200/70 px-4 py-4 dark:border-white/8 sm:px-6 sm:py-5">
-						<div className="flex min-w-0 items-center gap-3">
-							<div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-sky-500/15 bg-gradient-to-br from-sky-500/15 to-indigo-500/10 text-sky-600 shadow-inner dark:text-sky-300">
-								<SignalIcon className="size-5" />
-							</div>
+				<CardHeader className="min-w-0 space-y-0 p-0">
+					<div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3">
+						<div className="flex min-w-0 items-center gap-2.5">
+							<SignalIcon
+								aria-hidden="true"
+								className="size-4 shrink-0 text-muted-foreground"
+							/>
 							<div className="min-w-0">
-								<CardTitle className="truncate text-base font-bold tracking-tight sm:text-lg">
+								<CardTitle className="truncate text-sm font-semibold leading-5">
 									{serverName}
 								</CardTitle>
-								<CardDescription className="mt-0.5 text-xs">
+								<CardDescription className="text-xs leading-4">
 									{chartDataKey.length} {t("monitor.monitorCount")}
 								</CardDescription>
 							</div>
 						</div>
-						<div className="flex shrink-0 items-center gap-2">
-							<span className="inline-flex rounded-full border border-slate-200/70 bg-white/65 px-2 py-1 text-[10px] font-semibold tabular-nums text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:px-2.5 sm:text-[11px]">
+						<div className="flex shrink-0 items-center gap-1.5">
+							<span className="px-1 font-mono text-xs text-muted-foreground tabular-nums">
 								{selectedIndex + 1} / {chartDataKey.length}
 							</span>
 							<button
@@ -804,7 +804,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 								aria-label={t("monitor.previousMonitor", "上一个监控任务")}
 								disabled={selectedIndex <= 0}
 								onClick={() => selectMonitorAt(selectedIndex - 1)}
-								className="flex size-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/75 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400/50 hover:text-sky-600 hover:shadow-md disabled:pointer-events-none disabled:opacity-30 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-sky-300"
+								className="flex size-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
 							>
 								<ChevronLeftIcon className="size-4" />
 							</button>
@@ -813,28 +813,29 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 								aria-label={t("monitor.nextMonitor", "下一个监控任务")}
 								disabled={selectedIndex >= chartDataKey.length - 1}
 								onClick={() => selectMonitorAt(selectedIndex + 1)}
-								className="flex size-9 items-center justify-center rounded-full border border-slate-200/80 bg-white/75 text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-400/50 hover:text-sky-600 hover:shadow-md disabled:pointer-events-none disabled:opacity-30 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-sky-300"
+								className="flex size-8 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
 							>
 								<ChevronRightIcon className="size-4" />
 							</button>
 						</div>
 					</div>
-					<div className="relative min-w-0 w-full">
-						<div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-7 bg-gradient-to-r from-white/90 to-transparent dark:from-slate-950/90" />
-						<div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-7 bg-gradient-to-l from-white/90 to-transparent dark:from-slate-950/90" />
+					<div className="relative w-full min-w-0 border-b border-border">
+						<div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-6 bg-gradient-to-r from-card to-transparent" />
+						<div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-6 bg-gradient-to-l from-card to-transparent" />
 						<div
 							ref={monitorTrackRef}
-							className="scrollbar-hidden w-full min-w-0 touch-pan-x overflow-x-auto overscroll-contain scroll-smooth px-4 py-4 sm:px-6"
+							className="scrollbar-hidden w-full min-w-0 touch-pan-x overflow-x-auto overscroll-contain scroll-smooth px-4 py-3"
 							data-testid="monitor-track"
 						>
 							<fieldset
-								className="flex w-max min-w-full snap-x snap-mandatory gap-3 border-0 p-0"
+								className="flex w-max min-w-full snap-x snap-mandatory gap-2 border-0 p-0"
 								aria-label={t("monitor.selectMonitor", "选择监控目标")}
 							>
-								{chartDataKey.map((key) => {
+								{chartDataKey.map((key, keyIndex) => {
 									const points = chartData[key];
 									const lastPoint = points[points.length - 1];
 									const failed = lastPoint ? isPointFailed(lastPoint) : false;
+									const selected = selectedMonitor === key;
 									const delays = points
 										.filter(
 											(point) =>
@@ -849,44 +850,45 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 												monitorButtonRefs.current[key] = node;
 											}}
 											onClick={() => selectMonitorAt(chartDataKey.indexOf(key))}
-											aria-pressed={selectedMonitor === key}
+											aria-pressed={selected}
 											className={cn(
-												"group relative min-h-28 w-[178px] shrink-0 snap-center overflow-hidden rounded-2xl border p-4 text-left transition-all duration-300 sm:w-[210px]",
-												selectedMonitor === key
-													? "border-sky-400/55 bg-gradient-to-br from-sky-500/14 via-white/88 to-indigo-500/10 shadow-[0_18px_45px_-24px_rgba(14,165,233,0.75)] ring-1 ring-sky-500/20 dark:from-sky-500/18 dark:via-slate-900/90 dark:to-indigo-500/16"
-													: "border-slate-200/80 bg-white/58 shadow-[0_12px_35px_-28px_rgba(15,23,42,0.8)] hover:-translate-y-0.5 hover:border-sky-300/60 hover:bg-white/85 hover:shadow-[0_18px_42px_-28px_rgba(14,165,233,0.65)] dark:border-white/10 dark:bg-white/[0.035] dark:hover:border-sky-400/35 dark:hover:bg-white/[0.065]",
+												"relative flex w-[168px] shrink-0 snap-center flex-col gap-1 overflow-hidden rounded-md border px-3 py-2.5 text-left transition-colors duration-150 sm:w-[196px]",
+												selected
+													? "border-primary/60 bg-primary/[0.06] dark:bg-primary/10"
+													: "border-border bg-card hover:bg-muted/60 dark:hover:bg-foreground/[0.03]",
 											)}
 										>
-											<div className="flex items-center justify-between gap-2">
-												<span className="block truncate text-xs font-semibold text-slate-600 dark:text-slate-300">
-													{key}
+											<span className="flex items-center justify-between gap-2">
+												<span className="flex min-w-0 items-center gap-1.5">
+													<span
+														aria-hidden="true"
+														className="size-2 shrink-0 rounded-[2px]"
+														style={{
+															backgroundColor: `hsl(var(--chart-${(keyIndex % 10) + 1}))`,
+														}}
+													/>
+													<span className="truncate text-xs font-medium">
+														{key}
+													</span>
 												</span>
 												<span
-													className={cn(
-														"size-2 shrink-0 rounded-full shadow-[0_0_0_4px_rgba(16,185,129,0.1)]",
-														failed
-															? "bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.1)]"
-															: "bg-emerald-500",
-													)}
+													className="status-dot"
+													data-status={failed ? "offline" : "online"}
 												/>
-											</div>
+											</span>
 											<span
 												className={cn(
-													"mt-3 block text-xl font-bold tracking-tight tabular-nums text-slate-950 dark:text-white",
-													failed && "text-red-500",
+													"text-base font-semibold leading-6 tabular-nums",
+													failed && "text-danger",
 												)}
 											>
 												{failed
 													? errorLabel(lastPoint.error_code, t)
 													: `${(lastPoint?.avg_delay ?? 0).toFixed(2)} ms`}
 											</span>
-											<span className="mt-2 block text-[11px] font-medium text-slate-500 dark:text-slate-400">
+											<span className="truncate text-[11px] text-muted-foreground tabular-nums">
 												{delays.length
-													? "最低 " +
-														Math.min(...delays).toFixed(0) +
-														" · 最高 " +
-														Math.max(...delays).toFixed(0) +
-														" ms"
+													? `${t("monitor.min", "最低")} ${Math.min(...delays).toFixed(0)} · ${t("monitor.max", "最高")} ${Math.max(...delays).toFixed(0)} ms`
 													: t("monitor.noSuccessfulSample", "暂无成功采样")}
 											</span>
 										</button>
@@ -897,22 +899,25 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 					</div>
 				</CardHeader>
 
-				<CardContent className="min-w-0 px-2 pb-5 pt-4 sm:px-5 sm:pt-6">
-					<div className="rounded-2xl border border-white/70 bg-white/55 p-3 shadow-[0_16px_45px_-35px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/8 dark:bg-white/[0.025] sm:p-4">
-						<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-							<div className="flex items-center gap-3">
-								<div
-									className={cn(
-										"size-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,0.1),0_0_18px_rgba(16,185,129,0.45)]",
-										currentFailed &&
-											"bg-red-500 shadow-[0_0_0_5px_rgba(239,68,68,0.1),0_0_18px_rgba(239,68,68,0.45)]",
-									)}
+				<CardContent className="min-w-0 p-0">
+					<div className="px-2 pt-3 pb-3 sm:px-4">
+						<div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-2 sm:px-0">
+							<div className="flex min-w-0 items-center gap-2.5">
+								<span
+									className="status-dot"
+									data-status={currentFailed ? "offline" : "online"}
+									aria-hidden="true"
 								/>
-								<div>
-									<p className="text-sm font-bold tracking-tight text-slate-950 dark:text-white">
+								<div className="min-w-0">
+									<p className="truncate text-[13px] font-medium">
 										{selectedMonitor}
 									</p>
-									<p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+									<p
+										className={cn(
+											"text-xs text-muted-foreground tabular-nums",
+											currentFailed && "text-danger",
+										)}
+									>
 										{currentFailed
 											? errorLabel(latestPoint?.error_code, t) +
 												" · " +
@@ -923,38 +928,44 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									</p>
 								</div>
 							</div>
-							<div className="flex flex-wrap items-center justify-end gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-								<span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/12 bg-red-500/7 px-2.5 py-1">
-									<i className="size-1.5 rounded-full bg-red-500" />
+							<div className="flex flex-wrap items-center justify-end gap-3 text-xs text-muted-foreground">
+								<span className="inline-flex items-center gap-1.5">
+									<i
+										aria-hidden="true"
+										className="h-2.5 w-3 rounded-[2px] border border-danger/40 bg-danger/20"
+									/>
 									{t("monitor.outagePeriod", "故障时段")}
 								</span>
-								<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/12 bg-emerald-500/7 px-2.5 py-1">
-									<i className="h-3 w-0.5 bg-green-500" />
+								<span className="inline-flex items-center gap-1.5">
+									<i aria-hidden="true" className="h-3 w-0.5 bg-success" />
 									{t("monitor.recoveryTime", "恢复时间")}
 								</span>
-								<div className="flex items-center rounded-full border border-slate-200/80 bg-white/70 p-0.5 shadow-sm dark:border-white/10 dark:bg-white/5">
+								<div className="segmented">
 									<button
 										type="button"
 										aria-label={t("monitor.zoomIn", "放大时间线")}
+										title={t("monitor.zoomIn", "放大时间线")}
 										onClick={() => zoomChart(0.5)}
-										className="flex size-8 items-center justify-center rounded-full hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-300"
+										className="w-8 px-0!"
 									>
 										<MagnifyingGlassPlusIcon className="size-4" />
 									</button>
 									<button
 										type="button"
 										aria-label={t("monitor.zoomOut", "缩小时间线")}
+										title={t("monitor.zoomOut", "缩小时间线")}
 										onClick={() => zoomChart(2)}
-										className="flex size-8 items-center justify-center rounded-full hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-300"
+										className="w-8 px-0!"
 									>
 										<MagnifyingGlassMinusIcon className="size-4" />
 									</button>
 									<button
 										type="button"
 										aria-label={t("monitor.resetZoom", "重置时间线")}
+										title={t("monitor.resetZoom", "重置时间线")}
 										disabled={!viewDomain}
 										onClick={() => setViewDomain(null)}
-										className="flex size-8 items-center justify-center rounded-full hover:bg-sky-500/10 hover:text-sky-600 disabled:opacity-35 dark:hover:text-sky-300"
+										className="w-8 px-0!"
 									>
 										<ArrowPathIcon className="size-4" />
 									</button>
@@ -964,7 +975,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 						<div
 							ref={chartViewportRef}
 							data-testid="network-chart-viewport"
-							className="relative min-w-0 touch-pan-y overflow-hidden rounded-xl bg-gradient-to-b from-slate-50/50 to-transparent dark:from-white/[0.02]"
+							className="relative min-w-0 touch-pan-y overflow-hidden"
 							title={t(
 								"monitor.zoomHint",
 								"滚动鼠标滚轮可围绕指针位置缩放时间线",
@@ -1017,17 +1028,17 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 													yAxisId="delay"
 													x1={outage.start}
 													x2={visibleEnd}
-													fill="#ef4444"
-													fillOpacity={0.16}
-													stroke="#ef4444"
-													strokeOpacity={0.25}
+													fill="hsl(var(--danger))"
+													fillOpacity={0.14}
+													stroke="hsl(var(--danger))"
+													strokeOpacity={0.3}
 												/>
 												{outage.end !== null && (
 													<ReferenceLine
 														xAxisId={0}
 														yAxisId="delay"
 														x={outage.end}
-														stroke="#22c55e"
+														stroke="hsl(var(--success))"
 														strokeWidth={2}
 													/>
 												)}
@@ -1050,9 +1061,9 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 										dataKey="trend_delay"
 										name={selectedMonitor}
 										stroke={selectedColor}
-										strokeWidth={2.4}
+										strokeWidth={2}
 										dot={false}
-										activeDot={{ r: 6, strokeWidth: 2 }}
+										activeDot={{ r: 5, strokeWidth: 2 }}
 										connectNulls={false}
 										yAxisId="delay"
 									/>
@@ -1063,8 +1074,8 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 											y={delayScale.maximum * 0.97}
 											yAxisId="delay"
 											r={2.5}
-											fill="#ef4444"
-											stroke="#ef4444"
+											fill="hsl(var(--danger))"
+											stroke="hsl(var(--danger))"
 										/>
 									))}
 								</ComposedChart>
@@ -1091,10 +1102,10 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 							{hoveredPoint && (
 								<div
 									data-testid="network-chart-hover-tooltip"
-									className="pointer-events-none absolute z-20 min-w-44 -translate-x-1/2 -translate-y-[calc(100%+12px)] rounded-xl border border-slate-200/80 bg-white/95 px-3 py-2.5 text-xs shadow-xl backdrop-blur-md dark:border-white/10 dark:bg-slate-950/90"
+									className="pointer-events-none absolute z-20 min-w-44 -translate-x-1/2 -translate-y-[calc(100%+12px)] rounded-lg border border-border bg-popover px-3 py-2.5 text-xs text-popover-foreground shadow-popover"
 									style={{ left: hoveredPoint.x, top: hoveredPoint.y }}
 								>
-									<div className="mb-1.5 text-[11px] text-muted-foreground">
+									<div className="mb-1.5 text-[11px] text-muted-foreground tabular-nums">
 										{formatTime(hoveredPoint.point.created_at)}
 									</div>
 									<div className="flex items-center justify-between gap-4">
@@ -1104,7 +1115,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 										<span
 											className={cn(
 												"font-semibold tabular-nums",
-												isPointFailed(hoveredPoint.point) && "text-red-500",
+												isPointFailed(hoveredPoint.point) && "text-danger",
 											)}
 										>
 											{isPointFailed(hoveredPoint.point)
@@ -1119,7 +1130,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 										<span
 											className={cn(
 												"font-semibold",
-												isPointFailed(hoveredPoint.point) && "text-red-500",
+												isPointFailed(hoveredPoint.point) && "text-danger",
 											)}
 										>
 											{isPointFailed(hoveredPoint.point)
@@ -1140,53 +1151,66 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 								</div>
 							)}
 							{showPeriodLoading && (
-								<div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-md backdrop-blur-[1px]">
+								<div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
 									<div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground/70" />
 								</div>
 							)}
 						</div>
 					</div>
 
-					<div className="mt-4 rounded-2xl border border-slate-200/70 bg-white/45 p-3.5 shadow-[0_14px_40px_-34px_rgba(15,23,42,0.8)] backdrop-blur-xl dark:border-white/8 dark:bg-white/[0.02] sm:p-4">
-						<div className="mb-3 flex items-center justify-between gap-2">
-							<h3 className="text-sm font-semibold">
+					<div className="border-t border-border">
+						<div className="flex items-center justify-between gap-2 px-4 py-3">
+							<h3 className="text-[13px] font-semibold">
 								{t("monitor.outageRecords", "故障记录")}
 							</h3>
-							<span className="text-xs text-muted-foreground">
+							<span className="text-xs text-muted-foreground tabular-nums">
 								{outages.length} {t("monitor.outageCount", "次")}
 							</span>
 						</div>
 						{recentOutages.length === 0 ? (
-							<div className="rounded-xl border border-dashed border-slate-300/80 bg-white/35 px-4 py-6 text-center text-sm font-medium text-slate-400 dark:border-white/10 dark:bg-white/[0.015] dark:text-slate-500">
+							<div className="border-t border-border px-4 py-6 text-center text-[13px] text-muted-foreground">
 								{t("monitor.noOutage", "当前时间范围内没有故障")}
 							</div>
 						) : (
-							<div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+							<ul className="divide-y divide-border border-t border-border">
 								{recentOutages.map((outage) => {
 									const end = outage.end ?? domainEnd;
 									return (
-										<div
+										<li
 											key={outage.start}
-											className="min-h-24 rounded-xl border border-red-500/18 bg-gradient-to-br from-red-500/8 via-white/45 to-amber-500/5 p-3.5 shadow-[0_14px_34px_-28px_rgba(239,68,68,0.6)] dark:via-white/[0.02]"
+											className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 px-4 py-3"
 										>
-											<div className="flex items-start justify-between gap-3">
-												<div>
-													<p className="font-medium text-red-600 dark:text-red-400">
+											<div className="flex min-w-0 items-start gap-2.5">
+												<span
+													className="status-dot mt-[5px]"
+													data-status={outage.recovered ? "online" : "offline"}
+													aria-hidden="true"
+												/>
+												<div className="min-w-0">
+													<p className="text-[13px] font-medium text-danger">
 														{errorLabel(outage.errorCode, t)}
 													</p>
-													<p className="mt-1 text-xs text-muted-foreground">
+													<p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
 														{formatTime(outage.start)} →{" "}
 														{outage.end
 															? formatTime(outage.end)
 															: t("monitor.notRecovered", "尚未恢复")}
 													</p>
 												</div>
+											</div>
+											<div className="flex items-center gap-3 pl-[18px] sm:pl-0">
+												<span className="text-xs tabular-nums text-muted-foreground">
+													{t("monitor.duration", "持续")}{" "}
+													<span className="font-medium text-foreground">
+														{formatDuration(end - outage.start)}
+													</span>
+												</span>
 												<span
 													className={cn(
-														"shrink-0 rounded-full px-2 py-1 text-[11px] font-medium",
+														"inline-flex h-5 items-center rounded-[4px] px-1.5 text-xs font-medium",
 														outage.recovered
-															? "bg-green-500/10 text-green-600 dark:text-green-400"
-															: "bg-red-500/10 text-red-600 dark:text-red-400",
+															? "bg-success/12 text-success"
+															: "bg-danger/12 text-danger",
 													)}
 												>
 													{outage.recovered
@@ -1194,14 +1218,10 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 														: t("monitor.inOutage", "故障中")}
 												</span>
 											</div>
-											<p className="mt-3 text-sm font-semibold tabular-nums">
-												{t("monitor.duration", "持续")}{" "}
-												{formatDuration(end - outage.start)}
-											</p>
-										</div>
+										</li>
 									);
 								})}
-							</div>
+							</ul>
 						)}
 					</div>
 				</CardContent>

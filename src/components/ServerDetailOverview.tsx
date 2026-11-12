@@ -7,7 +7,6 @@ import { BackIcon } from "@/components/Icon";
 import { ServerDetailLoading } from "@/components/loading/ServerDetailLoading";
 import ServerFlag from "@/components/ServerFlag";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { useWebSocketContext } from "@/hooks/use-websocket-context";
 import { formatBytes } from "@/lib/format";
 import { cn, formatNezhaInfo } from "@/lib/utils";
@@ -103,137 +102,47 @@ export default function ServerDetailOverview({
 
 	countries.registerLocale(enLocale);
 
+	const uptimeLabel =
+		uptime / 86400 >= 1
+			? `${Math.floor(uptime / 86400)} ${t("serverDetail.days")} ${Math.floor((uptime % 86400) / 3600)} ${t("serverDetail.hours")}`
+			: `${Math.floor(uptime / 3600)} ${t("serverDetail.hours")}`;
+
 	return (
-		<div
-			className={cn(
-				"server-detail-overview glass-panel overflow-hidden rounded-2xl p-4 sm:p-5",
-				{
-					"bg-card/70 p-4 rounded-[10px]": customBackgroundImage,
-				},
-			)}
-		>
-			<div
-				onClick={linkClick}
-				className="server-name flex flex-none cursor-pointer items-center gap-2 break-all text-xl font-black leading-none tracking-tight sm:text-2xl"
-			>
-				<BackIcon />
-				{name}
-			</div>
-			<section className="flex flex-wrap gap-2 mt-3">
-				<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-					<CardContent className="px-1.5 py-1">
-						<section className="flex flex-col items-start gap-0.5">
-							<p className="text-xs text-muted-foreground">
-								{t("serverDetail.status")}
-							</p>
-							<Badge
-								className={cn(
-									"text-[9px] rounded-[6px] w-fit px-1 py-0 -mt-[0.3px] dark:text-white",
-									{
-										" bg-green-800": online,
-										" bg-red-600": !online,
-									},
-								)}
-							>
-								{online ? t("serverDetail.online") : t("serverDetail.offline")}
-							</Badge>
-						</section>
-					</CardContent>
-				</Card>
-				{online && (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">
-									{t("serverDetail.uptime")}
-								</p>
-								<NumericText
-									value={
-										uptime / 86400 >= 1
-											? `${Math.floor(uptime / 86400)} ${t("serverDetail.days")} ${Math.floor((uptime % 86400) / 3600)} ${t("serverDetail.hours")}`
-											: `${Math.floor(uptime / 3600)} ${t("serverDetail.hours")}`
-									}
-									className="text-xs"
-								/>
-							</section>
-						</CardContent>
-					</Card>
-				)}
-				{version && (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">
-									{t("serverDetail.version")}
-								</p>
-								<div className="text-xs">{version} </div>
-							</section>
-						</CardContent>
-					</Card>
-				)}
-				{arch && (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">
-									{t("serverDetail.arch")}
-								</p>
-								<div className="text-xs">{arch} </div>
-							</section>
-						</CardContent>
-					</Card>
-				)}
-
-				{mem_total ? (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">
-									{t("serverDetail.mem")}
-								</p>
-								<div className="text-xs">{formatBytes(mem_total)}</div>
-							</section>
-						</CardContent>
-					</Card>
-				) : null}
-
-				{disk_total ? (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">
-									{t("serverDetail.disk")}
-								</p>
-								<div className="text-xs">{formatBytes(disk_total)}</div>
-							</section>
-						</CardContent>
-					</Card>
-				) : null}
-
+		<div className="server-detail-overview flex min-w-0 flex-col gap-4">
+			<div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+				<button
+					type="button"
+					onClick={linkClick}
+					title={t("serverDetail.back")}
+					className="server-name group flex min-w-0 items-center gap-2.5 text-left"
+				>
+					<span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-card transition-colors group-hover:bg-muted [&_img]:mr-0! [&_img]:size-4">
+						<BackIcon />
+					</span>
+					<span className="min-w-0 break-all text-xl font-semibold leading-tight sm:text-2xl">
+						{name}
+					</span>
+				</button>
+				<Badge variant={online ? "success" : "destructive"}>
+					<span
+						className="status-dot size-1.5"
+						data-status={online ? "online" : "offline"}
+					/>
+					{online ? t("serverDetail.online") : t("serverDetail.offline")}
+				</Badge>
 				{country_code && (
 					<TooltipProvider delayDuration={100}>
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-									<CardContent className="px-1.5 py-1">
-										<section className="flex flex-col items-start gap-0.5">
-											<p className="text-xs text-muted-foreground">
-												{t("serverDetail.region")}
-											</p>
-											<section className="flex items-start gap-1">
-												<div className="text-xs text-start">
-													{country_code?.toUpperCase()}
-												</div>
-												{country_code && (
-													<ServerFlag
-														className="text-[11px] -mt-px"
-														country_code={country_code}
-													/>
-												)}
-											</section>
-										</section>
-									</CardContent>
-								</Card>
+								<span className="inline-flex h-5 cursor-default items-center gap-1.5 rounded-[4px] bg-muted px-1.5 text-xs text-muted-foreground dark:bg-foreground/[0.06]">
+									<ServerFlag
+										className="text-[11px] leading-none"
+										country_code={country_code}
+									/>
+									<span className="font-mono">
+										{country_code?.toUpperCase()}
+									</span>
+								</span>
 							</TooltipTrigger>
 							<TooltipContent>
 								<p>{countries.getName(country_code?.toUpperCase(), "en")}</p>
@@ -241,119 +150,106 @@ export default function ServerDetailOverview({
 						</Tooltip>
 					</TooltipProvider>
 				)}
-			</section>
-			<section className="flex flex-wrap gap-2 mt-1">
-				{platform && (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">
-									{t("serverDetail.system")}
-								</p>
-								<div className="text-xs">
-									{" "}
-									{platform} {platform_version ? ` - ${platform_version}` : ""}
-								</div>
-							</section>
-						</CardContent>
-					</Card>
+			</div>
+
+			<div
+				className={cn(
+					"overflow-hidden rounded-lg border border-border bg-card",
+					{
+						"bg-card/80": customBackgroundImage,
+					},
 				)}
-				{cpu_info.length > 0 && (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">{"CPU"}</p>
-								<div className="text-xs"> {cpu_info.join(", ")}</div>
-							</section>
-						</CardContent>
-					</Card>
-				)}
-				{gpu_info.length > 0 && (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">{"GPU"}</p>
-								<div className="text-xs">{gpu_info.join(", ")}</div>
-							</section>
-						</CardContent>
-					</Card>
-				)}
-			</section>
-			<section className="flex flex-wrap gap-2 mt-1">
-				<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-					<CardContent className="px-1.5 py-1">
-						<section className="flex flex-col items-start gap-0.5">
-							<p className="text-xs text-muted-foreground">{"Load"}</p>
-							<div className="grid grid-cols-3 gap-2 text-xs tabular-nums">
-								{[
-									{ label: "1m", value: load_1 },
-									{ label: "5m", value: load_5 },
-									{ label: "15m", value: load_15 },
-								].map(({ label, value }) => (
-									<div key={label} className="flex items-center gap-1">
-										<span className="text-[10px] text-muted-foreground">
-											{label}
-										</span>
-										<NumericText value={`${value}`} className="text-xs" />
-									</div>
-								))}
-							</div>
-						</section>
-					</CardContent>
-				</Card>
-				{net_out_transfer ? (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">
-									{t("serverDetail.upload")}
-								</p>
-								{net_out_transfer ? (
-									<NumericText
-										value={formatBytes(net_out_transfer)}
-										className="text-xs"
-									/>
-								) : (
-									<div className="text-xs"> {t("serverDetail.unknown")}</div>
-								)}
-							</section>
-						</CardContent>
-					</Card>
-				) : null}
-				{net_in_transfer ? (
-					<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-						<CardContent className="px-1.5 py-1">
-							<section className="flex flex-col items-start gap-0.5">
-								<p className="text-xs text-muted-foreground">
-									{t("serverDetail.download")}
-								</p>
-								{net_in_transfer ? (
-									<NumericText
-										value={formatBytes(net_in_transfer)}
-										className="text-xs"
-									/>
-								) : (
-									<div className="text-xs"> {t("serverDetail.unknown")}</div>
-								)}
-							</section>
-						</CardContent>
-					</Card>
-				) : null}
-			</section>
-			<section className="flex flex-wrap gap-2 mt-1">
+			>
+				<dl className="-mb-px -mr-px grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6">
+					{platform && (
+						<Fact label={t("serverDetail.system")} wide>
+							{platform} {platform_version ? ` - ${platform_version}` : ""}
+						</Fact>
+					)}
+					{cpu_info.length > 0 && (
+						<Fact label={t("serverDetail.cpu")} wide>
+							{cpu_info.join(", ")}
+						</Fact>
+					)}
+					{gpu_info.length > 0 && (
+						<Fact label={t("serverDetail.gpu")} wide>
+							{gpu_info.join(", ")}
+						</Fact>
+					)}
+					{arch && (
+						<Fact label={t("serverDetail.arch")} mono>
+							{arch}
+						</Fact>
+					)}
+					{mem_total ? (
+						<Fact label={t("serverDetail.mem")}>{formatBytes(mem_total)}</Fact>
+					) : null}
+					{disk_total ? (
+						<Fact label={t("serverDetail.disk")}>
+							{formatBytes(disk_total)}
+						</Fact>
+					) : null}
+					{online && (
+						<Fact label={t("serverDetail.uptime")}>
+							<NumericText value={uptimeLabel} />
+						</Fact>
+					)}
+					{version && (
+						<Fact label={t("serverDetail.version")} mono>
+							{version}
+						</Fact>
+					)}
+					<Fact label={t("serverDetail.load")} wide>
+						<span className="flex flex-wrap gap-x-3 gap-y-0.5">
+							{[
+								{ label: "1m", value: load_1 },
+								{ label: "5m", value: load_5 },
+								{ label: "15m", value: load_15 },
+							].map(({ label, value }) => (
+								<span key={label} className="inline-flex items-baseline gap-1">
+									<span className="text-[11px] text-muted-foreground">
+										{label}
+									</span>
+									<NumericText value={`${value}`} />
+								</span>
+							))}
+						</span>
+					</Fact>
+					{net_out_transfer ? (
+						<Fact label={t("serverDetail.upload")}>
+							<NumericText value={formatBytes(net_out_transfer)} />
+						</Fact>
+					) : null}
+					{net_in_transfer ? (
+						<Fact label={t("serverDetail.download")}>
+							<NumericText value={formatBytes(net_in_transfer)} />
+						</Fact>
+					) : null}
+					<Fact label={t("serverDetail.bootTime")} mono>
+						{boot_time_string ? boot_time_string : "N/A"}
+					</Fact>
+					<Fact label={t("serverDetail.lastActive")} mono>
+						<NumericText
+							value={last_active_time_string ? last_active_time_string : "N/A"}
+						/>
+					</Fact>
+				</dl>
 				{server?.state.temperatures &&
 					server?.state.temperatures.length > 0 && (
-						<section className="flex flex-wrap gap-2 ml-1.5">
-							<Accordion type="single" collapsible className="w-fit">
+						<div className="border-t border-border px-4 py-2.5">
+							<Accordion type="single" collapsible className="w-full">
 								<AccordionItem value="item-1" className="border-none">
-									<AccordionTrigger className="text-xs py-0 text-muted-foreground font-normal">
+									<AccordionTrigger className="justify-start py-0 text-xs font-normal text-muted-foreground">
 										{t("serverDetail.temperature")}
 									</AccordionTrigger>
-									<AccordionContent className="pb-0">
-										<section className="flex items-start flex-wrap gap-2">
+									<AccordionContent className="pb-0 pt-2">
+										<section className="flex flex-wrap items-start gap-x-4 gap-y-1">
 											{server?.state.temperatures.map((item, index) => (
-												<div className="text-xs flex items-center" key={index}>
-													<p className="font-semibold">{item.Name}</p>:{" "}
+												<div
+													className="flex items-center gap-1 text-xs tabular-nums"
+													key={index}
+												>
+													<p className="text-muted-foreground">{item.Name}</p>:{" "}
 													{item.Temperature.toFixed(2)} °C
 												</div>
 											))}
@@ -361,39 +257,40 @@ export default function ServerDetailOverview({
 									</AccordionContent>
 								</AccordionItem>
 							</Accordion>
-						</section>
+						</div>
 					)}
-			</section>
+			</div>
+		</div>
+	);
+}
 
-			<section className="flex flex-wrap gap-2 mt-1">
-				<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-					<CardContent className="px-1.5 py-1">
-						<section className="flex flex-col items-start gap-0.5">
-							<p className="text-xs text-muted-foreground">
-								{t("serverDetail.bootTime")}
-							</p>
-							<div className="text-xs">
-								{boot_time_string ? boot_time_string : "N/A"}
-							</div>
-						</section>
-					</CardContent>
-				</Card>
-				<Card className="rounded-[10px] bg-transparent border-none shadow-none ring-0">
-					<CardContent className="px-1.5 py-1">
-						<section className="flex flex-col items-start gap-0.5">
-							<p className="text-xs text-muted-foreground">
-								{t("serverDetail.lastActive")}
-							</p>
-							<NumericText
-								value={
-									last_active_time_string ? last_active_time_string : "N/A"
-								}
-								className="text-xs"
-							/>
-						</section>
-					</CardContent>
-				</Card>
-			</section>
+function Fact({
+	label,
+	children,
+	wide = false,
+	mono = false,
+}: {
+	label: string;
+	children: React.ReactNode;
+	wide?: boolean;
+	mono?: boolean;
+}) {
+	return (
+		<div
+			className={cn(
+				"flex min-w-0 flex-col gap-0.5 border-b border-r border-border px-3 py-2 sm:gap-1 sm:px-4 sm:py-3",
+				wide && "col-span-2",
+			)}
+		>
+			<dt className="text-xs text-muted-foreground">{label}</dt>
+			<dd
+				className={cn(
+					"break-words text-[13px] tabular-nums",
+					mono && "font-mono text-xs leading-5",
+				)}
+			>
+				{children}
+			</dd>
 		</div>
 	);
 }
