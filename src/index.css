@@ -273,24 +273,6 @@
 		background-color: hsl(var(--neutral-status));
 	}
 
-	/* Meter (§6): 4px track, threshold-colored fill. */
-	.meter {
-		@apply relative h-1 w-full overflow-hidden rounded-[2px] bg-muted;
-	}
-	.dark .meter {
-		background-color: hsl(var(--foreground) / 0.08);
-	}
-	.meter > span {
-		@apply absolute inset-y-0 left-0 rounded-[2px] transition-[width] duration-150 ease-out;
-		background-color: hsl(var(--primary));
-	}
-	.meter[data-level="warn"] > span {
-		background-color: hsl(var(--warning));
-	}
-	.meter[data-level="bad"] > span {
-		background-color: hsl(var(--danger));
-	}
-
 	/* Segmented control (§7): bordered track, filled selected item. */
 	.segmented {
 		@apply inline-flex shrink-0 items-center gap-0.5 rounded-md border border-border bg-card p-0.5;
