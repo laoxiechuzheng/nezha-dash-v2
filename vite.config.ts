@@ -30,6 +30,10 @@ const getVendorChunkName = (moduleId: string) => {
 	return packageName || null;
 };
 
+// Dev proxy target (host:port). Override with NEZHA_PROXY_TARGET, e.g. to point
+// at a mock server on another port; defaults to the local panel.
+const devProxyTarget = process.env.NEZHA_PROXY_TARGET || "localhost:8008";
+
 // https://vite.dev/config/
 export default defineConfig({
 	base: "/",
@@ -49,12 +53,12 @@ export default defineConfig({
 		},
 		proxy: {
 			"/api/v1/ws/server": {
-				target: "ws://localhost:8008",
+				target: `ws://${devProxyTarget}`,
 				changeOrigin: true,
 				ws: true,
 			},
 			"/api/v1/": {
-				target: "http://localhost:8008",
+				target: `http://${devProxyTarget}`,
 				changeOrigin: true,
 			},
 		},
