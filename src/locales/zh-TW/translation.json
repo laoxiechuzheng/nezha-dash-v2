@@ -21,12 +21,16 @@
 		"offlineServers": "離線伺服器",
 		"totalBandwidth": "總帶寬",
 		"speed": "速率",
-		"network": "網路"
+		"network": "網路",
+		"uploadSpeed": "即時上行",
+		"downloadSpeed": "即時下行",
+		"totalTraffic": "累計流量"
 	},
 	"map": {
 		"Distributions": "伺服器分布在",
 		"Regions": "個區域",
-		"Servers": "個伺服器"
+		"Servers": "個伺服器",
+		"title": "伺服器分佈"
 	},
 	"serverCard": {
 		"mem": "內存",
@@ -51,7 +55,24 @@
 		"delay": "延遲",
 		"daysAgo": "天前",
 		"today": "今天",
-		"loading": "載入中..."
+		"loading": "載入中...",
+		"title": "服務監控",
+		"toggle": "服務監控",
+		"toggleLabel": "服務監控，共 {{count}} 項",
+		"allHealthy": "全部服務運行正常",
+		"needsAttention": "{{count}} 項服務需要關注",
+		"monitored": "監控服務",
+		"healthy": "正常",
+		"avgUptime": "平均可用率",
+		"onlyIssues": "僅看異常",
+		"showAll": "查看全部",
+		"statusHealthy": "目前正常",
+		"statusDegraded": "目前異常",
+		"statusUnknown": "等待取樣",
+		"incidentDays": "{{count}} 天發生異常",
+		"noIncident": "無異常記錄",
+		"timelineLabel": "30 天服務可用性時間線",
+		"noIssues": "目前沒有異常服務"
 	},
 	"serverDetail": {
 		"status": "狀態",
@@ -71,7 +92,11 @@
 		"download": "下載",
 		"lastActive": "最後上報時間",
 		"temperature": "溫度",
-		"bootTime": "啟動時間"
+		"bootTime": "啟動時間",
+		"back": "返回",
+		"cpu": "CPU",
+		"gpu": "GPU",
+		"load": "負載"
 	},
 	"serverDetailChart": {
 		"process": "進程數",
@@ -79,10 +104,14 @@
 		"mem": "內存",
 		"swap": "虛擬記憶體",
 		"upload": "上傳",
-		"download": "下載"
+		"download": "下載",
+		"network": "網路",
+		"connections": "連線",
+		"noSwap": "無 Swap"
 	},
 	"footer": {
-		"themeBy": "主題-"
+		"themeBy": "主題-",
+		"search": "搜尋"
 	},
 	"language": {
 		"zh-CN": "简体中文",
@@ -102,7 +131,8 @@
 		"pageNotFound": "頁面不存在",
 		"backToHome": "回到主頁",
 		"backendUnavailableTitle": "後端 API 無法存取",
-		"backendUnavailableDescription": "頁面仍會正常顯示，但暫時無法載入監控資料。"
+		"backendUnavailableDescription": "頁面仍會正常顯示，但暫時無法載入監控資料。",
+		"somethingWentWrong": "發生錯誤"
 	},
 	"tabSwitch": {
 		"detail": "詳細資訊",
@@ -120,7 +150,14 @@
 		"peakCut": "削峰",
 		"period1d": "1 天",
 		"period7d": "7 天",
-		"period30d": "30 天"
+		"period30d": "30 天",
+		"historyCoverage": "歷史覆蓋",
+		"zoomIn": "放大時間線",
+		"zoomOut": "縮小時間線",
+		"resetZoom": "重設時間線",
+		"zoomHint": "捲動滑鼠滾輪可圍繞指標位置縮放時間線",
+		"min": "最低",
+		"max": "最高"
 	},
 	"billingInfo": {
 		"remaining": "剩餘天數",
@@ -163,5 +200,34 @@
 	},
 	"group": {
 		"all": "全部"
+	},
+	"header": {
+		"searchPlaceholder": "搜尋伺服器或指令",
+		"viewers": "線上訪客",
+		"toggleBackground": "切換背景圖"
+	},
+	"filter": {
+		"status": "狀態",
+		"all": "全部",
+		"online": "線上",
+		"offline": "離線"
+	},
+	"view": {
+		"label": "檢視",
+		"list": "列表",
+		"card": "卡片",
+		"map": "地圖"
+	},
+	"serverList": {
+		"name": "伺服器",
+		"cpu": "CPU",
+		"mem": "記憶體",
+		"disk": "磁碟",
+		"speed": "即時速率",
+		"traffic": "累計流量",
+		"load": "負載",
+		"uptime": "運行時間",
+		"offline": "離線",
+		"count": "{{count}} 台伺服器"
 	}
 }

@@ -17,7 +17,7 @@ import { useCommand } from "@/hooks/use-command";
 import { useTheme } from "@/hooks/use-theme";
 import { useWebSocketContext } from "@/hooks/use-websocket-context";
 import { saveMainPageScrollPosition } from "@/lib/navigation";
-import { formatNezhaInfo } from "@/lib/utils";
+import { cn, formatNezhaInfo } from "@/lib/utils";
 
 export function DashCommand() {
 	const { isOpen, closeCommand, toggleCommand } = useCommand();
@@ -95,7 +95,7 @@ export function DashCommand() {
 				value={search}
 				onValueChange={setSearch}
 			/>
-			<CommandList className="border-t">
+			<CommandList>
 				<CommandEmpty>{t("NoResults")}</CommandEmpty>
 				{serverCommands.length > 0 && (
 					<CommandGroup heading={t("Servers")}>
@@ -109,12 +109,21 @@ export function DashCommand() {
 									closeCommand();
 								}}
 							>
-								{server.online ? (
-									<span className="h-2 w-2 shrink-0 rounded-full bg-green-500 self-center" />
-								) : (
-									<span className="h-2 w-2 shrink-0 rounded-full bg-red-500 self-center" />
-								)}
-								<span>{server.name}</span>
+								<span
+									className="status-dot"
+									data-status={server.online ? "online" : "offline"}
+								/>
+								<span
+									className={cn(
+										"truncate",
+										!server.online && "text-muted-foreground",
+									)}
+								>
+									{server.name}
+								</span>
+								<span className="ml-auto font-mono text-[11px] text-muted-foreground tabular-nums">
+									#{server.id}
+								</span>
 							</CommandItem>
 						))}
 					</CommandGroup>

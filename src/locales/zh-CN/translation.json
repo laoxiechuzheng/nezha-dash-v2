@@ -21,12 +21,16 @@
 		"offlineServers": "离线服务器",
 		"totalBandwidth": "总流量",
 		"speed": "速率",
-		"network": "网络"
+		"network": "网络",
+		"uploadSpeed": "实时上行",
+		"downloadSpeed": "实时下行",
+		"totalTraffic": "累计流量"
 	},
 	"map": {
 		"Distributions": "服务器分布在",
 		"Regions": "个区域",
-		"Servers": "个服务器"
+		"Servers": "个服务器",
+		"title": "服务器分布"
 	},
 	"serverCard": {
 		"mem": "内存",
@@ -51,7 +55,24 @@
 		"delay": "延迟",
 		"daysAgo": "天前",
 		"today": "今天",
-		"loading": "加载中..."
+		"loading": "加载中...",
+		"title": "服务监控",
+		"toggle": "服务监控",
+		"toggleLabel": "服务监控，共 {{count}} 项",
+		"allHealthy": "全部服务运行正常",
+		"needsAttention": "{{count}} 项服务需要关注",
+		"monitored": "监控服务",
+		"healthy": "正常",
+		"avgUptime": "平均可用率",
+		"onlyIssues": "仅看异常",
+		"showAll": "查看全部",
+		"statusHealthy": "当前正常",
+		"statusDegraded": "当前异常",
+		"statusUnknown": "等待采样",
+		"incidentDays": "{{count}} 天发生异常",
+		"noIncident": "无异常记录",
+		"timelineLabel": "30 天服务可用性时间线",
+		"noIssues": "当前没有异常服务"
 	},
 	"serverDetail": {
 		"status": "状态",
@@ -71,7 +92,11 @@
 		"download": "下载",
 		"lastActive": "最后上报时间",
 		"temperature": "温度",
-		"bootTime": "启动时间"
+		"bootTime": "启动时间",
+		"back": "返回",
+		"cpu": "CPU",
+		"gpu": "GPU",
+		"load": "负载"
 	},
 	"serverDetailChart": {
 		"process": "进程数",
@@ -86,10 +111,14 @@
 		"period7d": "7 天",
 		"period30d": "30 天",
 		"tsdbRequired": "需要开启 TSDB 才能启用历史记录功能",
-		"loginRequired": "请登录后查看"
+		"loginRequired": "请登录后查看",
+		"network": "网络",
+		"connections": "连接",
+		"noSwap": "无 Swap"
 	},
 	"footer": {
-		"themeBy": "主题-"
+		"themeBy": "主题-",
+		"search": "搜索"
 	},
 	"language": {
 		"zh-CN": "简体中文",
@@ -110,7 +139,8 @@
 		"pageNotFound": "页面不存在",
 		"backToHome": "回到主页",
 		"backendUnavailableTitle": "后端 API 无法访问",
-		"backendUnavailableDescription": "页面仍会正常显示，但暂时无法加载监控数据。"
+		"backendUnavailableDescription": "页面仍会正常显示，但暂时无法加载监控数据。",
+		"somethingWentWrong": "出了点问题"
 	},
 	"tabSwitch": {
 		"Detail": "详情",
@@ -146,7 +176,15 @@
 		"unreachable": "网络不可达",
 		"invalidTarget": "目标地址无效",
 		"failed": "连接失败",
-		"recovered": "已恢复"
+		"recovered": "已恢复",
+		"historyCoverage": "历史覆盖",
+		"zoomIn": "放大时间线",
+		"zoomOut": "缩小时间线",
+		"resetZoom": "重置时间线",
+		"zoomHint": "滚动鼠标滚轮可围绕指针位置缩放时间线",
+		"packetLoss": "丢包率",
+		"min": "最低",
+		"max": "最高"
 	},
 	"pwa": {
 		"offlineReady": "应用可以离线使用了",
@@ -189,5 +227,34 @@
 	},
 	"group": {
 		"all": "全部"
+	},
+	"header": {
+		"searchPlaceholder": "搜索服务器或命令",
+		"viewers": "在线访客",
+		"toggleBackground": "切换背景图"
+	},
+	"filter": {
+		"status": "状态",
+		"all": "全部",
+		"online": "在线",
+		"offline": "离线"
+	},
+	"view": {
+		"label": "视图",
+		"list": "列表",
+		"card": "卡片",
+		"map": "地图"
+	},
+	"serverList": {
+		"name": "服务器",
+		"cpu": "CPU",
+		"mem": "内存",
+		"disk": "磁盘",
+		"speed": "实时速率",
+		"traffic": "累计流量",
+		"load": "负载",
+		"uptime": "在线时长",
+		"offline": "离线",
+		"count": "{{count}} 台服务器"
 	}
 }

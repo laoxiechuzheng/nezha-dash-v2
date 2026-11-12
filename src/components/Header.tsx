@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ModeToggle } from "@/components/ThemeSwitcher";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBackground } from "@/hooks/use-background";
 import { useWebSocketContext } from "@/hooks/use-websocket-context";
@@ -47,6 +46,9 @@ const useCurrentTime = () => {
 
 	return time;
 };
+
+/** Icon-sized header control: 40px touch target on phones, 36px on desktop. */
+const headerControlClass = "size-10 px-0 sm:size-9";
 
 function Header() {
 	const { t } = useTranslation();
@@ -115,91 +117,96 @@ function Header() {
 	const customBackgroundImage = backgroundImage;
 
 	return (
-		<div className="mx-auto w-full max-w-6xl">
-			<section className="glass-panel header-top flex min-w-0 items-center justify-between gap-3 rounded-2xl px-3 py-2.5 sm:px-4">
+		<header
+			className={cn(
+				"sticky top-0 z-40 w-full border-b border-border bg-background",
+				{
+					"bg-card/85": customBackgroundImage,
+				},
+			)}
+		>
+			<div className="page-container flex h-14 min-w-0 items-center justify-between gap-3">
 				<section
 					onClick={() => {
 						sessionStorage.removeItem("selectedGroup");
 						navigate("/");
 					}}
-					className="group flex min-w-0 cursor-pointer items-center text-sm font-bold tracking-tight sm:text-base"
+					className="flex min-w-0 cursor-pointer items-center gap-2.5"
 				>
-					<div className="header-logo mr-2 flex size-9 shrink-0 items-center justify-center rounded-xl border border-sky-500/15 bg-gradient-to-br from-sky-500/15 to-indigo-500/10 shadow-inner">
+					<span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-card">
 						<img
 							width={40}
 							height={40}
 							alt="apple-touch-icon"
 							src={customLogo}
-							className="relative m-0! border-2 border-transparent h-6 w-6 object-cover object-top p-0!"
+							className="size-5 object-cover object-top"
 						/>
-					</div>
-					{isLoading ? (
-						<Skeleton className="h-6 w-20 rounded-[5px] bg-muted-foreground/10 animate-none" />
-					) : (
-						siteName || "NEZHA"
-					)}
-					<Separator
-						orientation="vertical"
-						className="mx-2 hidden h-4 w-px md:block"
+					</span>
+					<span className="truncate text-[15px] font-semibold leading-none">
+						{isLoading ? (
+							<Skeleton className="h-4 w-20 animate-none" />
+						) : (
+							siteName || "NEZHA"
+						)}
+					</span>
+					<span
+						aria-hidden="true"
+						className="hidden h-4 w-px shrink-0 bg-border md:block"
 					/>
-					<p className="hidden text-sm font-medium opacity-40 md:block">
+					<p className="hidden truncate text-[13px] text-muted-foreground md:block">
 						{customDesc}
 					</p>
 				</section>
-				<section className="header-handles flex min-w-0 items-center gap-1.5 sm:gap-2">
-					<div className="hidden sm:flex items-center gap-2">
+				<section className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5">
+					<nav className="mr-2 hidden items-center gap-4 sm:flex">
 						<Links />
 						<DashboardLink />
-					</div>
+					</nav>
 					<SearchButton />
 					<LanguageSwitcher />
 					<ModeToggle />
 					{(customBackgroundImage ||
 						sessionStorage.getItem("savedBackgroundImage")) && (
 						<Button
-							variant="outline"
+							variant="ghost"
 							size="sm"
+							title={t("header.toggleBackground")}
 							onClick={handleBackgroundToggle}
-							className={cn("size-9 rounded-xl px-0", {
-								"bg-white/70 dark:bg-black/70": customBackgroundImage,
-								"hidden sm:block": customMobileBackgroundImage,
+							className={cn(headerControlClass, {
+								"hidden sm:inline-flex": customMobileBackgroundImage,
 							})}
 						>
-							<ImageMinus className="w-4 h-4" />
+							<ImageMinus className="size-4" />
 						</Button>
 					)}
 					<Button
 						variant="outline"
 						size="sm"
-						className={cn(
-							"flex h-9 cursor-default items-center rounded-xl px-2.5",
-							{
-								"bg-white/70 dark:bg-black/70": customBackgroundImage,
-							},
-						)}
+						title={t("header.viewers")}
+						className="h-10 cursor-default gap-1.5 px-2.5 tabular-nums hover:bg-card sm:h-9"
 					>
+						<span
+							className="status-dot"
+							data-status={connected ? "online" : "offline"}
+						/>
 						{connected ? (
 							<NumericText value={onlineCount} />
 						) : (
 							<Loader visible={true} />
 						)}
-						<p className="text-muted-foreground">
+						<p className="hidden text-muted-foreground min-[420px]:block">
 							{connected ? t("online") : t("offline")}
 						</p>
-						<span
-							className={cn("h-2 w-2 rounded-full bg-green-500", {
-								"bg-red-500": !connected,
-							})}
-						></span>
 					</Button>
 				</section>
-			</section>
-			<div className="glass-control mt-2 flex w-full justify-between rounded-xl px-3 py-2 sm:hidden">
-				<DashboardLink />
-				<Links />
 			</div>
-			<Overview />
-		</div>
+			<nav className="flex h-10 items-center justify-between gap-4 border-t border-border px-4 sm:hidden">
+				<DashboardLink />
+				<div className="scrollbar-hidden min-w-0 overflow-x-auto">
+					<Links />
+				</div>
+			</nav>
+		</header>
 	);
 }
 
@@ -236,7 +243,7 @@ function Links() {
 	if (!links) return null;
 
 	return (
-		<div className="flex items-center gap-2 w-fit">
+		<div className="flex w-fit items-center gap-4">
 			{links.map((link, index) => {
 				return (
 					<a
@@ -244,7 +251,7 @@ function Links() {
 						href={link.link}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="flex items-center gap-1 text-sm font-medium opacity-50 transition-opacity hover:opacity-100"
+						className="whitespace-nowrap text-[13px] text-muted-foreground transition-colors hover:text-foreground"
 					>
 						{link.name}
 					</a>
@@ -272,11 +279,9 @@ export function RefreshToast() {
 	}
 
 	return (
-		<div className="glass-panel refresh-toast-animate fixed left-1/2 top-8 z-999 flex -translate-x-1/2 items-center justify-between gap-4 rounded-full px-3 py-2">
-			<section className="flex items-center gap-1.5">
-				<LoadingSpinner />
-				<p className="text-[12.5px] font-medium">{t("refreshing")}...</p>
-			</section>
+		<div className="refresh-toast-animate fixed left-1/2 top-4 z-[999] flex -translate-x-1/2 items-center gap-2 rounded-md border border-border bg-popover px-3 py-2 text-popover-foreground shadow-popover">
+			<LoadingSpinner />
+			<p className="text-[13px] font-medium">{t("refreshing")}...</p>
 		</div>
 	);
 }
@@ -329,20 +334,19 @@ function DashboardLink() {
 	}, [isLogin, isError, isFetched, setNeedReconnect]);
 
 	return (
-		<div className="flex items-center gap-2">
-			<a
-				href={"/dashboard"}
-				rel="noopener noreferrer"
-				className="flex items-center text-nowrap gap-1 text-sm font-medium opacity-50 transition-opacity hover:opacity-100"
-			>
-				{!isLogin && t("login")}
-				{isLogin && t("dashboard")}
-			</a>
-		</div>
+		<a
+			href={"/dashboard"}
+			rel="noopener noreferrer"
+			className="whitespace-nowrap text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+		>
+			{!isLogin && t("login")}
+			{isLogin && t("dashboard")}
+		</a>
 	);
 }
 
-function Overview() {
+/** Page heading for the overview page: title plus a live local clock. */
+export function Overview() {
 	const { t } = useTranslation();
 	const time = useCurrentTime();
 	const [mounted, setMounted] = useState(false);
@@ -352,22 +356,20 @@ function Overview() {
 	}, []);
 
 	return (
-		<section className={"header-timer mt-9 flex flex-col gap-1 md:mt-12"}>
-			<p className="text-base font-semibold">👋 {t("overview")}</p>
-			<div className="flex items-center gap-1">
-				<p className="text-sm font-medium opacity-50">{t("whereTheTimeIs")}</p>
+		<section className="header-timer flex items-end justify-between gap-3">
+			<h1 className="text-xl font-semibold leading-tight">{t("overview")}</h1>
+			<div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+				<span className="hidden min-[380px]:inline">{t("whereTheTimeIs")}</span>
 				{mounted ? (
-					<div className="flex items-center font-medium text-sm">
+					<div className="flex items-center font-mono text-[13px] text-foreground tabular-nums">
 						<AnimateCountClient count={time.hh} minDigits={2} />
-						<span className="mb-px font-medium text-sm opacity-50">:</span>
+						<span className="text-muted-foreground">:</span>
 						<AnimateCountClient count={time.mm} minDigits={2} />
-						<span className="mb-px font-medium text-sm opacity-50">:</span>
-						<span className="font-medium text-sm">
-							<AnimateCountClient count={time.ss} minDigits={2} />
-						</span>
+						<span className="text-muted-foreground">:</span>
+						<AnimateCountClient count={time.ss} minDigits={2} />
 					</div>
 				) : (
-					<Skeleton className="h-[21px] w-16 animate-none rounded-[5px] bg-muted-foreground/10" />
+					<Skeleton className="h-4 w-16 animate-none" />
 				)}
 			</div>
 		</section>

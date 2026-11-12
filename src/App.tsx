@@ -106,14 +106,14 @@ const MainApp: React.FC = () => {
 				/>
 			)}
 			<div
-				className={cn("app-shell relative flex min-h-screen w-full flex-col", {
+				className={cn("relative flex min-h-screen w-full flex-col", {
 					"bg-background": !customBackgroundImage,
 				})}
 			>
-				<main className="relative z-20 flex min-h-[calc(100vh-calc(var(--spacing)*16))] flex-1 flex-col gap-5 px-4 py-5 sm:px-6 md:px-10 md:py-8">
-					<RefreshToast />
-					<Header />
-					<DashCommand />
+				<RefreshToast />
+				<Header />
+				<DashCommand />
+				<main className="page-container relative z-20 flex flex-1 flex-col pt-5 pb-10 sm:pt-6">
 					<Routes>
 						<Route
 							path="/"
@@ -137,8 +137,8 @@ const MainApp: React.FC = () => {
 							}
 						/>
 					</Routes>
-					<Footer />
 				</main>
+				<Footer />
 			</div>
 		</ErrorBoundary>
 	);
