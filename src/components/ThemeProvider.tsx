@@ -33,8 +33,7 @@ export function ThemeProvider({
 		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
 		const updateThemeColor = (nextTheme: "light" | "dark") => {
-			const themeColor =
-				nextTheme === "dark" ? "hsl(30 15% 8%)" : "hsl(0 0% 98%)";
+			const themeColor = nextTheme === "dark" ? "#0B0D10" : "#F6F7F9";
 			document
 				.querySelector('meta[name="theme-color"]')
 				?.setAttribute("content", themeColor);
@@ -44,8 +43,7 @@ export function ThemeProvider({
 			root.classList.remove("light", "dark");
 			root.classList.add(nextTheme);
 			root.style.colorScheme = nextTheme;
-			root.style.backgroundColor =
-				nextTheme === "dark" ? "hsl(30 15% 8%)" : "hsl(0 0% 98%)";
+			root.style.backgroundColor = nextTheme === "dark" ? "#0B0D10" : "#F6F7F9";
 			updateThemeColor(nextTheme);
 		};
 

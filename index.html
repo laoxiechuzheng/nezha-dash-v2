@@ -11,7 +11,7 @@
           theme === "system" ? (mediaQuery.matches ? "dark" : "light") : theme
 
         function updateThemeColor(nextTheme) {
-          const themeColor = nextTheme === "dark" ? "hsl(30 15% 8%)" : "hsl(0 0% 98%)"
+          const themeColor = nextTheme === "dark" ? "#0B0D10" : "#F6F7F9"
           let meta = document.querySelector('meta[name="theme-color"]')
 
           if (!meta) {
@@ -28,7 +28,7 @@
           root.classList.add(resolvedTheme)
           root.style.colorScheme = resolvedTheme
           root.style.backgroundColor =
-            resolvedTheme === "dark" ? "hsl(30 15% 8%)" : "hsl(0 0% 98%)"
+            resolvedTheme === "dark" ? "#0B0D10" : "#F6F7F9"
           updateThemeColor(resolvedTheme)
         }
 
@@ -66,7 +66,7 @@
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="hsl(0 0% 98%)" />
+    <meta name="theme-color" content="#F6F7F9" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Nezha Monitoring" />

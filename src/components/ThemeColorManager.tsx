@@ -22,8 +22,7 @@ export function ThemeColorManager() {
 				document.head.appendChild(newMeta);
 			}
 
-			const themeColor =
-				currentTheme === "dark" ? "hsl(222 47% 7%)" : "hsl(216 33% 97%)";
+			const themeColor = currentTheme === "dark" ? "#0B0D10" : "#F6F7F9";
 
 			document
 				.querySelector('meta[name="theme-color"]')

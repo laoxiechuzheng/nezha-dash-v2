@@ -53,18 +53,30 @@ describe("basic display components", () => {
 
 	it("renders server usage colors for healthy, warning, and critical values", () => {
 		const { rerender } = render(<ServerUsageBar value={70} />);
+		expect(screen.getByRole("progressbar")).toHaveAttribute(
+			"data-level",
+			"good",
+		);
 		expect(screen.getByRole("progressbar").firstElementChild).toHaveClass(
-			"bg-green-500",
+			"bg-primary",
 		);
 
 		rerender(<ServerUsageBar value={71} />);
+		expect(screen.getByRole("progressbar")).toHaveAttribute(
+			"data-level",
+			"warn",
+		);
 		expect(screen.getByRole("progressbar").firstElementChild).toHaveClass(
-			"bg-orange-400",
+			"bg-warning",
 		);
 
 		rerender(<ServerUsageBar value={91} />);
+		expect(screen.getByRole("progressbar")).toHaveAttribute(
+			"data-level",
+			"bad",
+		);
 		expect(screen.getByRole("progressbar").firstElementChild).toHaveClass(
-			"bg-red-500",
+			"bg-danger",
 		);
 	});
 

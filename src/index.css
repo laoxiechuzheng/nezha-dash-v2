@@ -4,12 +4,24 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+  "Signal" design tokens (design/DESIGN.md §3). Values are HSL triplets so the
+  existing `hsl(var(--token))` call sites (charts, inline styles) keep working.
+*/
 @theme {
-	--font-sans: var(--font-sans);
+	--font-sans:
+		"Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+		"Noto Sans SC", system-ui, sans-serif;
+	--font-mono:
+		ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Consolas,
+		monospace;
 
-	--radius-lg: var(--radius);
-	--radius-md: calc(var(--radius) - 2px);
 	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 2px);
+
+	--shadow-popover: var(--popover-shadow);
 
 	--color-background: hsl(var(--background));
 	--color-foreground: hsl(var(--foreground));
@@ -35,6 +47,11 @@
 	--color-destructive: hsl(var(--destructive));
 	--color-destructive-foreground: hsl(var(--destructive-foreground));
 
+	--color-success: hsl(var(--success));
+	--color-warning: hsl(var(--warning));
+	--color-danger: hsl(var(--danger));
+	--color-neutral-status: hsl(var(--neutral-status));
+
 	--color-border: hsl(var(--border));
 	--color-input: hsl(var(--input));
 	--color-ring: hsl(var(--ring));
@@ -44,9 +61,14 @@
 	--color-chart-3: hsl(var(--chart-3));
 	--color-chart-4: hsl(var(--chart-4));
 	--color-chart-5: hsl(var(--chart-5));
+	--color-chart-6: hsl(var(--chart-6));
+	--color-chart-7: hsl(var(--chart-7));
+	--color-chart-8: hsl(var(--chart-8));
+	--color-chart-9: hsl(var(--chart-9));
+	--color-chart-10: hsl(var(--chart-10));
 
-	--animate-accordion-down: accordion-down 0.2s ease-out;
-	--animate-accordion-up: accordion-up 0.2s ease-out;
+	--animate-accordion-down: accordion-down 0.16s ease-out;
+	--animate-accordion-up: accordion-up 0.16s ease-out;
 
 	@keyframes accordion-down {
 		from {
@@ -67,20 +89,305 @@
 }
 
 /*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
+  Reduced motion must also beat inline transition styles (sliding indicators),
+  so this block intentionally uses !important on a universal selector.
 */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		/* biome-ignore lint/complexity/noImportantStyles: must override inline styles */
+		animation-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: must override inline styles */
+		animation-iteration-count: 1 !important;
+		/* biome-ignore lint/complexity/noImportantStyles: must override inline styles */
+		transition-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: must override inline styles */
+		scroll-behavior: auto !important;
+	}
+}
+
+@layer base {
+	:root {
+		--background: 220 20% 97.1%;
+		--foreground: 210 25% 7.8%;
+		--card: 0 0% 100%;
+		--card-foreground: 210 25% 7.8%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 210 25% 7.8%;
+		--primary: 231.6 78.8% 57.5%;
+		--primary-foreground: 0 0% 100%;
+		--secondary: 216 18.5% 94.7%;
+		--secondary-foreground: 210 25% 7.8%;
+		--muted: 216 18.5% 94.7%;
+		--muted-foreground: 214.3 10.3% 39.8%;
+		--accent: 216 18.5% 94.7%;
+		--accent-foreground: 210 25% 7.8%;
+		--destructive: 0 69.4% 51.4%;
+		--destructive-foreground: 0 0% 100%;
+		--success: 152.3 76.5% 33.3%;
+		--warning: 35.9 100% 39%;
+		--danger: 0 69.4% 51.4%;
+		--neutral-status: 213.3 8.3% 57.6%;
+		--border: 217.5 16% 90.2%;
+		--input: 217.5 16% 90.2%;
+		--ring: 231.6 78.8% 57.5%;
+		--radius: 0.5rem;
+		--popover-shadow: 0 8px 24px rgba(15, 20, 25, 0.1);
+		/* Chart palette, slightly deepened for light surfaces. */
+		--chart-1: 231.6 78.8% 57.5%;
+		--chart-2: 186.4 72% 39%;
+		--chart-3: 152 66% 38%;
+		--chart-4: 37 90% 44%;
+		--chart-5: 331 68% 53%;
+		--chart-6: 256 70% 60%;
+		--chart-7: 17 88% 54%;
+		--chart-8: 90 55% 38%;
+		--chart-9: 211 82% 50%;
+		--chart-10: 47 74% 40%;
+		--timing: cubic-bezier(0.2, 0, 0, 1);
+	}
+
+	.dark {
+		--background: 216 18.5% 5.3%;
+		--foreground: 216 11.1% 91.2%;
+		--card: 214.3 17.1% 8%;
+		--card-foreground: 216 11.1% 91.2%;
+		--popover: 214.3 17.1% 8%;
+		--popover-foreground: 216 11.1% 91.2%;
+		--primary: 232.3 100% 74.1%;
+		--primary-foreground: 216 18.5% 5.3%;
+		--secondary: 213.3 17% 10.4%;
+		--secondary-foreground: 216 11.1% 91.2%;
+		--muted: 213.3 17% 10.4%;
+		--muted-foreground: 211.6 8.9% 58.2%;
+		--accent: 213.3 17% 10.4%;
+		--accent-foreground: 216 11.1% 91.2%;
+		--destructive: 0 83.6% 68.8%;
+		--destructive-foreground: 216 18.5% 5.3%;
+		--success: 151 65.1% 53.9%;
+		--warning: 39 87.2% 60.2%;
+		--danger: 0 83.6% 68.8%;
+		--neutral-status: 214.7 7.9% 46.9%;
+		--border: 215 15% 15.7%;
+		--input: 215 15% 15.7%;
+		--ring: 232.3 100% 74.1%;
+		--popover-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+		--chart-1: 232.3 100% 74.1%;
+		--chart-2: 186.4 67.2% 51%;
+		--chart-3: 151 65.1% 53.9%;
+		--chart-4: 39 87.2% 60.2%;
+		--chart-5: 330.8 82.1% 71.6%;
+		--chart-6: 256.2 91.7% 76.3%;
+		--chart-7: 17.2 100% 67.8%;
+		--chart-8: 90.5 58.6% 56.5%;
+		--chart-9: 211.3 100% 67.6%;
+		--chart-10: 46.8 70% 59.4%;
+	}
+}
+
 @layer base {
 	*,
 	::after,
 	::before,
 	::backdrop,
 	::file-selector-button {
-		border-color: var(--color-gray-200, currentcolor);
+		border-color: hsl(var(--border));
+	}
+
+	html {
+		background-color: hsl(var(--background));
+		color-scheme: light;
+		-webkit-text-size-adjust: 100%;
+	}
+
+	html.dark {
+		color-scheme: dark;
+	}
+
+	body {
+		@apply bg-background text-foreground font-sans;
+		min-width: 320px;
+		overflow-x: hidden;
+		font-size: 0.875rem;
+		line-height: 1.5;
+		font-weight: 400;
+		font-synthesis: none;
+		text-rendering: optimizeLegibility;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+
+	:focus-visible {
+		outline: 2px solid hsl(var(--ring));
+		outline-offset: 2px;
+	}
+
+	::selection {
+		background-color: hsl(var(--primary) / 0.28);
+	}
+
+	/* Avoid color fade when toggling themes. */
+	html.disable-transitions *,
+	html.disable-transitions *::before,
+	html.disable-transitions *::after {
+		transition: none;
+	}
+}
+
+@layer components {
+	/* Shared page width for header, content and footer. */
+	.page-container {
+		@apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8;
+	}
+
+	/* Bordered surface used by panels, tables and metric cards. */
+	.panel {
+		@apply rounded-lg border border-border bg-card text-card-foreground;
+	}
+
+	/* Section heading row above a panel. */
+	.section-title {
+		@apply text-[13px] font-medium text-muted-foreground;
+	}
+
+	/* Status dot (§6): 8px, success gets a soft 2px ring. */
+	.status-dot {
+		@apply inline-block size-2 shrink-0 rounded-full;
+	}
+	.status-dot[data-status="online"],
+	.status-dot[data-status="healthy"] {
+		background-color: hsl(var(--success));
+		box-shadow: 0 0 0 2px hsl(var(--success) / 0.2);
+	}
+	.status-dot[data-status="offline"],
+	.status-dot[data-status="degraded"] {
+		background-color: hsl(var(--danger));
+	}
+	.status-dot[data-status="unknown"] {
+		background-color: hsl(var(--neutral-status));
+	}
+
+	/* Meter (§6): 4px track, threshold-colored fill. */
+	.meter {
+		@apply relative h-1 w-full overflow-hidden rounded-[2px] bg-muted;
+	}
+	.dark .meter {
+		background-color: hsl(var(--foreground) / 0.08);
+	}
+	.meter > span {
+		@apply absolute inset-y-0 left-0 rounded-[2px] transition-[width] duration-150 ease-out;
+		background-color: hsl(var(--primary));
+	}
+	.meter[data-level="warn"] > span {
+		background-color: hsl(var(--warning));
+	}
+	.meter[data-level="bad"] > span {
+		background-color: hsl(var(--danger));
+	}
+
+	/* Segmented control (§7): bordered track, filled selected item. */
+	.segmented {
+		@apply inline-flex shrink-0 items-center gap-0.5 rounded-md border border-border bg-card p-0.5;
+	}
+	.segmented > button,
+	.segmented > [role="tab"],
+	.segmented > div > button {
+		@apply inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-[5px] px-2.5 text-[13px] font-medium text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40;
+	}
+	.segmented > [aria-pressed="true"],
+	.segmented > [aria-selected="true"],
+	.segmented > [data-state="active"],
+	.segmented > div > [aria-pressed="true"] {
+		@apply bg-muted text-foreground;
+	}
+	.dark .segmented > [aria-pressed="true"],
+	.dark .segmented > [aria-selected="true"],
+	.dark .segmented > [data-state="active"],
+	.dark .segmented > div > [aria-pressed="true"] {
+		background-color: hsl(var(--foreground) / 0.08);
+	}
+	/* Controls with a sliding indicator paint the selection themselves. */
+	.segmented[data-indicator="true"] > [aria-pressed="true"],
+	.segmented[data-indicator="true"] > div > [aria-pressed="true"],
+	.dark .segmented[data-indicator="true"] > [aria-pressed="true"],
+	.dark .segmented[data-indicator="true"] > div > [aria-pressed="true"] {
+		background-color: transparent;
+	}
+
+	/*
+	  Server list: one DOM per row. Phones get a compact three-column card,
+	  md+ a table row whose template is shared with the column header.
+	*/
+	.server-row {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-areas:
+			"name name uptime"
+			"cpu mem disk"
+			"speed speed traffic";
+		gap: 0.75rem 1rem;
+	}
+	.server-row[data-online="false"] {
+		grid-template-areas:
+			"name name name"
+			"info info info";
+	}
+	@media (min-width: 768px) {
+		.server-row,
+		.server-row[data-online="false"],
+		.server-list-head {
+			grid-template-columns:
+				minmax(0, 1.75fr) repeat(3, minmax(0, 0.9fr)) minmax(0, 1.05fr)
+				minmax(0, 1fr);
+			grid-template-areas: "name cpu mem disk speed traffic";
+			align-items: center;
+			row-gap: 0;
+			column-gap: 1.25rem;
+		}
+		.server-row[data-online="false"] {
+			grid-template-areas: "name info info info info info";
+		}
+	}
+	@media (min-width: 1280px) {
+		.server-row,
+		.server-row[data-online="false"],
+		.server-list-head {
+			grid-template-columns:
+				minmax(0, 1.75fr) repeat(3, minmax(0, 0.85fr)) minmax(0, 1fr)
+				minmax(0, 0.95fr) minmax(0, 0.5fr) minmax(0, 0.55fr);
+			grid-template-areas: "name cpu mem disk speed traffic load uptime";
+		}
+		.server-row[data-online="false"] {
+			grid-template-areas: "name info info info info info info info";
+		}
+	}
+	.server-list-head {
+		display: none;
+	}
+	@media (min-width: 768px) {
+		.server-list-head {
+			display: grid;
+		}
+	}
+
+	/* Metric cards on the server detail page. */
+	.metric-card .recharts-cartesian-grid line {
+		stroke: hsl(var(--border));
+	}
+	.metric-card .recharts-cartesian-axis-tick-value,
+	.network-chart-panel .recharts-cartesian-axis-tick-value {
+		fill: hsl(var(--muted-foreground));
+		font-size: 11px;
+		font-variant-numeric: tabular-nums;
+	}
+	.network-chart-panel .recharts-cartesian-grid line {
+		stroke: hsl(var(--border));
 	}
 }
 
@@ -94,304 +401,9 @@
 	}
 }
 
-@layer utilities {
-	:root {
-		font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-		line-height: 1.5;
-		font-weight: 400;
-
-		font-synthesis: none;
-		text-rendering: optimizeLegibility;
-		-webkit-font-smoothing: antialiased;
-		-moz-osx-font-smoothing: grayscale;
-	}
-}
-
-@layer base {
-	button:not(:disabled),
-	[role="button"]:not(:disabled) {
-		cursor: pointer;
-	}
-}
-
-@layer base {
-	:root {
-		--background: 216 33% 97%;
-		--foreground: 222 47% 11%;
-		--card: 0 0% 100%;
-		--card-foreground: 222 47% 11%;
-		--popover: 0 0% 100%;
-		--popover-foreground: 222 47% 11%;
-		--primary: 217 91% 60%;
-		--primary-foreground: 0 0% 100%;
-		--secondary: 214 32% 93%;
-		--secondary-foreground: 222 47% 11%;
-		--muted: 214 32% 94%;
-		--muted-foreground: 215 16% 47%;
-		--accent: 214 95% 93%;
-		--accent-foreground: 221 83% 38%;
-		--destructive: 0 84.2% 60.2%;
-		--destructive-foreground: 60 9.1% 97.8%;
-		--border: 214 32% 88%;
-		--input: 214 32% 88%;
-		--ring: 217 91% 60%;
-		--radius: 1.25rem;
-		--chart-1: 220 70% 50%;
-		--chart-2: 340 75% 55%;
-		--chart-3: 30 80% 55%;
-		--chart-4: 280 65% 60%;
-		--chart-5: 160 60% 45%;
-		--chart-6: 180 50% 50%;
-		--chart-7: 216 50% 50%;
-		--chart-8: 252 50% 50%;
-		--chart-9: 288 50% 50%;
-		--chart-10: 324 50% 50%;
-		--timing: cubic-bezier(0.4, 0, 0.2, 1);
-	}
-
-	.dark {
-		--background: 222 47% 7%;
-		--foreground: 210 40% 98%;
-		--card: 222 41% 11%;
-		--card-foreground: 210 40% 98%;
-		--popover: 222 41% 11%;
-		--popover-foreground: 210 40% 98%;
-		--primary: 213 94% 68%;
-		--primary-foreground: 222 47% 9%;
-		--secondary: 217 33% 17%;
-		--secondary-foreground: 210 40% 98%;
-		--muted: 217 33% 17%;
-		--muted-foreground: 215 20% 65%;
-		--accent: 217 33% 20%;
-		--accent-foreground: 210 40% 98%;
-		--destructive: 0 62.8% 30.6%;
-		--destructive-foreground: 60 9.1% 97.8%;
-		--border: 217 33% 20%;
-		--input: 217 33% 20%;
-		--ring: 213 94% 68%;
-		--chart-1: 220 70% 50%;
-		--chart-2: 340 75% 55%;
-		--chart-3: 30 80% 55%;
-		--chart-4: 280 65% 60%;
-		--chart-5: 160 60% 45%;
-		--chart-6: 180 50% 50%;
-		--chart-7: 216 50% 50%;
-		--chart-8: 252 50% 50%;
-		--chart-9: 288 50% 50%;
-		--chart-10: 324 50% 50%;
-	}
-}
-
-@layer base {
-	* {
-		@apply border-border;
-	}
-	html {
-		@apply scroll-smooth;
-		background-color: hsl(216 33% 97%);
-		color-scheme: light;
-	}
-	html.dark {
-		background-color: hsl(222 47% 7%);
-		color-scheme: dark;
-	}
-	body {
-		@apply bg-background text-foreground;
-		min-width: 320px;
-		overflow-x: hidden;
-		background-image:
-			radial-gradient(
-				circle at 8% -8%,
-				hsl(199 89% 60% / 0.13),
-				transparent 32rem
-			),
-			radial-gradient(
-				circle at 92% 4%,
-				hsl(239 84% 67% / 0.11),
-				transparent 30rem
-			),
-			linear-gradient(180deg, hsl(210 40% 99%), hsl(216 33% 96%));
-		background-attachment: fixed;
-		font-synthesis-weight: none;
-		text-rendering: optimizeLegibility;
-	}
-	.dark body {
-		background-image:
-			radial-gradient(
-				circle at 8% -8%,
-				hsl(199 89% 55% / 0.14),
-				transparent 32rem
-			),
-			radial-gradient(
-				circle at 92% 4%,
-				hsl(239 84% 62% / 0.13),
-				transparent 30rem
-			),
-			linear-gradient(180deg, hsl(222 47% 8%), hsl(224 52% 5%));
-	}
-}
-
-@layer components {
-	.glass-panel {
-		@apply border border-white/70 bg-white/70 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.45)] ring-1 ring-slate-950/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/60 dark:ring-white/5;
-	}
-
-	.glass-control {
-		@apply border border-white/70 bg-white/70 shadow-[0_12px_35px_-24px_rgba(15,23,42,0.5)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.055];
-	}
-
-	.app-shell::before {
-		content: "";
-		position: fixed;
-		inset: 0;
-		pointer-events: none;
-		z-index: 1;
-		background-image:
-			linear-gradient(hsl(215 25% 50% / 0.028) 1px, transparent 1px),
-			linear-gradient(90deg, hsl(215 25% 50% / 0.028) 1px, transparent 1px);
-		background-size: 40px 40px;
-		mask-image: linear-gradient(to bottom, black, transparent 70%);
-	}
-
-	.app-shell::after {
-		content: "";
-		position: fixed;
-		inset: 4rem 0 0;
-		pointer-events: none;
-		z-index: 0;
-		background:
-			radial-gradient(
-				ellipse 28rem 18rem at 4% 32%,
-				hsl(190 95% 55% / 0.07),
-				transparent 72%
-			),
-			radial-gradient(
-				ellipse 34rem 22rem at 96% 58%,
-				hsl(252 90% 67% / 0.065),
-				transparent 72%
-			),
-			linear-gradient(
-				115deg,
-				transparent 20%,
-				hsl(215 90% 65% / 0.025) 45%,
-				transparent 70%
-			);
-		mask-image: linear-gradient(to bottom, black 5%, transparent 95%);
-	}
-
-	.server-detail-overview > section {
-		@apply mt-3 gap-2;
-	}
-
-	.server-detail-overview > section > div,
-	.server-detail-overview > section > button > div {
-		@apply rounded-xl border border-white/65 bg-white/48 shadow-none ring-0 backdrop-blur-lg dark:border-white/7 dark:bg-white/[0.035];
-	}
-
-	.server-detail-overview > section > div > div,
-	.server-detail-overview > section > button > div > div {
-		@apply px-3 py-2;
-	}
-
-	.server-detail-overview .server-name svg {
-		@apply size-9 rounded-xl border border-white/70 bg-white/65 p-2 text-sky-600 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-sky-300;
-	}
-
-	/* biome-ignore lint/style/noDescendingSpecificity: component-scoped visual override */
-	.server-charts > div {
-		@apply min-w-0 overflow-hidden border-white/70 bg-white/68 shadow-[0_22px_60px_-38px_rgba(15,23,42,0.58)] ring-1 ring-slate-950/5 backdrop-blur-xl hover:border-sky-400/30 dark:border-white/10 dark:bg-slate-950/58 dark:ring-white/5;
-	}
-
-	.server-charts > div > div {
-		@apply px-4 py-4 sm:px-5 sm:py-5;
-	}
-
-	.dark .server-charts > div {
-		background-image:
-			linear-gradient(145deg, hsl(0 0% 100% / 0.025), transparent 46%),
-			radial-gradient(circle at 88% 0%, hsl(199 89% 55% / 0.1), transparent 42%);
-	}
-
-	.server-charts [data-chart] {
-		@apply mt-3 h-[176px] rounded-2xl border border-slate-200/60 bg-slate-50/45 p-2 dark:border-white/7 dark:bg-white/[0.018];
-	}
-
-	.server-charts .recharts-cartesian-grid line {
-		stroke: hsl(215 25% 55% / 0.13);
-	}
-
-	.server-charts .recharts-line-curve,
-	.server-charts .recharts-area-curve {
-		filter: drop-shadow(0 2px 4px hsl(215 80% 45% / 0.15));
-	}
-
-	/* biome-ignore lint/style/noDescendingSpecificity: component-scoped visual override */
-	.server-card-list > div,
-	.server-inline-list > section > div {
-		position: relative;
-	}
-
-	.server-card-list > div::before,
-	.server-inline-list > section > div::before {
-		content: "";
-		position: absolute;
-		inset: 0 auto auto 0;
-		width: 42%;
-		height: 1px;
-		background: linear-gradient(90deg, hsl(199 89% 58% / 0.7), transparent);
-	}
-
-	.server-empty-state {
-		@apply rounded-2xl border border-white/70 bg-white/70 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.45)] ring-1 ring-slate-950/5 backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/60 dark:ring-white/5;
-	}
-}
-
-@media (max-width: 640px) {
-	.header-top {
-		position: sticky;
-		top: 0.75rem;
-		z-index: 40;
-	}
-
-	.header-handles > button:last-child {
-		max-width: 7.25rem;
-	}
-
-	.server-overview {
-		gap: 0.625rem;
-	}
-
-	/* biome-ignore lint/style/noDescendingSpecificity: mobile component override */
-	.server-overview > div {
-		min-height: 6.25rem;
-	}
-
-	.server-overview > div > div {
-		padding: 1rem;
-	}
-
-	.server-detail-overview {
-		padding: 1rem;
-	}
-
-	.server-card-list > div > section + div + div > section {
-		grid-template-columns: repeat(5, minmax(0, 1fr));
-		width: 100%;
-	}
-
-	.server-card-list > div > section + div + div > section > div {
-		width: auto;
-		min-width: 0;
-	}
-
-	.server-card-list > div > section + div + div > section > div > div {
-		font-size: 0.68rem;
-	}
-}
-
 * {
 	scrollbar-width: thin;
-	scrollbar-color: hsl(215 20% 65% / 0.45) transparent;
+	scrollbar-color: hsl(var(--muted-foreground) / 0.35) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -402,27 +414,8 @@
 *::-webkit-scrollbar-thumb {
 	border: 2px solid transparent;
 	border-radius: 999px;
-	background: hsl(215 20% 65% / 0.45);
+	background: hsl(var(--muted-foreground) / 0.35);
 	background-clip: padding-box;
-}
-
-@layer base {
-	/* Avoid color fade when toggling themes. */
-	html.disable-transitions *,
-	html.disable-transitions *::before,
-	html.disable-transitions *::after {
-		transition: none;
-	}
-}
-
-@media (max-width: 640px) {
-	.container {
-		@apply px-4;
-	}
-}
-
-::selection {
-	@apply bg-stone-300 dark:bg-stone-800;
 }
 
 .hamster-loading-wrapper {
@@ -447,9 +440,8 @@
 }
 
 .hamster-loading-bar {
-	--gray11: hsl(0, 0%, 43.5%);
 	animation: hamster-spin 0.8s linear infinite;
-	background: var(--gray11);
+	background: hsl(var(--muted-foreground));
 	border-radius: 6px;
 	height: 13%;
 	left: -10%;
@@ -498,17 +490,6 @@
 	transform: rotate(315deg) translate(120%);
 }
 
-@keyframes hamster-fade-in {
-	0% {
-		opacity: 0;
-		transform: scale(0.8);
-	}
-	100% {
-		opacity: 1;
-		transform: scale(1);
-	}
-}
-
 @keyframes hamster-fade-out {
 	0% {
 		opacity: 1;
@@ -539,26 +520,23 @@
 
 .tooltip-animate {
 	opacity: 0;
-	filter: blur(5px);
-	animation: tooltip-fade-in 0.1s ease-in-out forwards;
+	animation: tooltip-fade-in 0.12s ease-out forwards;
 }
 
 .refresh-toast-animate {
-	animation: refresh-toast-in 0.5s var(--timing) forwards;
+	animation: refresh-toast-in 0.18s ease-out forwards;
 }
 
 .active-indicator-fade-in {
-	animation: active-indicator-fade-in 0.18s var(--timing) forwards;
+	animation: active-indicator-fade-in 0.16s ease-out forwards;
 }
 
 @keyframes tooltip-fade-in {
 	from {
 		opacity: 0;
-		filter: blur(5px);
 	}
 	to {
 		opacity: 1;
-		filter: blur(0px);
 	}
 }
 
@@ -574,13 +552,11 @@
 @keyframes refresh-toast-in {
 	from {
 		opacity: 0;
-		filter: blur(10px);
-		transform: translateX(-50%) scale(0.8);
+		transform: translateX(-50%) translateY(-4px);
 	}
 	to {
 		opacity: 1;
-		filter: blur(0px);
-		transform: translateX(-50%) scale(1);
+		transform: translateX(-50%) translateY(0);
 	}
 }
 
@@ -591,33 +567,30 @@
 	align-items: center;
 }
 
-/* biome-ignore lint/style/noDescendingSpecificity: independent counter animation scope */
 [data-issues-count-animation] > div {
 	text-align: center;
 }
 
 [data-issues-count-exit].animate {
-	animation: fadeOut 300ms var(--timing) forwards;
+	animation: fadeOut 160ms ease-out forwards;
 }
 
 [data-issues-count-enter].animate {
-	animation: fadeIn 300ms var(--timing) forwards;
+	animation: fadeIn 160ms ease-out forwards;
 }
 
 [data-issues-count-plural] {
 	display: inline-block;
-	animation: fadeIn 300ms var(--timing) forwards;
+	animation: fadeIn 160ms ease-out forwards;
 }
 
 @keyframes fadeIn {
 	0% {
 		opacity: 0;
-		filter: blur(2px);
-		transform: translateY(8px);
+		transform: translateY(4px);
 	}
 	100% {
 		opacity: 1;
-		filter: blur(0px);
 		transform: translateY(0);
 	}
 }
@@ -625,12 +598,10 @@
 @keyframes fadeOut {
 	0% {
 		opacity: 1;
-		filter: blur(0px);
 		transform: translateY(0);
 	}
 	100% {
 		opacity: 0;
-		transform: translateY(-12px);
-		filter: blur(2px);
+		transform: translateY(-4px);
 	}
 }

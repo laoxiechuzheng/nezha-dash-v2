@@ -53,11 +53,15 @@ describe("ThemeProvider", () => {
 		expect(document.documentElement.style.colorScheme).toBe("dark");
 		expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
 			"content",
-			"hsl(30 15% 8%)",
+			"#0B0D10",
 		);
 
 		await user.click(screen.getByRole("button", { name: "light" }));
 		expect(document.documentElement).toHaveClass("light");
+		expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
+			"content",
+			"#F6F7F9",
+		);
 	});
 
 	it("uses stored theme value as the initial theme", () => {
@@ -128,7 +132,7 @@ describe("ThemeProvider", () => {
 
 		expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
 			"content",
-			"hsl(30 15% 8%)",
+			"#0B0D10",
 		);
 	});
 

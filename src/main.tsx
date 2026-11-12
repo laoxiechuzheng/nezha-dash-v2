@@ -2,6 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { Toaster } from "sonner";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
 
 import App from "./App";
 import { ThemeColorManager } from "./components/ThemeColorManager";
@@ -43,7 +46,7 @@ ReactDOM.createRoot(rootElement).render(
 									toastOptions={{
 										classNames: {
 											default:
-												"w-fit rounded-full px-2.5 py-1.5 bg-neutral-100 border border-neutral-200 backdrop-blur-xl shadow-none",
+												"w-fit rounded-md border border-border bg-popover px-3 py-1.5 text-[13px] text-popover-foreground shadow-popover",
 										},
 									}}
 									position="top-center"

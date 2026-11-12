@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircleIcon, LanguageIcon } from "@heroicons/react/20/solid";
+import { CheckIcon, LanguageIcon } from "@heroicons/react/20/solid";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,10 +40,10 @@ export function LanguageSwitcher() {
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<Button
-					variant="outline"
+					variant="ghost"
 					size="sm"
-					className={cn("size-9 rounded-xl px-0", {
-						"bg-white/70 dark:bg-black/70": customBackgroundImage,
+					className={cn("size-10 px-0 sm:size-9", {
+						"bg-card/80": customBackgroundImage,
 					})}
 				>
 					<LanguageIcon className="size-4" />
@@ -51,25 +51,18 @@ export function LanguageSwitcher() {
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className="flex flex-col gap-0.5" align="end">
-				{localeItems.map((item, index) => (
+				{localeItems.map((item) => (
 					<DropdownMenuItem
 						key={item.code}
 						onSelect={(e) => handleSelect(e, item.code)}
-						className={cn(
-							"text-xs",
-							{
-								"gap-3 bg-muted font-semibold": locale === item.code,
-							},
-							{
-								"rounded-t-[5px]": index === localeItems.length - 1,
-								"rounded-[5px]":
-									index !== 0 && index !== localeItems.length - 1,
-								"rounded-b-[5px]": index === 0,
-							},
-						)}
+						className={cn("gap-3", {
+							"bg-muted font-semibold": locale === item.code,
+						})}
 					>
 						{item.name}{" "}
-						{locale === item.code && <CheckCircleIcon className="size-4" />}
+						{locale === item.code && (
+							<CheckIcon className="size-4 text-primary" />
+						)}
 					</DropdownMenuItem>
 				))}
 			</DropdownMenuContent>
