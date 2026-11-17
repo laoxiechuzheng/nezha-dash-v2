@@ -10,7 +10,7 @@ export default function ChartSkeleton({
 
 	return (
 		<div
-			className="relative h-full w-full overflow-hidden"
+			className="shimmer h-full w-full rounded-[10px]"
 			style={{
 				width: resolvedWidth || "100%",
 				height: resolvedHeight || "100%",

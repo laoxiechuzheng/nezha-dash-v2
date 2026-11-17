@@ -141,7 +141,13 @@ describe("server detail loading states", () => {
 	it("renders chart skeleton cards", () => {
 		const { container } = render(<ServerDetailChartLoading />);
 
-		expect(container.querySelectorAll(".h-\\[182px\\]")).toHaveLength(6);
+		expect(
+			container.querySelectorAll('[data-detail-skeleton="metric"]'),
+		).toHaveLength(6);
+		expect(container.querySelector("section")).toHaveAttribute(
+			"aria-busy",
+			"true",
+		);
 	});
 
 	it("navigates home from the detail loading back affordance", async () => {

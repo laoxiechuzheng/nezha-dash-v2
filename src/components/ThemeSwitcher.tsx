@@ -33,13 +33,13 @@ export function ModeToggle() {
 				<Button
 					variant="ghost"
 					size="sm"
-					className={cn("relative size-10 px-0 sm:size-9", {
+					className={cn("ghost-icon relative", {
 						"bg-card/80": customBackgroundImage,
 					})}
 				>
 					<Sun className="h-4 w-4 scale-100 transition-transform duration-150 dark:scale-0" />
 					<Moon className="absolute h-4 w-4 scale-0 transition-transform duration-150 dark:scale-100" />
-					<span className="sr-only">Toggle theme</span>
+					<span className="sr-only">{t("v2Shell.theme.label")}</span>
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className="flex flex-col gap-0.5" align="end">

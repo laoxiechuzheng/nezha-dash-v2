@@ -13,17 +13,15 @@ export function AnimateCountClient({
 	const [previousCount, setPreviousCount] = useState(count);
 
 	useEffect(() => {
-		if (count !== previousCount) {
-			setTimeout(() => {
-				setPreviousCount(count);
-			}, 300);
-		}
+		if (count === previousCount) return;
+		const timeout = setTimeout(() => setPreviousCount(count), 300);
+		return () => clearTimeout(timeout);
 	}, [count, previousCount]);
 	return (
 		<AnimateCount
 			key={count}
 			preCount={previousCount}
-			className={cn("inline-flex items-center leading-none", className)}
+			className={cn("num inline-flex items-center leading-none", className)}
 			minDigits={minDigits}
 			data-issues-count-animation
 		>
@@ -69,7 +67,7 @@ export function AnimateCount({
 	}
 
 	return (
-		<div {...props} className={cn("flex h-[1em] items-center", className)}>
+		<div {...props} className={cn("num flex h-[1em] items-center", className)}>
 			{currentDigits.map((digit, index) => {
 				const hasChanged = digit !== previousDigits[index];
 				return (

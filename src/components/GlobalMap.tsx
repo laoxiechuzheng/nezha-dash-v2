@@ -1,5 +1,5 @@
 import { geoEquirectangular, geoPath } from "d3-geo";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import useTooltip from "@/hooks/use-tooltip";
 import { geoJsonString } from "@/lib/geo-json-string";
@@ -74,20 +74,17 @@ export default function GlobalMap({
 
 	return (
 		<section
-			className={cn(
-				"flex flex-col overflow-hidden rounded-lg border border-border bg-card",
-				{
-					"bg-card/70": customBackgroundImage,
-				},
-			)}
+			className={cn("hm-map surface-stage flex flex-col", {
+				"bg-card/70": customBackgroundImage,
+			})}
 		>
-			<header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+			<header className="hm-map-heading">
 				<h2 className="text-sm font-semibold">{t("map.title")}</h2>
 				<p className="text-xs text-muted-foreground tabular-nums">
 					{t("map.Distributions")} {countryList.length} {t("map.Regions")}
 				</p>
 			</header>
-			<div className="w-full overflow-hidden px-2 py-3 sm:px-4">
+			<div className="w-full">
 				<InteractiveMap
 					countries={countryList}
 					serverCounts={serverCounts}
@@ -97,6 +94,21 @@ export default function GlobalMap({
 					countryServers={countryServers}
 				/>
 			</div>
+			<footer className="hm-map-footer">
+				<div className="hm-map-legend">
+					<span className="status-dot" data-status="online" />
+					{t("v2Home.map.legendOnline")}
+					<span className="status-dot" data-status="offline" />
+					{t("v2Home.map.legendIssue")}
+					<span className="num">
+						{t("v2Home.map.summary", {
+							countries: countryList.length,
+							servers: serverList.length,
+						})}
+					</span>
+				</div>
+				<p>{t("v2Home.map.note")}</p>
+			</footer>
 		</section>
 	);
 }
@@ -127,6 +139,27 @@ export function InteractiveMap({
 	countryServers,
 }: InteractiveMapProps) {
 	const { setTooltipData } = useTooltip();
+	const containerRef = useRef<HTMLDivElement>(null);
+	const showTooltip = (
+		centroid: number[],
+		country: string,
+		code: string,
+		count: number,
+	) => {
+		const bounds = containerRef.current?.getBoundingClientRect();
+		const scale = Math.min(
+			(bounds?.width || width) / width,
+			(bounds?.height || height) / height,
+		);
+		const offsetX = ((bounds?.width || width) - width * scale) / 2;
+		const offsetY = ((bounds?.height || height) - height * scale) / 2;
+		setTooltipData({
+			centroid: [offsetX + centroid[0] * scale, offsetY + centroid[1] * scale],
+			country,
+			count,
+			servers: countryServers[code] ?? [],
+		});
+	};
 
 	const { path, projection } = useMemo(() => {
 		const projection = geoEquirectangular()
@@ -152,7 +185,8 @@ export function InteractiveMap({
 
 	return (
 		<div
-			className="relative w-full aspect-2/1"
+			ref={containerRef}
+			className="relative hm-map-canvas"
 			onMouseLeave={() => setTooltipData(null)}
 		>
 			<svg
@@ -162,11 +196,6 @@ export function InteractiveMap({
 				xmlns="http://www.w3.org/2000/svg"
 				className="w-full h-auto"
 			>
-				<defs>
-					<pattern id="dots" width="2" height="2" patternUnits="userSpaceOnUse">
-						<circle cx="1" cy="1" r="0.5" fill="currentColor" />
-					</pattern>
-				</defs>
 				<g>
 					{/* Background rect to handle mouse events in empty areas */}
 					<rect
@@ -189,11 +218,14 @@ export function InteractiveMap({
 								key={index}
 								d={path(feature) || ""}
 								data-highlighted={isHighlighted ? "true" : undefined}
-								className={
-									isHighlighted
-										? "cursor-pointer fill-primary/65 stroke-card stroke-[0.5] transition-colors duration-150 hover:fill-primary"
-										: "fill-muted-foreground/15 stroke-card stroke-[0.5]"
+								data-issue={
+									(isHighlighted &&
+										countryServers[feature.properties.iso_a2_eh]?.some(
+											(server) => !server.status,
+										)) ||
+									undefined
 								}
+								className="hm-map-land"
 								onMouseEnter={() => {
 									if (!isHighlighted) {
 										setTooltipData(null);
@@ -201,12 +233,12 @@ export function InteractiveMap({
 									}
 									if (path.centroid(feature)) {
 										const countryCode = feature.properties.iso_a2_eh;
-										setTooltipData({
-											centroid: path.centroid(feature),
-											country: feature.properties.name,
-											count: serverCount,
-											servers: countryServers[countryCode] ?? [],
-										});
+										showTooltip(
+											path.centroid(feature),
+											feature.properties.name,
+											countryCode,
+											serverCount,
+										);
 									}
 								}}
 							/>
@@ -214,7 +246,7 @@ export function InteractiveMap({
 					})}
 
 					{/* 渲染不在 filteredFeatures 中的国家标记点 */}
-					{countries.map((countryCode) => {
+					{countries.map((countryCode, markerIndex) => {
 						// 检查该国家是否已经在 filteredFeatures 中
 						const isInFilteredFeatures = featureCountryCodes.has(countryCode);
 
@@ -233,25 +265,69 @@ export function InteractiveMap({
 							<g
 								key={countryCode}
 								onMouseEnter={() => {
-									setTooltipData({
-										centroid: [x, y],
-										country: coords.name,
-										count: serverCount,
-										servers: countryServers[countryCode] ?? [],
-									});
+									showTooltip([x, y], coords.name, countryCode, serverCount);
 								}}
 								className="cursor-pointer"
 							>
+								{markerIndex < 12 &&
+									!countryServers[countryCode]?.some(
+										(server) => !server.status,
+									) && (
+										<circle
+											cx={x}
+											cy={y}
+											r="6"
+											className="hm-map-halo hm-map-ping"
+										/>
+									)}
 								<circle
 									cx={x}
 									cy={y}
 									r={4}
 									data-marker="true"
-									className="fill-primary stroke-card stroke-[1.5] transition-colors duration-150 hover:fill-primary/80"
+									className="hm-map-marker"
+									data-issue={
+										countryServers[countryCode]?.some(
+											(server) => !server.status,
+										) || undefined
+									}
 								/>
 							</g>
 						);
 					})}
+					{countries
+						.filter((code) => (serverCounts[code] || 0) >= 2)
+						.map((code) => {
+							const feature = filteredFeatures.find(
+								(feature) => feature.properties.iso_a2_eh === code,
+							);
+							const coords = countryCoordinates[code];
+							const centroid = feature
+								? path.centroid(feature)
+								: coords
+									? projection([coords.lng, coords.lat])
+									: null;
+							if (!centroid) return null;
+							return (
+								<g
+									key={`count-${code}`}
+									transform={`translate(${centroid[0]},${centroid[1]})`}
+									pointerEvents="none"
+								>
+									<rect
+										className="hm-map-count"
+										x="-12"
+										y="-9"
+										width="24"
+										height="18"
+										rx="9"
+									/>
+									<text className="hm-map-count-label">
+										{serverCounts[code]}
+									</text>
+								</g>
+							);
+						})}
 				</g>
 			</svg>
 			<MapTooltip />

@@ -75,8 +75,12 @@ describe("ServerCard", () => {
 		expect(
 			screen.getByRole("group", { name: "serverCard.download" }),
 		).toBeInTheDocument();
-		expect(screen.getByText("已用 2.00 GiB")).toBeInTheDocument();
-		expect(screen.getByText("已用 1.00 GiB")).toBeInTheDocument();
+		expect(screen.getByText("2.00 GiB").parentElement).toHaveTextContent(
+			"已用 2.00 GiB",
+		);
+		expect(screen.getByText("1.00 GiB").parentElement).toHaveTextContent(
+			"已用 1.00 GiB",
+		);
 		expect(screen.getByText("实时上传")).toBeInTheDocument();
 		expect(screen.getByText("实时下载")).toBeInTheDocument();
 		expect(screen.getByText("1Gbps")).toBeInTheDocument();

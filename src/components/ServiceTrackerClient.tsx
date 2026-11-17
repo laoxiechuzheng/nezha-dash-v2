@@ -76,7 +76,7 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 	return (
 		<div
 			className={cn(
-				"flex flex-col gap-2.5 px-4 py-3 lg:flex-row lg:items-center lg:gap-8",
+				"hm-service-row flex flex-col gap-2.5 px-4 py-3 lg:flex-row lg:items-center lg:gap-8",
 				className,
 			)}
 		>
@@ -122,7 +122,7 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 
 			<div className="min-w-0 flex-1">
 				<div
-					className="flex h-6 items-stretch gap-[3px]"
+					className="hm-service-timeline flex h-7 items-stretch gap-[3px]"
 					role="img"
 					aria-label={t("serviceTracker.timelineLabel")}
 				>
@@ -136,7 +136,7 @@ export const ServiceTrackerClient: React.FC<ServiceTrackerProps> = ({
 										<div
 											data-level={dayLevel ?? "none"}
 											className={cn(
-												"min-w-0 flex-1 cursor-help rounded-[2px] transition-opacity duration-150 hover:opacity-70",
+												"hm-service-day min-w-0 flex-1 cursor-help rounded-[3px] hover:opacity-70",
 												dayLevel
 													? levelFill[dayLevel]
 													: "bg-muted dark:bg-foreground/[0.08]",

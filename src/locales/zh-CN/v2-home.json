@@ -1,0 +1,39 @@
+{
+	"v2Home": {
+		"trace": {
+			"caption": "当前分组 · 在线机器合计 · 本页会话采样 · 最近 {{span}} · {{count}} 个样本 · 中位间隔 {{interval}}",
+			"sampling": "采样中 · {{count}} 个样本",
+			"waiting": "等待数据…",
+			"peak": "峰值 {{value}}",
+			"stale": "已断线，重连中",
+			"spanSeconds": "{{n}} 秒",
+			"spanMinutes": "{{n}} 分钟",
+			"intervalSeconds": "{{n}} 秒",
+			"tileTitle": "最近 {{span}} 内 {{count}} 个样本的总吞吐（无纵轴）",
+			"chartLabel": "当前分组在线机器上下行吞吐（本页会话采样）",
+			"now": "现在"
+		},
+		"fleet": {
+			"topTalkers": "实时占用最高",
+			"lastSeen": "最后上报 {{time}}",
+			"totalTransfer": "累计流量"
+		},
+		"attention": {
+			"title": "需要关注 · {{count}}",
+			"more": "+{{count}}",
+			"offline": "{{name}} 离线",
+			"resource": "{{name}} · {{metric}} {{value}}",
+			"expiring": "{{name}} · 剩余 {{days}} 天",
+			"expired": "{{name}} · 已过期 {{days}} 天"
+		},
+		"map": {
+			"note": "统计全部节点，不受分组/状态筛选影响",
+			"legendOnline": "在线",
+			"legendIssue": "含离线",
+			"summary": "{{countries}} 个国家/地区 · {{servers}} 台"
+		},
+		"clearFilters": "清除筛选",
+		"reconnect": "重新连接",
+		"network": { "upload": "实时上传", "download": "实时下载", "used": "已用" }
+	}
+}

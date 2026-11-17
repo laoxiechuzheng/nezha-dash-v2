@@ -93,6 +93,32 @@ describe("ServerDetailOverview", () => {
 		expect(screen.getAllByAltText("BackIcon").length).toBeGreaterThan(0);
 	});
 
+	it("keeps zero traffic explicit, missing specs unknown, and long hardware names available", () => {
+		const cpuName = "AMD EPYC ".repeat(30);
+		seedWebSocketData({
+			server: createServer({
+				host: { cpu: [cpuName], mem_total: 0 },
+				state: { net_out_transfer: 0, net_in_transfer: 0 },
+			}),
+		});
+		const { container } = render(
+			<MemoryRouter>
+				<ServerDetailOverview server_id="1" />
+			</MemoryRouter>,
+		);
+		expect(container.querySelector(".dt-cpu-model [title]")).toHaveAttribute(
+			"title",
+			cpuName,
+		);
+		expect(screen.getAllByText("0 KiB")).toHaveLength(2);
+		expect(
+			container.querySelector(".dt-spec-grid .dt-fact dd"),
+		).toHaveTextContent("—");
+		expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+			"edge-1",
+		);
+	});
+
 	it("renders server identity, hardware, traffic, and temperature details", async () => {
 		const user = userEvent.setup();
 		sessionStorage.setItem("fromMainPage", "true");

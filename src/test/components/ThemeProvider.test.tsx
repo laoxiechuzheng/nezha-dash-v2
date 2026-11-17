@@ -53,14 +53,14 @@ describe("ThemeProvider", () => {
 		expect(document.documentElement.style.colorScheme).toBe("dark");
 		expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
 			"content",
-			"#0B0D10",
+			"#070B14",
 		);
 
 		await user.click(screen.getByRole("button", { name: "light" }));
 		expect(document.documentElement).toHaveClass("light");
 		expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
 			"content",
-			"#F6F7F9",
+			"#EDF0F8",
 		);
 	});
 
@@ -132,7 +132,7 @@ describe("ThemeProvider", () => {
 
 		expect(document.querySelector('meta[name="theme-color"]')).toHaveAttribute(
 			"content",
-			"#0B0D10",
+			"#070B14",
 		);
 	});
 

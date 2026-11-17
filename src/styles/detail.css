@@ -1,0 +1,709 @@
+.dt-page {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-width: 0;
+	gap: 16px;
+}
+.dt-overview {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 16px;
+}
+.dt-title-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	min-width: 0;
+}
+.dt-heading {
+	min-width: 0;
+	max-width: 100%;
+	margin: 0;
+	flex: 0 1 auto;
+}
+.dt-title-link {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+	max-width: 100%;
+	text-align: left;
+	cursor: pointer;
+}
+.dt-back {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	flex-shrink: 0;
+	border: 1px solid hsl(var(--border));
+	border-radius: 999px;
+	background: hsl(var(--card));
+	box-shadow: var(--shadow-surface);
+}
+.dt-back img {
+	margin-right: 0;
+	width: 18px;
+	height: 18px;
+}
+.dt-title-link:hover .dt-back {
+	border-color: hsl(var(--primary) / 0.45);
+	background: hsl(var(--muted));
+}
+.dt-hostname {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+	font-size: 24px;
+	line-height: 30px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+}
+.dt-state,
+.dt-country {
+	flex-shrink: 0;
+	gap: 8px;
+}
+.dt-country {
+	font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+}
+.dt-last-report {
+	margin: 0 0 0 auto;
+	font:
+		12px / 16px ui-monospace,
+		"SF Mono",
+		"Cascadia Mono",
+		Consolas,
+		monospace;
+	color: hsl(var(--muted-foreground));
+	overflow-wrap: anywhere;
+}
+.dt-identity {
+	min-width: 0;
+	padding: 24px;
+	border-radius: 20px;
+}
+.dt-identity-main {
+	display: grid;
+	grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+	gap: 24px;
+}
+.dt-hardware {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 16px;
+}
+.dt-platform-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+.dt-os-icon {
+	display: flex;
+	width: 44px;
+	height: 44px;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	border-radius: 14px;
+	background: hsl(var(--primary) / 0.12);
+	color: hsl(var(--primary));
+	font-size: 24px;
+}
+.dt-platform-copy {
+	min-width: 0;
+}
+.dt-label,
+.dt-fact dt {
+	color: hsl(var(--muted-foreground));
+	font-size: 11px;
+	line-height: 14px;
+	font-weight: 500;
+}
+.dt-platform-name {
+	margin-top: 4px;
+	font-size: 16px;
+	line-height: 24px;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+.dt-hardware-facts {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+.dt-hardware-facts :where(.dt-fact dd) {
+	color: hsl(var(--muted-foreground));
+	font-size: 13px;
+	line-height: 20px;
+	font-weight: 400;
+}
+.dt-cpu-model :where(dd > span) {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	overflow: hidden;
+}
+.dt-architecture-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+.dt-architecture {
+	font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+}
+.dt-agent-version {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 8px;
+	font-size: 12px;
+	line-height: 16px;
+	color: hsl(var(--muted-foreground));
+}
+.dt-agent-version > span:last-child {
+	color: hsl(var(--foreground));
+	font-family: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+	overflow-wrap: anywhere;
+}
+.dt-spec-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 20px 16px;
+	align-content: center;
+}
+.dt-fact {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 8px;
+}
+.dt-fact dd {
+	margin: 0;
+	min-width: 0;
+	font-size: 16px;
+	line-height: 24px;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+.dt-load-values {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.dt-load-values > span {
+	display: flex;
+	align-items: baseline;
+	gap: 4px;
+}
+.dt-load-values small {
+	color: hsl(var(--muted-foreground));
+	font-size: 11px;
+	font-weight: 500;
+}
+.dt-identity-times {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 8px 24px;
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: 1px solid hsl(var(--foreground) / 0.06);
+	font:
+		12px / 16px ui-monospace,
+		"SF Mono",
+		"Cascadia Mono",
+		Consolas,
+		monospace;
+	color: hsl(var(--muted-foreground));
+}
+.dt-identity-times > div {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	min-width: 0;
+}
+.dt-identity-times :where(dd) {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+.dt-temperatures {
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid hsl(var(--foreground) / 0.06);
+}
+.dt-temperature-trigger {
+	justify-content: flex-start;
+	gap: 8px;
+	padding: 0;
+	font-size: 12px;
+	line-height: 20px;
+	font-weight: 400;
+	color: hsl(var(--muted-foreground));
+}
+.dt-temperature-values {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 16px;
+	font-size: 12px;
+	line-height: 20px;
+}
+.dt-temperature-values > div {
+	display: flex;
+	gap: 4px;
+}
+.dt-temperature-values p {
+	color: hsl(var(--muted-foreground));
+	overflow-wrap: anywhere;
+}
+.dt-workspace {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: start;
+	min-width: 0;
+	gap: 16px;
+}
+.dt-tabs {
+	grid-column: 1;
+	grid-row: 1;
+	min-width: 0;
+	border-bottom: 1px solid hsl(var(--foreground) / 0.06);
+}
+.dt-tab {
+	flex-shrink: 0;
+}
+.dt-tab-indicator {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	z-index: 10;
+	height: 2px;
+	border-radius: 999px;
+	background: var(--grad-accent);
+}
+.dt-charts,
+.dt-network {
+	display: contents;
+}
+.dt-period {
+	grid-column: 2;
+	grid-row: 1;
+}
+.dt-period-indicator {
+	border-radius: 9px;
+	background: hsl(var(--card));
+	box-shadow: var(--shadow-surface);
+}
+.dark .dt-period-indicator {
+	background: hsl(var(--foreground) / 0.1);
+}
+.dt-period-locked,
+.dt-network-tools button:disabled {
+	opacity: 0.45;
+}
+.dt-chart-grid {
+	display: grid;
+	min-width: 0;
+	grid-column: 1 / -1;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 16px;
+	animation: dt-tab-enter 180ms var(--timing) both;
+}
+.dt-gradient-defs {
+	position: absolute;
+	pointer-events: none;
+}
+.dt-metric {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	padding: 16px;
+	border-radius: 16px;
+}
+.dt-metric-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	min-width: 0;
+}
+.dt-metric-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	flex: 1 1 100px;
+}
+.dt-metric-title h3 {
+	min-width: 0;
+	font-size: 14px;
+	line-height: 20px;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+.dt-metric-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 28px;
+	height: 28px;
+	background: hsl(var(--primary) / 0.12);
+	color: hsl(var(--primary));
+	border-radius: 8px;
+}
+.dt-metric-value {
+	font-size: 28px;
+	line-height: 32px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	overflow-wrap: anywhere;
+}
+.dt-value-unit {
+	margin-left: 4px;
+	font-size: 13px;
+	font-weight: 400;
+	letter-spacing: normal;
+	color: hsl(var(--muted-foreground));
+}
+.dt-metric-meta {
+	padding-top: 8px;
+	color: hsl(var(--muted-foreground));
+	font-size: 12px;
+	line-height: 16px;
+	overflow-wrap: anywhere;
+}
+.dt-metric-legend {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding-top: 8px;
+}
+.dt-legend-item {
+	display: inline-flex;
+	min-width: 0;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 4px 8px;
+	border: 1px solid hsl(var(--border));
+	border-radius: 8px;
+	background: hsl(var(--muted));
+	color: hsl(var(--muted-foreground));
+	font-size: 11px;
+	line-height: 14px;
+}
+.dt-legend-mark {
+	width: 8px;
+	height: 8px;
+	flex-shrink: 0;
+	border-radius: 2px;
+}
+.dt-metric-graph {
+	min-width: 0;
+	margin-top: auto;
+	padding-top: 12px;
+}
+.dt-metric-plot {
+	height: 148px;
+}
+.dt-metric-plot .recharts-cartesian-axis-tick text,
+.dt-network-plot .recharts-cartesian-axis-tick text,
+.dt-network-plot .dt-axis-tick {
+	fill: hsl(var(--muted-foreground));
+	font-size: 11px;
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: "tnum", "cv11", "ss01";
+	paint-order: stroke;
+	stroke: hsl(var(--card));
+	stroke-width: 3px;
+	stroke-linejoin: round;
+}
+.dt-chart-tooltip {
+	border-radius: 12px;
+	font-size: 13px;
+	box-shadow: var(--popover-shadow);
+}
+.dt-tooltip-reading {
+	gap: 6px;
+}
+.dt-tooltip-reading > .text-muted-foreground {
+	margin-right: auto;
+}
+.dt-tooltip-time {
+	font:
+		11px / 14px ui-monospace,
+		"SF Mono",
+		"Cascadia Mono",
+		Consolas,
+		monospace;
+}
+.dt-network-tools {
+	display: flex;
+	grid-column: 2;
+	grid-row: 1;
+	align-items: center;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 8px;
+	min-width: 0;
+	max-width: 100%;
+}
+.dt-network-panel {
+	grid-column: 1 / -1;
+	padding: 0;
+	border-radius: 20px;
+	animation: dt-tab-enter 180ms var(--timing) both;
+}
+.dt-network-panel [data-testid="monitor-track"] {
+	scroll-snap-type: x mandatory;
+	-webkit-mask-image: linear-gradient(
+		90deg,
+		transparent,
+		#000 24px,
+		#000 calc(100% - 24px),
+		transparent
+	);
+	mask-image: linear-gradient(
+		90deg,
+		transparent,
+		#000 24px,
+		#000 calc(100% - 24px),
+		transparent
+	);
+}
+.dt-monitor-chip {
+	border-radius: 12px;
+}
+.dt-monitor-chip[aria-pressed="true"] {
+	border-color: transparent;
+	background:
+		linear-gradient(hsl(var(--card)), hsl(var(--card))) padding-box,
+		var(--grad-accent) border-box;
+}
+.dt-monitor-chip[aria-pressed="true"]::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: hsl(var(--primary) / 0.12);
+	pointer-events: none;
+}
+.dt-monitor-chip > * {
+	position: relative;
+}
+.dt-network-plot {
+	height: 320px;
+}
+.dt-network-tooltip {
+	max-width: calc(100% - 16px);
+	border-radius: 12px;
+	font-size: 13px;
+}
+.dt-network-tooltip > div:first-child {
+	font:
+		11px / 14px ui-monospace,
+		"SF Mono",
+		"Cascadia Mono",
+		Consolas,
+		monospace;
+}
+.dt-network-empty {
+	display: flex;
+	grid-column: 1 / -1;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	min-height: 220px;
+	padding: 48px 16px;
+	text-align: center;
+	color: hsl(var(--muted-foreground));
+	font-size: 13px;
+}
+.dt-network-empty-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border: 1px solid hsl(var(--primary) / 0.24);
+	border-radius: 14px;
+	background: hsl(var(--muted));
+	color: hsl(var(--primary));
+}
+.dt-network-coverage {
+	position: absolute;
+	top: 12px;
+	left: 80px;
+	max-width: calc(100% - 96px);
+	font-size: 11px;
+	line-height: 14px;
+	color: hsl(var(--muted-foreground));
+	pointer-events: none;
+}
+.dt-outage-timeline {
+	margin: 0 16px 16px 20px;
+	border-left: 1px solid hsl(var(--border));
+}
+.dt-outage-timeline > li {
+	position: relative;
+}
+.dt-outage-timeline > li .status-dot {
+	margin-left: -21px;
+	box-shadow: 0 0 0 4px hsl(var(--card));
+}
+.dt-network-loading {
+	min-width: 0;
+	grid-column: 1 / -1;
+	border-radius: 20px;
+}
+.dt-loading {
+	display: flex;
+	width: 100%;
+	flex-direction: column;
+	gap: 16px;
+}
+.dt-loading-identity {
+	min-height: 236px;
+	padding: 24px;
+	border-radius: 20px;
+}
+.dt-loading-grid {
+	grid-column: 1 / -1;
+}
+.dt-loading-card {
+	display: flex;
+	min-height: 236px;
+	min-width: 0;
+	flex-direction: column;
+	gap: 16px;
+	padding: 16px;
+	border-radius: 16px;
+}
+.dt-custom-background {
+	background: hsl(var(--card) / 0.85);
+}
+.dt-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	padding: 16px;
+	border-radius: 16px;
+}
+@keyframes dt-tab-enter {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+@media (min-width: 768px) and (max-width: 1279px) {
+	.dt-chart-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+@media (max-width: 1023px) {
+	.dt-identity-main {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.dt-network-plot {
+		height: 260px;
+	}
+	.dt-network-tools {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		justify-content: flex-start;
+	}
+}
+@media (max-width: 767px) {
+	.dt-page,
+	.dt-overview {
+		gap: 12px;
+	}
+	.dt-hostname {
+		font-size: 20px;
+		line-height: 26px;
+	}
+	.dt-last-report {
+		flex-basis: 100%;
+		margin-left: 52px;
+	}
+	.dt-identity {
+		padding: 16px;
+	}
+	.dt-identity-main {
+		gap: 20px;
+	}
+	.dt-spec-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 20px 16px;
+	}
+	.dt-identity-times {
+		gap: 8px;
+	}
+	.dt-identity-times > div {
+		flex-basis: 100%;
+	}
+	.dt-workspace {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 12px;
+	}
+	.dt-period {
+		grid-column: 1;
+		grid-row: 2;
+		justify-self: start;
+	}
+	.dt-chart-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.dt-metric-value {
+		font-size: 24px;
+		line-height: 28px;
+	}
+	.dt-metric-plot {
+		height: 128px;
+	}
+	.dt-network-plot {
+		height: 220px;
+	}
+	.dt-network-coverage {
+		left: 64px;
+		max-width: calc(100% - 80px);
+	}
+	.dt-loading-identity {
+		min-height: 400px;
+		padding: 16px;
+	}
+	.dt-loading-card {
+		min-height: 216px;
+	}
+	.dt-tab {
+		min-height: 44px;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.dt-chart-grid,
+	.dt-network-panel {
+		animation: none;
+	}
+	.dt-tab-indicator,
+	.dt-period-indicator {
+		transition-duration: 0s;
+	}
+}

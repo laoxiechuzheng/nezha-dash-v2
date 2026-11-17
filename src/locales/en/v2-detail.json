@@ -1,0 +1,13 @@
+{
+	"v2Detail": {
+		"identity": { "lastReport": "Last report {{time}}", "bootAt": "Boot time" },
+		"period": {
+			"lockedLogin": "Available after login",
+			"lockedTsdb": "Historical data is not enabled"
+		},
+		"network": {
+			"coverage": "History covers only {{span}}",
+			"recordsTitle": "Recent outage records"
+		}
+	}
+}

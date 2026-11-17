@@ -26,12 +26,7 @@ class ErrorBoundary extends React.Component<Props, State> {
 
 	render() {
 		if (this.state.hasError) {
-			return (
-				<ErrorPage
-					code={500}
-					message={this.state.error?.message || "应用程序发生错误"}
-				/>
-			);
+			return <ErrorPage code={500} message={this.state.error?.message} />;
 		}
 
 		return this.props.children;

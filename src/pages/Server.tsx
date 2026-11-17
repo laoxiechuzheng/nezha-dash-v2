@@ -14,7 +14,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import GlobalMap from "@/components/GlobalMap";
 import GroupSwitch from "@/components/GroupSwitch";
-import { Overview } from "@/components/Header";
+import AttentionStrip from "@/components/home/AttentionStrip";
+import { DenseRowProvider } from "@/components/home/DenseRow";
+import DrawingDefs from "@/components/home/DrawingDefs";
+import { HomeDisplayContext } from "@/components/home/HomeDisplay";
+import {
+	buildNodeTraces,
+	fleetMemberKey,
+	type NodeSample,
+} from "@/lib/fleet-trace";
+import "@/styles/home.css";
 import { Loader } from "@/components/loading/Loader";
 import ServerCard from "@/components/ServerCard";
 import ServerCardInline from "@/components/ServerCardInline";
@@ -67,7 +76,13 @@ const readStoredFlag = (key: string, fallback: string, force?: boolean) => {
 	return localStorage.getItem(key) ?? fallback;
 };
 
-function BackendErrorState({ error }: { error: unknown }) {
+function BackendErrorState({
+	error,
+	onRetry,
+}: {
+	error: unknown;
+	onRetry: () => void;
+}) {
 	const { t } = useTranslation();
 	const message = getErrorMessage(error);
 
@@ -84,6 +99,9 @@ function BackendErrorState({ error }: { error: unknown }) {
 				<p className="text-[13px] text-muted-foreground">
 					{t("error.backendUnavailableDescription")}
 				</p>
+				<button type="button" className="hm-reconnect" onClick={onRetry}>
+					{t("v2Home.reconnect")}
+				</button>
 				{message && (
 					<p className="mt-2 max-w-full break-words rounded-md bg-danger/10 px-3 py-2 font-mono text-xs text-danger">
 						{message}
@@ -121,20 +139,13 @@ function ServerPageSkeleton({ label }: { label: string }) {
 				<Loader visible={true} />
 				{label}
 			</div>
-			<div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-6">
-				{Array.from({ length: 6 }, (_, index) => (
-					<div key={index} className="bg-card px-5 py-4">
-						<Skeleton className="h-3 w-16" />
-						<Skeleton className="mt-3 h-6 w-12" />
-					</div>
-				))}
+			<div className="hm-hero">
+				<Skeleton className="hm-stage" />
+				<Skeleton className="hm-skeleton-fleet" />
 			</div>
-			<div className="panel divide-y divide-border">
-				{Array.from({ length: 4 }, (_, index) => (
-					<div key={index} className="flex items-center gap-4 px-4 py-3.5">
-						<Skeleton className="h-3 w-40" />
-						<Skeleton className="ml-auto h-1.5 w-1/3" />
-					</div>
+			<div className="hm-node-grid hm-skeleton-grid">
+				{Array.from({ length: 6 }, (_, index) => (
+					<Skeleton key={index} className="hm-node-tile hm-skeleton-tile" />
 				))}
 			</div>
 		</div>
@@ -163,7 +174,8 @@ export default function Servers({
 	});
 	const serviceCount = Object.keys(serviceData?.data?.services ?? {}).length;
 	const hasServices = serviceCount > 0;
-	const { lastData, connected } = useWebSocketContext();
+	const { lastData, connected, messageHistory, reconnect } =
+		useWebSocketContext();
 	const { status, setStatus } = useStatus();
 	const [showServices, setShowServices] = useState<string>(() =>
 		readStoredFlag("showServices", "0", window.ForceShowServices),
@@ -171,11 +183,25 @@ export default function Servers({
 	const [showMap, setShowMap] = useState<string>(() =>
 		readStoredFlag("showMap", "0", window.ForceShowMap),
 	);
-	// "1" = list rows (the default), "0" = cards. The key predates the list
-	// view, when "inline" meant the row layout it replaces.
-	const [inline, setInline] = useState<string>(() =>
-		readStoredFlag("inline", "1", window.ForceCardInline),
+	// 已保存/强制偏好优先；无偏好在首批非空数据到达时锁定，resize 不重置。
+	const [inline, setInline] = useState<string | null>(() =>
+		window.ForceCardInline ? "1" : localStorage.getItem("inline"),
 	);
+	const defaultInline = useRef<string | null>(null);
+	if (defaultInline.current === null && lastData?.servers.length) {
+		defaultInline.current =
+			window.innerWidth >= 768 && lastData.servers.length <= 120 ? "0" : "1";
+	}
+	const resolvedInline = inline ?? defaultInline.current ?? "1";
+	const hasWsData = Boolean(lastData);
+	const [reducedMotion, setReducedMotion] = useState(
+		() => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+	);
+	const highDensity = (lastData?.servers.length ?? 0) > 120;
+	const motion =
+		!reducedMotion && (lastData?.servers.length ?? 0) <= 60 ? "live" : "still";
+	const gridRef = useRef<HTMLElement>(null);
+	const entered = useRef(false);
 	const hasRestoredScroll = useRef(false);
 	const [currentGroup, setCurrentGroup] = useState<string>("All");
 	const nezhaWsData = lastData;
@@ -432,10 +458,111 @@ export default function Servers({
 		status,
 	]);
 
+	const groupServers = useMemo(
+		() =>
+			(nezhaWsData?.servers ?? EMPTY_SERVER_LIST).filter(
+				(server) =>
+					currentGroup === "All" ||
+					groupServerIdSets.get(currentGroup)?.has(server.id),
+			),
+		[nezhaWsData?.servers, currentGroup, groupServerIdSets],
+	);
+	const memberKey = fleetMemberKey(
+		currentGroup,
+		currentGroup === "All"
+			? groupServers.map((server) => server.id)
+			: [...(groupServerIdSets.get(currentGroup) ?? [])],
+	);
+	const memberIds = useMemo(
+		() => (JSON.parse(memberKey) as [string, number[]])[1],
+		[memberKey],
+	);
+	const traces = useMemo(
+		() =>
+			highDensity
+				? new Map<number, NodeSample[]>()
+				: buildNodeTraces(messageHistory, memberIds),
+		[highDensity, messageHistory, memberIds],
+	);
+	const display = useMemo(
+		() => ({ highDensity, traces }),
+		[highDensity, traces],
+	);
+
+	useEffect(() => {
+		const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+		const change = () => setReducedMotion(query.matches);
+		query.addEventListener("change", change);
+		return () => query.removeEventListener("change", change);
+	}, []);
+	useEffect(() => {
+		if (!nezhaWsData) return;
+		document.documentElement.dataset.fleet = nezhaWsData.servers.some(
+			(server) => !isServerOnline(nezhaWsData.now, server),
+		)
+			? "down"
+			: "ok";
+		return () => {
+			delete document.documentElement.dataset.fleet;
+		};
+	}, [nezhaWsData]);
+	useEffect(() => {
+		const grid = gridRef.current;
+		if (
+			resolvedInline !== "0" ||
+			!hasWsData ||
+			!grid ||
+			highDensity ||
+			reducedMotion ||
+			!window.matchMedia("(hover: hover) and (pointer: fine)").matches
+		)
+			return;
+		let frame = 0;
+		let latest: PointerEvent | null = null;
+		const move = (event: PointerEvent) => {
+			if (event.pointerType !== "mouse") return;
+			latest = event;
+			if (frame) return;
+			frame = requestAnimationFrame(() => {
+				frame = 0;
+				const event = latest;
+				const tile =
+					event?.target instanceof Element
+						? event.target.closest<HTMLElement>(".spot")
+						: null;
+				if (!event || !tile) return;
+				const rect = tile.getBoundingClientRect();
+				tile.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+				tile.style.setProperty("--my", `${event.clientY - rect.top}px`);
+			});
+		};
+		grid.addEventListener("pointermove", move);
+		return () => {
+			grid.removeEventListener("pointermove", move);
+			if (frame) cancelAnimationFrame(frame);
+		};
+	}, [highDensity, reducedMotion, resolvedInline, hasWsData]);
+	useEffect(() => {
+		if (!hasWsData || entered.current) return;
+		entered.current = true;
+		const grid = gridRef.current;
+		if (!grid || motion !== "live") return;
+		grid.dataset.enter = "true";
+		const timer = window.setTimeout(() => {
+			delete grid.dataset.enter;
+		}, 700);
+		return () => {
+			window.clearTimeout(timer);
+			delete grid.dataset.enter;
+		};
+	}, [hasWsData, motion]);
+
 	const currentBackendError = backendError || groupError || serviceError;
 
 	if (!nezhaWsData && currentBackendError) {
-		return <BackendErrorState error={currentBackendError} />;
+		return (
+			<BackendErrorState error={currentBackendError} onRetry={reconnect} />
+		);
 	}
 
 	if (!connected && !lastData) {
@@ -454,7 +581,7 @@ export default function Servers({
 
 	const hasServers = nezhaWsData.servers.length > 0;
 	const activeView: ServerView =
-		showMap === "1" ? "map" : inline === "1" ? "list" : "card";
+		showMap === "1" ? "map" : resolvedInline === "1" ? "list" : "card";
 	const viewOptions: {
 		value: ServerView;
 		label: string;
@@ -471,187 +598,219 @@ export default function Servers({
 	] as const;
 
 	return (
-		<div className="flex w-full min-w-0 flex-col gap-4">
-			<Overview />
-			<ServerOverview
-				total={totalServers}
-				online={onlineServers}
-				offline={offlineServers}
-				up={up}
-				down={down}
-				upSpeed={upSpeed}
-				downSpeed={downSpeed}
-			/>
+		<HomeDisplayContext.Provider value={display}>
 			<div
-				hidden={!hasServers}
-				className="server-overview-controls flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center lg:justify-between"
+				className="hm-home flex w-full min-w-0 flex-col gap-4"
+				data-density={highDensity ? "high" : "normal"}
+				data-motion={motion}
 			>
-				<div className="flex min-w-0 items-center">
-					<GroupSwitch
-						tabs={groupTabs}
-						currentTab={currentGroup}
-						setCurrentTab={handleTagChange}
-					/>
-				</div>
-				<div className="flex min-w-0 flex-wrap items-center gap-2">
-					<fieldset
-						aria-label={t("filter.status")}
-						className={cn("segmented", { "bg-card/80": customBackgroundImage })}
-					>
-						{statusOptions.map((option) => (
-							<button
-								key={option.value}
-								type="button"
-								aria-pressed={status === option.value}
-								onClick={() => setStatus(option.value)}
-							>
-								{option.value !== "all" && (
-									<span className="status-dot" data-status={option.value} />
-								)}
-								{option.label}
-							</button>
-						))}
-					</fieldset>
-					<div
-						className={cn(
-							"flex h-9 shrink-0 items-center rounded-md border border-border bg-card text-[13px]",
-							{ "bg-card/80": customBackgroundImage },
-						)}
-					>
-						<button
-							type="button"
-							aria-label="Toggle sort direction"
-							onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-							disabled={sortType === "default"}
-							className={cn(
-								"flex h-full items-center gap-1.5 rounded-l-md px-2.5 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40",
-								sortType !== "default" && "text-primary",
-							)}
-						>
-							{sortOrder === "asc" && sortType !== "default" ? (
-								<ArrowUpIcon className="size-3.5 shrink-0" />
-							) : sortOrder === "desc" && sortType !== "default" ? (
-								<ArrowDownIcon className="size-3.5 shrink-0" />
-							) : (
-								<ArrowsUpDownIcon className="size-3.5 shrink-0" />
-							)}
-							<span className="hidden sm:inline">{t("sort.label")}</span>
-						</button>
-						<span aria-hidden="true" className="h-4 w-px bg-border" />
-						<span className="relative inline-flex h-full items-center px-2.5">
-							<span
-								className="pointer-events-none select-none whitespace-nowrap font-medium"
-								aria-hidden
-							>
-								{t(`sort.types.${sortType.replace(/ /g, "_")}`)}
-							</span>
-							<select
-								aria-label="Sort metric"
-								value={sortType}
-								onChange={(e) => {
-									const val = e.target.value as typeof sortType;
-									setSortType(val);
-									if (val === "default") setSortOrder("desc");
-								}}
-								className="absolute inset-0 cursor-pointer appearance-none bg-transparent text-transparent outline-none [&>option]:text-foreground"
-							>
-								{SORT_TYPES.map((type) => (
-									<option key={type} value={type} className="bg-popover">
-										{t(`sort.types.${type.replace(/ /g, "_")}`)}
-									</option>
-								))}
-							</select>
-						</span>
+				<DrawingDefs />
+				{!connected && (
+					<div className="hm-disconnected-line" role="status">
+						{t("v2Home.trace.stale")}
 					</div>
-					<div className="ml-auto flex items-center gap-2">
-						{hasServices && (
-							<button
-								type="button"
-								aria-label={t("serviceTracker.toggleLabel", {
-									count: serviceCount,
-								})}
-								aria-pressed={showServices === "1"}
-								onClick={toggleServices}
-								className={cn(
-									"flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground",
-									showServices === "1" &&
-										"border-primary/40 bg-primary/10 text-primary hover:text-primary",
-								)}
-							>
-								<ChartBarSquareIcon className="size-4" />
-								<span className="hidden sm:inline">
-									{t("serviceTracker.toggle")}
-								</span>
-								<span className="tabular-nums">{serviceCount}</span>
-							</button>
-						)}
+				)}
+				<ServerOverview
+					total={totalServers}
+					online={onlineServers}
+					offline={offlineServers}
+					up={up}
+					down={down}
+					upSpeed={upSpeed}
+					downSpeed={downSpeed}
+					groupServerIds={currentGroup === "All" ? undefined : memberIds}
+					servers={groupServers}
+					now={nezhaWsData.now}
+				/>
+				<AttentionStrip servers={groupServers} now={nezhaWsData.now} />
+				<div
+					hidden={!hasServers}
+					className="server-overview-controls hm-controls surface glass"
+				>
+					<div className="hm-control-groups flex min-w-0 items-center">
+						<GroupSwitch
+							tabs={groupTabs}
+							currentTab={currentGroup}
+							setCurrentTab={handleTagChange}
+						/>
+					</div>
+					<div className="hm-control-actions flex min-w-0 flex-wrap items-center gap-2">
 						<fieldset
-							aria-label={t("view.label")}
+							aria-label={t("filter.status")}
 							className={cn("segmented", {
 								"bg-card/80": customBackgroundImage,
 							})}
 						>
-							{viewOptions.map(({ value, label, icon: Icon }) => (
+							{statusOptions.map((option) => (
 								<button
-									key={value}
+									key={option.value}
 									type="button"
-									aria-label={label}
-									title={label}
-									aria-pressed={activeView === value}
-									onClick={() => selectView(value)}
+									aria-pressed={status === option.value}
+									onClick={() => setStatus(option.value)}
 								>
-									<Icon className="size-4" />
-									<span className="hidden md:inline">{label}</span>
+									{option.value !== "all" && (
+										<span className="status-dot" data-status={option.value} />
+									)}
+									{option.label}
 								</button>
 							))}
 						</fieldset>
+						<div
+							className={cn(
+								"flex h-9 shrink-0 items-center rounded-md border border-border bg-card text-[13px]",
+								{ "bg-card/80": customBackgroundImage },
+							)}
+						>
+							<button
+								type="button"
+								aria-label="Toggle sort direction"
+								onClick={() =>
+									setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+								}
+								disabled={sortType === "default"}
+								className={cn(
+									"flex h-full items-center gap-1.5 rounded-l-md px-2.5 text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40",
+									sortType !== "default" && "text-primary",
+								)}
+							>
+								{sortOrder === "asc" && sortType !== "default" ? (
+									<ArrowUpIcon className="size-3.5 shrink-0" />
+								) : sortOrder === "desc" && sortType !== "default" ? (
+									<ArrowDownIcon className="size-3.5 shrink-0" />
+								) : (
+									<ArrowsUpDownIcon className="size-3.5 shrink-0" />
+								)}
+								<span className="hidden sm:inline">{t("sort.label")}</span>
+							</button>
+							<span aria-hidden="true" className="h-4 w-px bg-border" />
+							<span className="relative inline-flex h-full items-center px-2.5">
+								<span
+									className="pointer-events-none select-none whitespace-nowrap font-medium"
+									aria-hidden
+								>
+									{t(`sort.types.${sortType.replace(/ /g, "_")}`)}
+								</span>
+								<select
+									aria-label="Sort metric"
+									value={sortType}
+									onChange={(e) => {
+										const val = e.target.value as typeof sortType;
+										setSortType(val);
+										if (val === "default") setSortOrder("desc");
+									}}
+									className="absolute inset-0 cursor-pointer appearance-none bg-transparent text-transparent outline-none [&>option]:text-foreground"
+								>
+									{SORT_TYPES.map((type) => (
+										<option key={type} value={type} className="bg-popover">
+											{t(`sort.types.${type.replace(/ /g, "_")}`)}
+										</option>
+									))}
+								</select>
+							</span>
+						</div>
+						<div className="ml-auto flex items-center gap-2">
+							{hasServices && (
+								<button
+									type="button"
+									aria-label={t("serviceTracker.toggleLabel", {
+										count: serviceCount,
+									})}
+									aria-pressed={showServices === "1"}
+									onClick={toggleServices}
+									className={cn(
+										"flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground",
+										showServices === "1" &&
+											"border-primary/40 bg-primary/10 text-primary hover:text-primary",
+									)}
+								>
+									<ChartBarSquareIcon className="size-4" />
+									<span className="hidden sm:inline">
+										{t("serviceTracker.toggle")}
+									</span>
+									<span className="tabular-nums">{serviceCount}</span>
+								</button>
+							)}
+							<fieldset
+								aria-label={t("view.label")}
+								className={cn("segmented", {
+									"bg-card/80": customBackgroundImage,
+								})}
+							>
+								{viewOptions.map(({ value, label, icon: Icon }) => (
+									<button
+										key={value}
+										type="button"
+										aria-label={label}
+										title={label}
+										aria-pressed={activeView === value}
+										onClick={() => selectView(value)}
+									>
+										<Icon className="size-4" />
+										<span className="hidden md:inline">{label}</span>
+									</button>
+								))}
+							</fieldset>
+						</div>
 					</div>
 				</div>
-			</div>
-			{hasServers && showMap === "1" && (
-				<GlobalMap now={nezhaWsData.now} serverList={nezhaWsData.servers} />
-			)}
-			{hasServers && hasServices && showServices === "1" && (
-				<ServiceTracker serverList={filteredServers} />
-			)}
-			{!hasServers ? (
-				<ServerEmptyState />
-			) : filteredServers.length > 0 ? (
-				inline === "1" ? (
-					<section
-						aria-label={t("serverList.count", {
-							count: filteredServers.length,
-						})}
-						className={cn(
-							"server-inline-list overflow-hidden rounded-lg border border-border bg-card",
-							{ "bg-card/85": customBackgroundImage },
-						)}
-					>
-						<ServerListHeader />
-						<div className="divide-y divide-border">
+				{hasServers && showMap === "1" && (
+					<GlobalMap now={nezhaWsData.now} serverList={nezhaWsData.servers} />
+				)}
+				{hasServers && hasServices && showServices === "1" && (
+					<ServiceTracker serverList={filteredServers} />
+				)}
+				{!hasServers ? (
+					<ServerEmptyState />
+				) : filteredServers.length > 0 ? (
+					resolvedInline === "1" ? (
+						<section
+							aria-label={t("serverList.count", {
+								count: filteredServers.length,
+							})}
+							className={cn("server-inline-list hm-node-list", {
+								"bg-card/85": customBackgroundImage,
+							})}
+						>
+							<ServerListHeader />
+							<DenseRowProvider enabled={highDensity}>
+								<div className="hm-node-rows">
+									{filteredServers.map((serverInfo) => (
+										<ServerCardInline
+											key={serverInfo.id}
+											now={nezhaWsData.now}
+											serverInfo={serverInfo}
+										/>
+									))}
+								</div>
+							</DenseRowProvider>
+						</section>
+					) : (
+						<section ref={gridRef} className="server-card-list hm-node-grid">
 							{filteredServers.map((serverInfo) => (
-								<ServerCardInline
+								<ServerCard
 									key={serverInfo.id}
 									now={nezhaWsData.now}
 									serverInfo={serverInfo}
 								/>
 							))}
-						</div>
-					</section>
+						</section>
+					)
 				) : (
-					<section className="server-card-list grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-						{filteredServers.map((serverInfo) => (
-							<ServerCard
-								key={serverInfo.id}
-								now={nezhaWsData.now}
-								serverInfo={serverInfo}
-							/>
-						))}
-					</section>
-				)
-			) : (
-				<ServerEmptyState filtered />
-			)}
-		</div>
+					<div className="hm-filter-empty">
+						<ServerEmptyState filtered />
+						<button
+							type="button"
+							className="hm-clear-filters"
+							onClick={() => {
+								setStatus("all");
+								handleTagChange("All");
+							}}
+						>
+							{t("v2Home.clearFilters")}
+						</button>
+					</div>
+				)}
+			</div>
+		</HomeDisplayContext.Provider>
 	);
 }

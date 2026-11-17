@@ -3,6 +3,7 @@ import type { MouseEvent } from "react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { renderDenseRow, useDenseRowContext } from "@/components/home/DenseRow";
 import ServerFlag from "@/components/ServerFlag";
 import ServerPlatform from "@/components/ServerPlatform";
 import UsageCell from "@/components/UsageCell";
@@ -19,7 +20,7 @@ import { Badge } from "./ui/badge";
  * as a table row from md up and as a compact card on phones; see
  * `.server-row` in index.css for the grid areas.
  */
-function ServerCardInline({
+function StandardRow({
 	now,
 	serverInfo,
 }: {
@@ -32,11 +33,8 @@ function ServerCardInline({
 		name,
 		country_code,
 		online,
-		cpu,
 		up,
 		down,
-		mem,
-		stg,
 		platform,
 		uptime,
 		load_1,
@@ -56,12 +54,25 @@ function ServerCardInline({
 		navigate(href);
 	};
 
+	const displayCpu = Number.isFinite(serverInfo.state?.cpu)
+		? serverInfo.state.cpu
+		: Number.NaN;
+	const displayMem =
+		Number.isFinite(serverInfo.state?.mem_used) &&
+		serverInfo.host?.mem_total > 0
+			? (serverInfo.state.mem_used / serverInfo.host.mem_total) * 100
+			: Number.NaN;
+	const displayDisk =
+		Number.isFinite(serverInfo.state?.disk_used) &&
+		serverInfo.host?.disk_total > 0
+			? (serverInfo.state.disk_used / serverInfo.host.disk_total) * 100
+			: Number.NaN;
 	const parsedData = parsePublicNote(public_note);
 	const hasBilling = Boolean(parsedData?.billingDataMod);
 	const hasPlan = Boolean(parsedData?.planDataMod);
 
 	const nameCell = (
-		<div className="flex min-w-0 flex-col gap-1 [grid-area:name]">
+		<div className="hm-row-name flex min-w-0 flex-col gap-1 [grid-area:name]">
 			<div className="flex min-w-0 items-center gap-2">
 				<span
 					className="status-dot"
@@ -72,6 +83,7 @@ function ServerCardInline({
 					className="shrink-0 leading-none"
 				/>
 				<span
+					title={name}
 					className={cn(
 						"truncate text-[13px] font-medium",
 						!online && "text-muted-foreground",
@@ -81,7 +93,7 @@ function ServerCardInline({
 				</span>
 			</div>
 			{(online || hasBilling) && (
-				<div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 pl-4 text-[11px] text-muted-foreground [&_p]:text-[11px] [&>div]:text-[11px]">
+				<div className="hm-row-sub flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 pl-4 text-[11px] text-muted-foreground [&_p]:text-[11px] [&>div]:text-[11px]">
 					{online && (
 						<span className="flex min-w-0 items-center">
 							<span className="sr-only">{t("serverCard.system")}</span>
@@ -92,7 +104,7 @@ function ServerCardInline({
 				</div>
 			)}
 			{hasPlan && parsedData && (
-				<div className="pl-4">
+				<div className="hm-row-plan pl-4">
 					<PlanInfo parsedData={parsedData} />
 				</div>
 			)}
@@ -105,7 +117,7 @@ function ServerCardInline({
 				href={href}
 				onClick={rowClick}
 				data-online="false"
-				className="server-row group px-4 py-3 text-muted-foreground transition-colors duration-150 hover:bg-muted/60 dark:hover:bg-foreground/[0.03]"
+				className="server-row hm-row-grid hm-node-row surface group px-4 py-3 text-muted-foreground"
 			>
 				{nameCell}
 				<div className="flex min-w-0 flex-wrap items-center gap-2 pl-4 text-xs [grid-area:info] md:pl-0">
@@ -133,26 +145,29 @@ function ServerCardInline({
 			href={href}
 			onClick={rowClick}
 			data-online="true"
-			className="server-row group px-4 py-3 transition-colors duration-150 hover:bg-muted/60 md:py-2.5 dark:hover:bg-foreground/[0.03]"
+			className="server-row hm-row-grid hm-node-row surface group px-4 py-3 md:py-2.5"
 		>
 			{nameCell}
 			<UsageCell
 				label="CPU"
-				value={cpu}
+				metric="cpu"
+				value={displayCpu}
 				className="[grid-area:cpu]"
 				labelClassName="md:hidden"
 				valueRowClassName="md:justify-end"
 			/>
 			<UsageCell
 				label={t("serverCard.mem")}
-				value={mem}
+				metric="memory"
+				value={displayMem}
 				className="[grid-area:mem]"
 				labelClassName="md:hidden"
 				valueRowClassName="md:justify-end"
 			/>
 			<UsageCell
 				label={t("serverCard.stg")}
-				value={stg}
+				metric="disk"
+				value={displayDisk}
 				className="[grid-area:disk]"
 				labelClassName="md:hidden"
 				valueRowClassName="md:justify-end"
@@ -192,4 +207,11 @@ function ServerCardInline({
 	);
 }
 
-export default memo(ServerCardInline);
+const MemoStandardRow = memo(StandardRow);
+export default memo(function ServerCardInline(props: {
+	now: number;
+	serverInfo: NezhaServer;
+}) {
+	const dense = useDenseRowContext();
+	return dense ? renderDenseRow(props, dense) : <MemoStandardRow {...props} />;
+});

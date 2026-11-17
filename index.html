@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <meta name="theme-color" content="#EDF0F8" />
     <script>
       ;(() => {
         const storageKey = "vite-ui-theme"
@@ -11,7 +12,7 @@
           theme === "system" ? (mediaQuery.matches ? "dark" : "light") : theme
 
         function updateThemeColor(nextTheme) {
-          const themeColor = nextTheme === "dark" ? "#0B0D10" : "#F6F7F9"
+          const themeColor = nextTheme === "dark" ? "#070B14" : "#EDF0F8"
           let meta = document.querySelector('meta[name="theme-color"]')
 
           if (!meta) {
@@ -28,7 +29,7 @@
           root.classList.add(resolvedTheme)
           root.style.colorScheme = resolvedTheme
           root.style.backgroundColor =
-            resolvedTheme === "dark" ? "#0B0D10" : "#F6F7F9"
+            resolvedTheme === "dark" ? "#070B14" : "#EDF0F8"
           updateThemeColor(resolvedTheme)
         }
 
@@ -66,7 +67,6 @@
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#F6F7F9" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Nezha Monitoring" />

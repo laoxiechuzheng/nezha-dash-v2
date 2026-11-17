@@ -42,12 +42,12 @@ export function LanguageSwitcher() {
 				<Button
 					variant="ghost"
 					size="sm"
-					className={cn("size-10 px-0 sm:size-9", {
+					className={cn("ghost-icon", {
 						"bg-card/80": customBackgroundImage,
 					})}
 				>
-					<LanguageIcon className="size-4" />
-					<span className="sr-only">Change language</span>
+					<LanguageIcon className="size-[18px]" />
+					<span className="sr-only">{t("v2Shell.language.label")}</span>
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent className="flex flex-col gap-0.5" align="end">

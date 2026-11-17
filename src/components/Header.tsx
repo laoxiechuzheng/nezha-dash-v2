@@ -1,18 +1,19 @@
 import { Bars3Icon } from "@heroicons/react/20/solid";
 import { useQuery } from "@tanstack/react-query";
-import { ImageMinus } from "lucide-react";
+import { ExternalLink, ImageMinus } from "lucide-react";
 import { DateTime } from "luxon";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { ModeToggle } from "@/components/ThemeSwitcher";
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBackground } from "@/hooks/use-background";
 import { useWebSocketContext } from "@/hooks/use-websocket-context";
@@ -20,6 +21,7 @@ import { fetchLoginUser, fetchSetting } from "@/lib/nezha-api";
 import { cn } from "@/lib/utils";
 
 import AnimateCountClient from "./AnimatedCount";
+import { BrandMark } from "./BrandMark";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Loader, LoadingSpinner } from "./loading/Loader";
 import NumericText from "./NumericText";
@@ -55,8 +57,8 @@ const useCurrentTime = () => {
 	return time;
 };
 
-/** Icon-sized header control: 40px touch target on phones, 36px on desktop. */
-const headerControlClass = "size-10 px-0 sm:size-9";
+/** 图标视觉 32px，额外热区达到 40px。 */
+const headerControlClass = "ghost-icon";
 
 function Header() {
 	const { t } = useTranslation();
@@ -78,7 +80,7 @@ function Header() {
 	const siteName = settingData?.data?.config?.site_name;
 
 	// @ts-expect-error CustomLogo is a global variable
-	const customLogo = window.CustomLogo || "/apple-touch-icon.png";
+	const customLogo = window.CustomLogo || undefined;
 
 	// @ts-expect-error CustomDesc is a global variable
 	const customDesc = window.CustomDesc || t("nezha");
@@ -97,7 +99,7 @@ function Header() {
 		// @ts-expect-error set link.rel
 		link.rel = "shortcut icon";
 		// @ts-expect-error set link.href
-		link.href = customLogo;
+		link.href = customLogo || "/apple-touch-icon.png";
 		document.getElementsByTagName("head")[0].appendChild(link);
 	}, [customLogo]);
 
@@ -125,54 +127,42 @@ function Header() {
 	const customBackgroundImage = backgroundImage;
 
 	return (
-		<header
-			className={cn(
-				"sticky top-0 z-40 w-full border-b border-border bg-background",
-				{
-					"bg-card/85": customBackgroundImage,
-				},
+		<header className="sh-header glass w-full">
+			{!connected && lastData && (
+				<span className="sh-disconnected" aria-hidden="true" />
 			)}
-		>
-			<div className="page-container flex h-14 min-w-0 items-center justify-between gap-3">
-				<section
+			<div className="sh-header-inner page-container">
+				<button
+					type="button"
 					onClick={() => {
 						sessionStorage.removeItem("selectedGroup");
 						navigate("/");
 					}}
-					className="flex min-w-0 cursor-pointer items-center gap-2.5"
+					className="sh-brand"
+					title={siteName}
 				>
-					<span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-card">
-						<img
-							width={40}
-							height={40}
-							alt="apple-touch-icon"
-							src={customLogo}
-							className="size-5 object-cover object-top"
-						/>
-					</span>
-					<span className="truncate text-[15px] font-semibold leading-none">
+					<BrandMark customLogo={customLogo} />
+					<span className="sh-brand-name">
 						{isLoading ? (
-							<Skeleton className="h-4 w-20 animate-none" />
+							<Skeleton className="h-4 w-20" />
 						) : (
 							siteName || "NEZHA"
 						)}
 					</span>
-					<span
-						aria-hidden="true"
-						className="hidden h-4 w-px shrink-0 bg-border md:block"
-					/>
-					<p className="hidden truncate text-[13px] text-muted-foreground md:block">
+					<span className="hidden min-w-0 truncate text-xs text-muted-foreground lg:block">
 						{customDesc}
-					</p>
-				</section>
-				<section className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5">
-					<nav className="mr-2 hidden items-center gap-4 sm:flex">
+					</span>
+				</button>
+				<SearchButton />
+				<section className="sh-header-actions">
+					<nav className="hidden items-center gap-3 md:flex">
 						<Links />
-						<DashboardLink />
+						<DashboardLink className="rounded-[10px] px-2 py-2 hover:bg-foreground/6" />
 					</nav>
-					<SearchButton />
-					<LanguageSwitcher />
-					<ModeToggle />
+					<div className="hidden items-center gap-2 md:flex">
+						<LanguageSwitcher />
+						<ModeToggle />
+					</div>
 					{(customBackgroundImage ||
 						sessionStorage.getItem("savedBackgroundImage")) && (
 						<Button
@@ -184,28 +174,38 @@ function Header() {
 								"hidden sm:inline-flex": customMobileBackgroundImage,
 							})}
 						>
-							<ImageMinus className="size-4" />
+							<ImageMinus className="size-[18px]" />
 						</Button>
 					)}
 					<Button
 						variant="outline"
 						size="sm"
 						title={t("header.viewers")}
-						className="h-10 cursor-default gap-1.5 px-2.5 tabular-nums hover:bg-card sm:h-9"
+						aria-label={t("header.viewers")}
+						className="sh-visitors num"
 					>
 						<span
 							className="status-dot"
 							data-status={connected ? "online" : "offline"}
+							aria-hidden="true"
 						/>
 						{connected ? (
 							<NumericText value={onlineCount} />
 						) : (
 							<Loader visible={true} />
 						)}
-						<p className="hidden text-muted-foreground min-[420px]:block">
+						<span className="hidden text-muted-foreground xl:inline">
+							{t("v2Shell.header.visitors")}
+						</span>
+						<span className="sr-only">
 							{connected ? t("online") : t("offline")}
-						</p>
+						</span>
 					</Button>
+					{!connected && lastData && (
+						<span className="chip hidden xl:inline-flex" data-tone="danger">
+							{t("v2Shell.header.disconnected")}
+						</span>
+					)}
 					<MobileNavMenu />
 				</section>
 			</div>
@@ -284,53 +284,68 @@ export function RefreshToast() {
 	}
 
 	return (
-		<div className="refresh-toast-animate fixed left-1/2 top-4 z-[999] flex -translate-x-1/2 items-center gap-2 rounded-md border border-border bg-popover px-3 py-2 text-popover-foreground shadow-popover">
+		<div className="refresh-toast-animate fixed left-1/2 top-4 z-[999] flex -translate-x-1/2 items-center gap-2 rounded-[14px] border border-border border-l-[3px] border-l-primary bg-popover px-3 py-2 text-popover-foreground shadow-popover">
 			<LoadingSpinner />
 			<p className="text-[13px] font-medium">{t("refreshing")}...</p>
 		</div>
 	);
 }
 
-/**
- * Phone-only navigation: the dashboard/login entry and any custom links share
- * one menu on the first header row instead of a second row.
- */
+/** 手机导航使用 Radix Dialog，保持焦点陷阱、Esc 与全部自定义链接。 */
 function MobileNavMenu() {
 	const { t } = useTranslation();
 	const links = getCustomLinks() ?? [];
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
+		<Dialog>
+			<DialogTrigger asChild>
 				<Button
 					variant="ghost"
 					size="sm"
 					aria-label={t("header.menu")}
 					title={t("header.menu")}
-					className={cn(headerControlClass, "sm:hidden")}
+					className={cn(headerControlClass, "md:hidden")}
 				>
-					<Bars3Icon className="size-4" aria-hidden="true" />
+					<Bars3Icon className="size-5" aria-hidden="true" />
 				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="min-w-40">
-				<DropdownMenuItem asChild>
-					<DashboardLink className="w-full cursor-pointer text-popover-foreground hover:text-popover-foreground" />
-				</DropdownMenuItem>
-				{links.length > 0 && <DropdownMenuSeparator />}
-				{links.map((link, index) => (
-					<DropdownMenuItem key={index} asChild>
-						<a
-							href={link.link}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="w-full cursor-pointer"
-						>
-							{link.name}
-						</a>
-					</DropdownMenuItem>
-				))}
-			</DropdownMenuContent>
-		</DropdownMenu>
+			</DialogTrigger>
+			<DialogContent className="sh-menu-content sh-sheet">
+				<div className="sh-menu-head">
+					<DialogTitle>{t("header.menu")}</DialogTitle>
+					<DialogDescription className="sr-only">
+						{t("v2Shell.header.navigation")}
+					</DialogDescription>
+				</div>
+				<nav
+					className="sh-menu-links"
+					aria-label={t("v2Shell.header.navigation")}
+				>
+					<DialogClose asChild>
+						<DashboardLink className="w-full" />
+					</DialogClose>
+					{links.length > 0 && (
+						<p className="eyebrow mt-6 mb-2 px-3">
+							{t("v2Shell.header.customLinks")}
+						</p>
+					)}
+					{links.map((link, index) => (
+						<DialogClose key={index} asChild>
+							<a href={link.link} target="_blank" rel="noopener noreferrer">
+								<ExternalLink
+									className="size-[18px] shrink-0 text-muted-foreground"
+									aria-hidden="true"
+								/>
+								{link.name}
+							</a>
+						</DialogClose>
+					))}
+				</nav>
+				<div className="sh-menu-foot">
+					<LanguageSwitcher />
+					<ModeToggle />
+				</div>
+			</DialogContent>
+		</Dialog>
 	);
 }
 
@@ -409,7 +424,7 @@ export function Overview() {
 
 	return (
 		<section className="header-timer flex items-end justify-between gap-3">
-			<h1 className="text-xl font-semibold leading-tight">{t("overview")}</h1>
+			<h1 className="eyebrow">{t("overview")}</h1>
 			<div className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
 				<span className="hidden min-[380px]:inline">{t("whereTheTimeIs")}</span>
 				{mounted ? (

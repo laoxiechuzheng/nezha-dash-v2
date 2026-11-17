@@ -1,0 +1,43 @@
+{
+	"v2Home": {
+		"trace": {
+			"caption": "Current group · Online nodes combined · This session · Last {{span}} · {{count}} samples · Median interval {{interval}}",
+			"sampling": "Sampling · {{count}} samples",
+			"waiting": "Waiting for data…",
+			"peak": "Peak {{value}}",
+			"stale": "Disconnected, reconnecting",
+			"spanSeconds": "{{n}} seconds",
+			"spanMinutes": "{{n}} minutes",
+			"intervalSeconds": "{{n}} seconds",
+			"tileTitle": "Combined throughput across {{count}} samples over the last {{span}} (no vertical axis)",
+			"chartLabel": "Current group online node upload and download throughput (this session)",
+			"now": "Now"
+		},
+		"fleet": {
+			"topTalkers": "Top talkers",
+			"lastSeen": "Last reported {{time}}",
+			"totalTransfer": "Total transfer"
+		},
+		"attention": {
+			"title": "Needs attention · {{count}}",
+			"more": "+{{count}}",
+			"offline": "{{name}} offline",
+			"resource": " {{name}} · {{metric}} {{value}}",
+			"expiring": "{{name}} · {{days}} days remaining",
+			"expired": "{{name}} · Expired {{days}} days ago"
+		},
+		"map": {
+			"note": "All nodes, independent of group and status filters",
+			"legendOnline": "Online",
+			"legendIssue": "Includes offline",
+			"summary": "{{countries}} countries/regions · {{servers}} nodes"
+		},
+		"clearFilters": "Clear filters",
+		"reconnect": "Reconnect",
+		"network": {
+			"upload": "Live upload",
+			"download": "Live download",
+			"used": "Used"
+		}
+	}
+}

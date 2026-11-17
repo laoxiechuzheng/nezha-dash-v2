@@ -4,6 +4,7 @@ import {
 	ArrowPathIcon,
 	ChevronLeftIcon,
 	ChevronRightIcon,
+	LockClosedIcon,
 	MagnifyingGlassMinusIcon,
 	MagnifyingGlassPlusIcon,
 	SignalIcon,
@@ -77,6 +78,41 @@ const LIVE_POINT_LIMIT_PER_MONITOR = 8192;
 const DESKTOP_CHART_LEFT_GUTTER = 68;
 const MOBILE_CHART_LEFT_GUTTER = 56;
 const CHART_RIGHT_GUTTER = 12;
+
+function NetworkTimeTick({
+	x,
+	y,
+	payload,
+	first,
+	last,
+	format,
+}: {
+	x?: number;
+	y?: number;
+	payload?: { value: number };
+	first: number;
+	last: number;
+	format: (value: number) => string;
+}) {
+	if (!payload) return null;
+	return (
+		<text
+			x={x}
+			y={y}
+			dy="0.71em"
+			className="dt-axis-tick"
+			textAnchor={
+				payload.value === first
+					? "start"
+					: payload.value === last
+						? "end"
+						: "middle"
+			}
+		>
+			{format(payload.value)}
+		</text>
+	);
+}
 
 type HoveredMonitorPoint = {
 	point: MonitorChartPoint;
@@ -207,16 +243,7 @@ export function NetworkChart({
 	}, [liveData, server_id]);
 
 	if (!monitorData) return <NetworkChartLoading />;
-	if (monitorData.success && !monitorData.data) {
-		return (
-			<div className="space-y-3">
-				<p className="py-4 text-center text-sm text-muted-foreground">
-					{t("monitor.noData")}
-				</p>
-				<NetworkChartLoading />
-			</div>
-		);
-	}
+	if (monitorData.success && !monitorData.data) return <NetworkEmptyState />;
 
 	const mergedMonitorData = mergeMonitorData(
 		monitorData.data,
@@ -238,6 +265,7 @@ export function NetworkChart({
 			const indexDiff = (bInfo?.displayIndex ?? 0) - (aInfo?.displayIndex ?? 0);
 			return indexDiff || (aInfo?.id ?? 0) - (bInfo?.id ?? 0);
 		});
+	if (chartDataKey.length === 0) return <NetworkEmptyState />;
 	const chartConfig = {
 		avg_delay: { label: t("monitor.avgDelay") },
 	} satisfies ChartConfig;
@@ -253,6 +281,18 @@ export function NetworkChart({
 			onPeriodChange={setPeriod}
 			isLogin={isLogin}
 		/>
+	);
+}
+
+function NetworkEmptyState() {
+	const { t } = useTranslation();
+	return (
+		<section className="surface dt-network-empty" role="status">
+			<span className="dt-network-empty-icon" aria-hidden="true">
+				<SignalIcon className="size-6" />
+			</span>
+			<p>{t("monitor.noData")}</p>
+		</section>
 	);
 }
 
@@ -465,7 +505,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 		[outages],
 	);
 	const selectedIndex = Math.max(0, chartDataKey.indexOf(selectedMonitor));
-	const selectedColor = `hsl(var(--chart-${(selectedIndex % 10) + 1}))`;
+	const selectedColor = "hsl(var(--chart-2))";
 	const latestPoint = selectedPoints[selectedPoints.length - 1];
 	const currentFailed = latestPoint ? isPointFailed(latestPoint) : false;
 	const activeOutage = outages.find((outage) => !outage.recovered);
@@ -693,8 +733,8 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 		[chartDataKey],
 	);
 	return (
-		<div className="flex min-w-0 flex-col gap-3">
-			<div className="flex flex-wrap items-center gap-2">
+		<div className="dt-network">
+			<div className="dt-network-tools">
 				<TooltipProvider delayDuration={120}>
 					<div className="scrollbar-hidden flex min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
 						<div
@@ -705,12 +745,12 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 							{indicator && (
 								<div
 									aria-hidden="true"
-									className="active-indicator-fade-in absolute left-0 top-0 z-0 rounded-[5px] bg-muted dark:bg-foreground/[0.08]"
+									className="active-indicator-fade-in dt-period-indicator absolute left-0 top-0 z-0"
 									style={{
 										height: indicator.height,
 										transform: `translate(${indicator.x}px, ${indicator.y}px)`,
 										transition: indicator.shouldAnimate
-											? "transform 0.16s ease-out, width 0.16s ease-out, height 0.16s ease-out"
+											? "transform 220ms cubic-bezier(.3,.7,.2,1), width 220ms cubic-bezier(.3,.7,.2,1), height 220ms cubic-bezier(.3,.7,.2,1)"
 											: "none",
 										width: indicator.width,
 									}}
@@ -723,6 +763,9 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									<button
 										type="button"
 										disabled={locked}
+										title={
+											locked ? t("v2Detail.period.lockedLogin") : undefined
+										}
 										aria-pressed={period === option.value}
 										onClick={() => {
 											if (period !== option.value) enableIndicatorAnimation();
@@ -731,6 +774,9 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 										}}
 										className="relative z-10"
 									>
+										{locked && (
+											<LockClosedIcon aria-hidden="true" className="size-3" />
+										)}
 										{option.label}
 									</button>
 								);
@@ -775,8 +821,8 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 
 			<Card
 				className={cn(
-					"network-chart-panel min-w-0 overflow-hidden",
-					customBackgroundImage && "bg-card/70",
+					"network-chart-panel surface-stage dt-network-panel min-w-0",
+					customBackgroundImage && "dt-custom-background",
 				)}
 			>
 				<CardHeader className="min-w-0 space-y-0 p-0">
@@ -831,7 +877,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 								className="flex w-max min-w-full snap-x snap-mandatory gap-2 border-0 p-0"
 								aria-label={t("monitor.selectMonitor", "选择监控目标")}
 							>
-								{chartDataKey.map((key, keyIndex) => {
+								{chartDataKey.map((key) => {
 									const points = chartData[key];
 									const lastPoint = points[points.length - 1];
 									const failed = lastPoint ? isPointFailed(lastPoint) : false;
@@ -852,7 +898,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 											onClick={() => selectMonitorAt(chartDataKey.indexOf(key))}
 											aria-pressed={selected}
 											className={cn(
-												"relative flex w-[168px] shrink-0 snap-center flex-col gap-1 overflow-hidden rounded-md border px-3 py-2.5 text-left transition-colors duration-150 sm:w-[196px]",
+												"dt-monitor-chip relative flex w-[168px] shrink-0 snap-center flex-col gap-1 rounded-md border px-3 py-2.5 text-left transition-colors duration-150 sm:w-[196px]",
 												selected
 													? "border-primary/60 bg-primary/[0.06] dark:bg-primary/10"
 													: "border-border bg-card hover:bg-muted/60 dark:hover:bg-foreground/[0.03]",
@@ -864,7 +910,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 														aria-hidden="true"
 														className="size-2 shrink-0 rounded-[2px]"
 														style={{
-															backgroundColor: `hsl(var(--chart-${(keyIndex % 10) + 1}))`,
+															backgroundColor: selectedColor,
 														}}
 													/>
 													<span className="truncate text-xs font-medium">
@@ -975,7 +1021,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 						<div
 							ref={chartViewportRef}
 							data-testid="network-chart-viewport"
-							className="relative min-w-0 touch-pan-y overflow-hidden"
+							className="dt-network-viewport relative min-w-0 touch-pan-y"
 							title={t(
 								"monitor.zoomHint",
 								"滚动鼠标滚轮可围绕指针位置缩放时间线",
@@ -984,7 +1030,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 							<ChartContainer
 								config={chartConfig}
 								className={cn(
-									"pointer-events-none aspect-auto h-[320px] w-full transition-opacity sm:h-[380px]",
+									"dt-network-plot pointer-events-none aspect-auto w-full transition-opacity",
 									showPeriodLoading && "opacity-60",
 								)}
 							>
@@ -992,7 +1038,31 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									data={trendPoints}
 									margin={{ top: 10, right: 12, bottom: 8, left: 4 }}
 								>
-									<CartesianGrid vertical={false} />
+									<defs>
+										<linearGradient
+											id="dt-network-fill"
+											x1="0"
+											y1="0"
+											x2="0"
+											y2="1"
+										>
+											<stop
+												offset="0%"
+												stopColor={selectedColor}
+												stopOpacity={0.12}
+											/>
+											<stop
+												offset="100%"
+												stopColor={selectedColor}
+												stopOpacity={0}
+											/>
+										</linearGradient>
+									</defs>
+									<CartesianGrid
+										vertical={false}
+										stroke="hsl(var(--border) / .8)"
+										strokeDasharray="3 4"
+									/>
 									<XAxis
 										type="number"
 										dataKey="created_at"
@@ -1000,11 +1070,18 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 										ticks={timeTicks}
 										scale="time"
 										interval={0}
-										tickLine
+										tickLine={false}
 										tickSize={3}
 										axisLine={false}
 										tickMargin={9}
 										tickFormatter={formatTick}
+										tick={
+											<NetworkTimeTick
+												first={timeTicks[0]}
+												last={timeTicks[timeTicks.length - 1]}
+												format={formatTick}
+											/>
+										}
 									/>
 									<YAxis
 										yAxisId="delay"
@@ -1029,7 +1106,9 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 													x1={outage.start}
 													x2={visibleEnd}
 													fill="hsl(var(--danger))"
-													fillOpacity={0.14}
+													fillOpacity={0.1}
+													strokeDasharray="3 4"
+													strokeWidth={1}
 													stroke="hsl(var(--danger))"
 													strokeOpacity={0.3}
 												/>
@@ -1039,7 +1118,14 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 														yAxisId="delay"
 														x={outage.end}
 														stroke="hsl(var(--success))"
-														strokeWidth={2}
+														strokeWidth={1}
+														strokeDasharray="3 4"
+														label={{
+															value: "✓",
+															position: "insideTopRight",
+															fill: "hsl(var(--success))",
+															fontSize: 12,
+														}}
 													/>
 												)}
 											</React.Fragment>
@@ -1050,8 +1136,8 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 										type="linear"
 										dataKey="trend_delay"
 										stroke="none"
-										fill={selectedColor}
-										fillOpacity={0.08}
+										fill="url(#dt-network-fill)"
+										fillOpacity={1}
 										connectNulls={false}
 										yAxisId="delay"
 									/>
@@ -1061,9 +1147,9 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 										dataKey="trend_delay"
 										name={selectedMonitor}
 										stroke={selectedColor}
-										strokeWidth={2}
+										strokeWidth={1.75}
 										dot={false}
-										activeDot={{ r: 5, strokeWidth: 2 }}
+										activeDot={{ r: 4, strokeWidth: 2 }}
 										connectNulls={false}
 										yAxisId="delay"
 									/>
@@ -1074,7 +1160,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 											y={delayScale.maximum * 0.97}
 											yAxisId="delay"
 											r={2.5}
-											fill="hsl(var(--danger))"
+											fill="hsl(var(--card))"
 											stroke="hsl(var(--danger))"
 										/>
 									))}
@@ -1099,10 +1185,17 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 									if (event.pointerType !== "touch") clearHoveredPoint();
 								}}
 							/>
+							{hasIncompleteHistory && (
+								<p className="dt-network-coverage">
+									{t("v2Detail.network.coverage", {
+										span: formatDuration(availableHistoryMs),
+									})}
+								</p>
+							)}
 							{hoveredPoint && (
 								<div
 									data-testid="network-chart-hover-tooltip"
-									className="pointer-events-none absolute z-20 min-w-44 -translate-x-1/2 -translate-y-[calc(100%+12px)] rounded-lg border border-border bg-popover px-3 py-2.5 text-xs text-popover-foreground shadow-popover"
+									className="dt-network-tooltip pointer-events-none absolute z-20 min-w-44 -translate-x-1/2 -translate-y-[calc(100%+12px)] rounded-lg border border-border bg-popover px-3 py-2.5 text-xs text-popover-foreground shadow-popover"
 									style={{ left: hoveredPoint.x, top: hoveredPoint.y }}
 								>
 									<div className="mb-1.5 text-[11px] text-muted-foreground tabular-nums">
@@ -1172,7 +1265,7 @@ export const NetworkChartClient = React.memo(function NetworkChartClient({
 								{t("monitor.noOutage", "当前时间范围内没有故障")}
 							</div>
 						) : (
-							<ul className="divide-y divide-border border-t border-border">
+							<ul className="dt-outage-timeline">
 								{recentOutages.map((outage) => {
 									const end = outage.end ?? domainEnd;
 									return (

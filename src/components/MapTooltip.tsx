@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import useTooltip from "@/hooks/use-tooltip";
@@ -9,25 +9,45 @@ const MapTooltip = memo(function MapTooltip() {
 	const navigate = useNavigate();
 	const { tooltipData } = useTooltip();
 
+	const ref = useRef<HTMLDivElement>(null);
+	const [position, setPosition] = useState({ left: 8, top: 8 });
+	useLayoutEffect(() => {
+		const tooltip = ref.current;
+		const parent = tooltip?.parentElement;
+		if (!tooltip || !parent || !tooltipData) return;
+		const place = () => {
+			const bounds = parent.getBoundingClientRect();
+			const measured = tooltip.getBoundingClientRect();
+			const width = measured.width || 220;
+			const height = measured.height || 80;
+			setPosition({
+				left: Math.max(
+					8,
+					Math.min(tooltipData.centroid[0] + 12, bounds.width - width - 8),
+				),
+				top: Math.max(
+					8,
+					Math.min(
+						tooltipData.centroid[1] - height / 2,
+						bounds.height - height - 8,
+					),
+				),
+			});
+		};
+		place();
+		const observer = new ResizeObserver(place);
+		observer.observe(parent);
+		return () => observer.disconnect();
+	}, [tooltipData]);
 	if (!tooltipData) return null;
-
-	const verticalPlacement =
-		tooltipData.centroid[1] < 120
-			? "translate(20%, 8px)"
-			: tooltipData.centroid[1] > 380
-				? "translate(20%, calc(-100% - 8px))"
-				: "translate(20%, -50%)";
 
 	return (
 		<div
-			className="tooltip-animate absolute z-50 hidden min-w-40 rounded-lg border border-border bg-popover px-3 py-2.5 text-[13px] text-popover-foreground shadow-popover lg:block"
+			ref={ref}
+			className="hm-map-tooltip tooltip-animate absolute z-50 hidden min-w-40 rounded-lg border border-border bg-popover px-3 py-2.5 text-[13px] text-popover-foreground shadow-popover lg:block"
 			data-testid="map-tooltip"
 			key={tooltipData.country}
-			style={{
-				left: tooltipData.centroid[0],
-				top: tooltipData.centroid[1],
-				transform: verticalPlacement,
-			}}
+			style={position}
 			onMouseEnter={(e) => {
 				e.stopPropagation();
 			}}
@@ -49,7 +69,7 @@ const MapTooltip = memo(function MapTooltip() {
 					overflowY: "auto",
 				}}
 			>
-				{tooltipData.servers.map((server) => (
+				{tooltipData.servers.slice(0, 5).map((server) => (
 					<button
 						key={server.id}
 						type="button"
@@ -66,6 +86,13 @@ const MapTooltip = memo(function MapTooltip() {
 						<span className="text-xs">{server.name}</span>
 					</button>
 				))}
+				{tooltipData.servers.length > 5 && (
+					<span className="text-xs text-muted-foreground">
+						{t("v2Home.attention.more", {
+							count: tooltipData.servers.length - 5,
+						})}
+					</span>
+				)}
 			</div>
 		</div>
 	);

@@ -77,7 +77,9 @@ describe("language and theme switchers", () => {
 
 		render(<LanguageSwitcher />);
 
-		await user.click(screen.getByRole("button", { name: "Change language" }));
+		await user.click(
+			screen.getByRole("button", { name: "v2Shell.language.label" }),
+		);
 
 		expect(screen.getByText("language.zh-CN")).toBeInTheDocument();
 		expect(screen.getByText("language.en-US")).toHaveClass("font-semibold");
@@ -92,7 +94,9 @@ describe("language and theme switchers", () => {
 			</ThemeProvider>,
 		);
 
-		await user.click(screen.getByRole("button", { name: "Toggle theme" }));
+		await user.click(
+			screen.getByRole("button", { name: "v2Shell.theme.label" }),
+		);
 		await user.click(await screen.findByText("theme.dark"));
 
 		expect(document.documentElement).toHaveClass("dark");

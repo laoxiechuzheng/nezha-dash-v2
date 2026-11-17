@@ -8,7 +8,7 @@ export default function ServerListHeader() {
 	return (
 		<div
 			aria-hidden="true"
-			className="server-list-head h-9 border-b border-border bg-muted/50 px-4 dark:bg-foreground/[0.02]"
+			className="server-list-head hm-row-grid hm-list-head h-9 px-4"
 		>
 			<span className={`${cell} [grid-area:name]`}>{t("serverList.name")}</span>
 			<span className={`${cell} text-right [grid-area:cpu]`}>

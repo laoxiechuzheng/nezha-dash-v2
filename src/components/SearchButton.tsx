@@ -1,10 +1,8 @@
 "use client";
 
-import { MagnifyingGlassIcon } from "@heroicons/react/20/solid";
+import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useCommand } from "@/hooks/use-command";
-import { cn } from "@/lib/utils";
-
 import { Button } from "./ui/button";
 
 export function SearchButton() {
@@ -14,36 +12,22 @@ export function SearchButton() {
 		typeof navigator !== "undefined" &&
 		/macintosh|mac os x/i.test(navigator.userAgent);
 
-	const customBackgroundImage =
-		(window.CustomBackgroundImage as string) !== ""
-			? window.CustomBackgroundImage
-			: undefined;
-
 	return (
 		<Button
 			variant="outline"
-			size="sm"
-			className={cn(
-				"size-10 px-0 text-muted-foreground sm:size-9 md:h-9 md:w-52 md:justify-start md:gap-2 md:px-2.5",
-				{
-					"bg-card/80": customBackgroundImage,
-				},
-			)}
+			className="sh-search-trigger"
 			onClick={openCommand}
-			title="Search"
-			aria-label="Search"
+			title={t("v2Shell.search.label")}
+			aria-label={t("v2Shell.search.label")}
 		>
-			<MagnifyingGlassIcon className="size-4" />
-			<span className="sr-only">Search</span>
+			<Search className="size-[18px]" aria-hidden="true" />
 			<span
 				aria-hidden="true"
-				className="hidden flex-1 text-left font-normal md:inline"
+				className="hidden min-w-0 flex-1 truncate text-left font-normal text-muted-foreground lg:inline"
 			>
 				{t("header.searchPlaceholder")}
 			</span>
-			<kbd className="pointer-events-none hidden h-5 items-center rounded-[4px] border border-border bg-muted px-1.5 font-mono text-[11px] text-muted-foreground md:inline-flex">
-				{isMac ? "⌘" : "Ctrl"} K
-			</kbd>
+			<kbd className="kbd hidden lg:inline-flex">{isMac ? "⌘" : "Ctrl"} K</kbd>
 		</Button>
 	);
 }

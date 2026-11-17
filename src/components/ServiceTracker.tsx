@@ -114,10 +114,9 @@ export function ServiceTracker({ serverList }: { serverList: NezhaServer[] }) {
 			)}
 			{serviceSummaries.length > 0 && (
 				<section
-					className={cn(
-						"overflow-hidden rounded-lg border border-border bg-card",
-						{ "bg-card/85": customBackgroundImage },
-					)}
+					className={cn("hm-services surface", {
+						"bg-card/85": customBackgroundImage,
+					})}
 				>
 					<header className="flex flex-col gap-3 border-b border-border px-4 py-3 md:flex-row md:items-center md:justify-between">
 						<div className="min-w-0">

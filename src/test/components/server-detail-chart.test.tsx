@@ -24,12 +24,25 @@ vi.mock("recharts", () => {
 			children,
 			data,
 			dataKey,
+			isAnimationActive,
+			syncId,
+			domain,
 		}: {
 			children?: ReactNode;
 			data?: unknown[];
 			dataKey?: string;
+			isAnimationActive?: boolean;
+			syncId?: string;
+			domain?: unknown[];
 		}) => (
-			<div data-key={dataKey} data-points={data?.length} data-testid={testId}>
+			<div
+				data-key={dataKey}
+				data-points={data?.length}
+				data-animation={isAnimationActive}
+				data-sync={syncId}
+				data-domain={domain ? JSON.stringify(domain) : undefined}
+				data-testid={testId}
+			>
 				{children}
 			</div>
 		);
@@ -205,7 +218,10 @@ describe("ServerDetailChart", () => {
 
 		const { container } = renderWithQuery(<ServerDetailChart server_id="7" />);
 
-		expect(container.querySelectorAll(".h-\\[182px\\]")).toHaveLength(6);
+		expect(
+			container.querySelectorAll('[data-detail-skeleton="metric"]'),
+		).toHaveLength(6);
+		expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument();
 	});
 
 	it("renders realtime resource, network, connection, and GPU charts", async () => {
@@ -232,7 +248,31 @@ describe("ServerDetailChart", () => {
 		expect(screen.getByText("TCP")).toBeInTheDocument();
 		expect(screen.getByText("UDP")).toBeInTheDocument();
 		expect(screen.getAllByTestId("area-chart").length).toBeGreaterThan(0);
-		expect(screen.getAllByTestId("line-chart").length).toBeGreaterThan(0);
+		expect(screen.getAllByTestId("area-chart")).toHaveLength(7);
+		for (const chart of screen.getAllByTestId("area-chart"))
+			expect(chart).toHaveAttribute("data-sync", "serverDetailCharts");
+		for (const series of screen.getAllByTestId("area"))
+			expect(series).toHaveAttribute("data-animation", "false");
+		for (const percentageMetric of ["cpu", "gpu", "memory", "disk"])
+			expect(
+				document.querySelector(
+					`[data-metric="${percentageMetric}"] [data-testid="y-axis"]`,
+				),
+			).toHaveAttribute("data-domain", "[0,100]");
+		expect(
+			document.querySelectorAll('[data-metric="network"] [data-key="upload"]'),
+		).toHaveLength(1);
+		expect(
+			document.querySelectorAll(
+				'[data-metric="network"] [data-key="download"]',
+			),
+		).toHaveLength(1);
+		expect(
+			document.querySelectorAll('[data-metric="connection"] [data-key="tcp"]'),
+		).toHaveLength(1);
+		expect(
+			document.querySelectorAll('[data-metric="connection"] [data-key="udp"]'),
+		).toHaveLength(1);
 
 		await user.click(screen.getByText("serverDetailChart.period7d"));
 
@@ -281,6 +321,57 @@ describe("ServerDetailChart", () => {
 				),
 			).toBeGreaterThanOrEqual(3);
 		});
+	});
+
+	it.each([
+		0, 1, 2,
+	])("keeps six metric kinds plus %i real GPU readings", async (gpuCount) => {
+		seedWebSocketData();
+		const server = detailChartMocks.lastData?.servers[0];
+		if (!server) throw new Error("Missing seeded server");
+		server.host.gpu = Array.from(
+			{ length: gpuCount },
+			(_, index) => `GPU-${index + 1}`,
+		);
+		server.state.gpu = Array.from(
+			{ length: gpuCount },
+			(_, index) => index * 10 + 20,
+		);
+		const { container } = renderWithQuery(<ServerDetailChart server_id="7" />);
+		await screen.findByText("serverDetailChart.realtime");
+		expect(container.querySelectorAll("[data-metric]")).toHaveLength(
+			6 + gpuCount,
+		);
+		expect(container.querySelectorAll('[data-metric="gpu"]')).toHaveLength(
+			gpuCount,
+		);
+	});
+
+	it("does not present offline or unknown CPU readings as current zeroes", async () => {
+		seedWebSocketData();
+		const server = detailChartMocks.lastData?.servers[0];
+		if (!server) throw new Error("Missing seeded server");
+		server.last_active = "2020-01-01T00:00:00.000Z";
+		const { container, unmount } = renderWithQuery(
+			<ServerDetailChart server_id="7" />,
+		);
+		await screen.findByText("serverDetailChart.realtime");
+		expect(
+			container.querySelector('[data-metric="cpu"] .dt-metric-value'),
+		).toHaveTextContent("—");
+		expect(
+			container.querySelector('[data-metric="memory"] .dt-metric-meta'),
+		).toHaveTextContent("—");
+		unmount();
+		seedWebSocketData();
+		const nextServer = detailChartMocks.lastData?.servers[0];
+		if (!nextServer) throw new Error("Missing seeded server");
+		nextServer.state.cpu = Number.NaN;
+		const next = renderWithQuery(<ServerDetailChart server_id="7" />);
+		await screen.findByText("serverDetailChart.realtime");
+		expect(
+			next.container.querySelector('[data-metric="cpu"] .dt-metric-value'),
+		).toHaveTextContent("—");
 	});
 
 	it("fetches every historical metric group for the selected period", async () => {

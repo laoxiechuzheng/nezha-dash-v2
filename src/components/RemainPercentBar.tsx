@@ -25,8 +25,9 @@ export default function RemainPercentBar({
 		<Progress
 			aria-label={"Server Usage Bar"}
 			aria-labelledby={"Server Usage Bar"}
-			value={value}
+			value={Number.isFinite(value) ? value : null}
 			data-level={level}
+			data-unknown={!Number.isFinite(value) || undefined}
 			indicatorClassName={indicatorByLevel[level]}
 			className={cn("h-1 w-[70px]", className)}
 		/>

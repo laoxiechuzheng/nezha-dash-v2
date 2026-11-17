@@ -162,13 +162,14 @@ describe("Header", () => {
 
 		// Phones reach the same entries through the header menu.
 		await user.click(screen.getByRole("button", { name: "header.menu" }));
-		const menu = await screen.findByRole("menu");
+		const menu = await screen.findByRole("dialog", { name: "header.menu" });
 		expect(
-			within(menu).getByRole("menuitem", { name: "dashboard" }),
+			within(menu).getByRole("link", { name: "dashboard" }),
 		).toHaveAttribute("href", "/dashboard");
-		expect(
-			within(menu).getByRole("menuitem", { name: "Docs" }),
-		).toHaveAttribute("href", "https://example.test");
+		expect(within(menu).getByRole("link", { name: "Docs" })).toHaveAttribute(
+			"href",
+			"https://example.test",
+		);
 	});
 
 	it("uses the offline display and login links when websocket and auth are unavailable", async () => {
@@ -184,10 +185,11 @@ describe("Header", () => {
 		).toBeInTheDocument();
 
 		await user.click(screen.getByRole("button", { name: "header.menu" }));
-		const menu = await screen.findByRole("menu");
-		expect(
-			within(menu).getByRole("menuitem", { name: "login" }),
-		).toHaveAttribute("href", "/dashboard");
+		const menu = await screen.findByRole("dialog", { name: "header.menu" });
+		expect(within(menu).getByRole("link", { name: "login" })).toHaveAttribute(
+			"href",
+			"/dashboard",
+		);
 		expect(within(menu).queryAllByRole("separator")).toHaveLength(0);
 	});
 

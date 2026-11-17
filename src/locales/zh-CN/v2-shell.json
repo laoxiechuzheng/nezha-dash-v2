@@ -1,0 +1,26 @@
+{
+	"v2Shell": {
+		"header": {
+			"visitors": "在线访客",
+			"disconnected": "已断线，重连中",
+			"navigation": "导航",
+			"customLinks": "自定义链接"
+		},
+		"search": {
+			"label": "搜索",
+			"title": "搜索服务器与命令",
+			"description": "使用方向键选择服务器、页面或主题。",
+			"pages": "页面",
+			"themes": "主题",
+			"empty": "没有匹配 “{{query}}”",
+			"select": "选择",
+			"open": "打开",
+			"close": "关闭"
+		},
+		"theme": { "label": "切换主题" },
+		"language": { "label": "切换语言" },
+		"close": "关闭",
+		"retry": "重试",
+		"login": { "title": "登录", "subtitle": "管理后台" }
+	}
+}

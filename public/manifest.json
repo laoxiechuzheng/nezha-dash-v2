@@ -9,8 +9,8 @@
 			"purpose": "any maskable"
 		}
 	],
-	"theme_color": "hsl(0 0% 98%)",
-	"background_color": "hsl(0 0% 98%)",
+	"theme_color": "#EDF0F8",
+	"background_color": "#EDF0F8",
 	"start_url": "/",
 	"display": "standalone",
 	"orientation": "portrait"

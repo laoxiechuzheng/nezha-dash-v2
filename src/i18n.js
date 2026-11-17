@@ -46,9 +46,27 @@ i18n.use(initReactI18next).init({
 	},
 });
 
+// 仅收集已存在的分块翻译；互不相交的 namespace 深合并且不覆盖旧 key。
+const v2 = import.meta.glob("./locales/*/v2-*.json", {
+	eager: true,
+	import: "default",
+});
+for (const [path, json] of Object.entries(v2)) {
+	const dir = path.split("/").slice(-2)[0];
+	i18n.addResourceBundle(
+		dir === "en" ? "en-US" : dir,
+		"translation",
+		json,
+		true,
+		false,
+	);
+}
+
 // 添加语言改变时的处理函数
 i18n.on("languageChanged", (lng) => {
 	localStorage.setItem("language", lng);
+	document.documentElement.lang = lng;
 });
+document.documentElement.lang = i18n.language;
 
 export default i18n;

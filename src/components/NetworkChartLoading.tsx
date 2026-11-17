@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function NetworkChartLoading() {
 	return (
 		<section
-			className="network-chart-panel overflow-hidden rounded-lg border border-border bg-card"
+			className="network-chart-panel surface-stage dt-network-loading"
 			aria-busy="true"
 		>
 			<header className="flex items-center justify-between gap-4 border-b border-border px-4 py-3">
@@ -15,7 +15,7 @@ export default function NetworkChartLoading() {
 				<Loader visible={true} />
 			</header>
 			<div className="px-2 py-4 sm:px-4">
-				<div className="aspect-auto h-[250px] w-full" />
+				<div className="dt-network-plot w-full" />
 			</div>
 		</section>
 	);

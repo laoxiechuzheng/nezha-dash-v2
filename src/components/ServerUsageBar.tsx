@@ -31,8 +31,9 @@ export default function ServerUsageBar({
 		<Progress
 			aria-label={"Server Usage Bar"}
 			aria-labelledby={"Server Usage Bar"}
-			value={value}
+			value={Number.isFinite(value) ? Math.round(value * 2) / 2 : null}
 			data-level={level}
+			data-unknown={!Number.isFinite(value) || undefined}
 			indicatorClassName={indicatorByLevel[level]}
 			className={cn("mt-1 h-1", className)}
 		/>

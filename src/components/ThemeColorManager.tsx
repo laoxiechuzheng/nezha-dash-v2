@@ -22,7 +22,7 @@ export function ThemeColorManager() {
 				document.head.appendChild(newMeta);
 			}
 
-			const themeColor = currentTheme === "dark" ? "#0B0D10" : "#F6F7F9";
+			const themeColor = currentTheme === "dark" ? "#070B14" : "#EDF0F8";
 
 			document
 				.querySelector('meta[name="theme-color"]')

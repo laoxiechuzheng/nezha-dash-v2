@@ -1,4 +1,10 @@
-import { act, render, renderHook, screen } from "@testing-library/react";
+import {
+	act,
+	fireEvent,
+	render,
+	renderHook,
+	screen,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -163,19 +169,31 @@ describe("state providers", () => {
 		expect(screen.getByTestId("command-state")).toHaveTextContent("closed");
 	});
 
-	it("uses forced sort globals when valid and still allows local updates", async () => {
+	it("uses forced sort globals when valid and still allows local updates", () => {
+		vi.useFakeTimers();
 		window.ForceSortType = "mem";
 		window.ForceSortOrder = "asc";
-		const user = userEvent.setup();
-		render(
+		const { unmount } = render(
 			<SortProvider>
 				<SortProbe />
 			</SortProvider>,
 		);
 
-		expect(screen.getByText("mem:asc")).toBeInTheDocument();
-		await user.click(screen.getByRole("button", { name: "cpu" }));
-		expect(screen.getByText("cpu:asc")).toBeInTheDocument();
+		try {
+			expect(screen.getByText("mem:asc")).toBeInTheDocument();
+			fireEvent.click(screen.getByRole("button", { name: "cpu" }));
+			expect(screen.getByText("cpu:asc")).toBeInTheDocument();
+			// 等待强制值的一次延迟重应用，再验证它不会持续覆盖手动排序。
+			act(() => vi.advanceTimersByTime(100));
+			expect(screen.getByText("mem:asc")).toBeInTheDocument();
+			fireEvent.click(screen.getByRole("button", { name: "cpu" }));
+			expect(screen.getByText("cpu:asc")).toBeInTheDocument();
+			act(() => vi.advanceTimersByTime(500));
+			expect(screen.getByText("cpu:asc")).toBeInTheDocument();
+		} finally {
+			unmount();
+			vi.useRealTimers();
+		}
 	});
 
 	it("falls back to default sort values for invalid forced globals", () => {

@@ -128,6 +128,10 @@ function websocketPayload(servers: NezhaServer[]) {
 
 describe("Servers page", () => {
 	beforeEach(() => {
+		Object.defineProperty(window, "innerWidth", {
+			configurable: true,
+			value: 1440,
+		});
 		apiMocks.fetchServerGroup.mockResolvedValue({
 			success: true,
 			data: [
@@ -300,6 +304,82 @@ describe("Servers page", () => {
 		expect(screen.queryByText("alpha")).not.toBeInTheDocument();
 		expect(screen.getByText("beta")).toBeInTheDocument();
 		expect(sessionStorage.getItem("selectedGroup")).toBe("Edge");
+	});
+
+	it("locks the first nonempty-data default without persisting it on resize", async () => {
+		const payload = websocketPayload([createServer()]);
+		const value = {
+			connected: true,
+			lastData: payload,
+			messageHistory: [],
+			reconnect: vi.fn(),
+			needReconnect: false,
+			setNeedReconnect: vi.fn(),
+		};
+		const { rerender } = renderServerPage(value);
+		expect(screen.getByTestId("server-card")).toBeInTheDocument();
+		Object.defineProperty(window, "innerWidth", {
+			configurable: true,
+			value: 390,
+		});
+		rerender(
+			<SortProvider>
+				<StatusProvider>
+					<WebSocketContext.Provider
+						value={{
+							...value,
+							lastData: websocketPayload([createServer({ id: 2 })]),
+						}}
+					>
+						<Servers />
+					</WebSocketContext.Provider>
+				</StatusProvider>
+			</SortProvider>,
+		);
+		expect(screen.getByTestId("server-card")).toBeInTheDocument();
+		expect(localStorage.getItem("inline")).toBeNull();
+	});
+
+	it("selects still/high density at the precise size boundaries and respects Force flags", () => {
+		for (const [count, density, motion] of [
+			[60, "normal", "live"],
+			[61, "normal", "still"],
+			[120, "normal", "still"],
+			[121, "high", "still"],
+		] as const) {
+			const { container, unmount } = renderServerPage({
+				connected: true,
+				lastData: websocketPayload(
+					Array.from({ length: count }, (_, i) => createServer({ id: i + 1 })),
+				),
+			});
+			expect(container.querySelector(".hm-home")).toHaveAttribute(
+				"data-density",
+				density,
+			);
+			expect(container.querySelector(".hm-home")).toHaveAttribute(
+				"data-motion",
+				motion,
+			);
+			expect(
+				screen.getAllByTestId(
+					count > 120 ? "server-card-inline" : "server-card",
+				),
+			).toHaveLength(count);
+			unmount();
+		}
+		window.ForceCardInline = true;
+		window.ForceShowMap = true;
+		localStorage.setItem("inline", "0");
+		const { unmount } = renderServerPage({
+			connected: true,
+			lastData: websocketPayload([createServer()]),
+		});
+		expect(screen.getByTestId("server-card-inline")).toBeInTheDocument();
+		expect(screen.getByTestId("global-map")).toBeInTheDocument();
+		unmount();
+		window.ForceCardInline = false;
+		window.ForceShowMap = false;
 	});
 
 	it("sorts server cards by selected metrics and direction", async () => {
@@ -520,7 +600,11 @@ describe("Servers page", () => {
 		expect(screen.queryByTestId("server-card")).not.toBeInTheDocument();
 	});
 
-	it("defaults to the list view when no layout preference is stored", () => {
+	it("defaults to tiles on desktop with at most 120 nodes without persisting the default", () => {
+		Object.defineProperty(window, "innerWidth", {
+			configurable: true,
+			value: 1440,
+		});
 		const online = createServer({ id: 1, name: "alpha" });
 		const offline = createServer({
 			id: 2,
@@ -534,15 +618,16 @@ describe("Servers page", () => {
 		});
 
 		expect(localStorage.getItem("inline")).toBeNull();
-		expect(screen.getAllByTestId("server-card-inline")).toHaveLength(2);
-		expect(screen.queryByTestId("server-card")).not.toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "view.list" })).toHaveAttribute(
+		expect(screen.getAllByTestId("server-card")).toHaveLength(2);
+		expect(screen.queryByTestId("server-card-inline")).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "view.card" })).toHaveAttribute(
 			"aria-pressed",
 			"true",
 		);
 	});
 
 	it("sorts the list view exactly like the card view", async () => {
+		localStorage.setItem("inline", "1");
 		const lowCpu = createServer({
 			id: 1,
 			name: "alpha",
@@ -628,6 +713,7 @@ describe("Servers page", () => {
 	});
 
 	it("filters by status from the segmented status control", async () => {
+		localStorage.setItem("inline", "1");
 		const user = userEvent.setup();
 		const online = createServer({ id: 1, name: "alpha" });
 		const offline = createServer({

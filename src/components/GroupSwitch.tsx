@@ -85,7 +85,7 @@ export default function GroupSwitch({
 	return (
 		<div
 			ref={scrollRef}
-			className="scrollbar-hidden flex min-w-0 max-w-full overflow-x-auto overscroll-x-contain"
+			className="hm-groups scrollbar-hidden flex min-w-0 max-w-full overflow-x-auto overscroll-x-contain"
 		>
 			<div
 				ref={containerRef}
@@ -101,7 +101,7 @@ export default function GroupSwitch({
 							height: indicator.height,
 							transform: `translate(${indicator.x}px, ${indicator.y}px)`,
 							transition: indicator.shouldAnimate
-								? "transform 0.16s ease-out, width 0.16s ease-out, height 0.16s ease-out"
+								? "transform 220ms cubic-bezier(.3,.7,.2,1), width 220ms, height 220ms"
 								: "none",
 							width: indicator.width,
 						}}

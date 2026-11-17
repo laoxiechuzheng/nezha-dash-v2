@@ -32,6 +32,7 @@ vi.mock("recharts", () => {
 			children,
 			data,
 			dataKey,
+			width,
 			domain,
 			type,
 			x1,
@@ -40,12 +41,14 @@ vi.mock("recharts", () => {
 			children?: ReactNode;
 			data?: unknown[];
 			dataKey?: string;
+			width?: number;
 			domain?: unknown[];
 			type?: string;
 			x1?: number;
 			x2?: number;
 		}) => (
 			<div
+				data-width={width}
 				data-domain={domain ? JSON.stringify(domain) : undefined}
 				data-key={dataKey}
 				data-points={data?.length}
@@ -249,7 +252,10 @@ describe("NetworkChart", () => {
 			<NetworkChart server_id={7} show={false} />,
 		);
 
-		expect(container.querySelector(".h-\\[250px\\]")).toBeInTheDocument();
+		expect(
+			container.querySelector('.dt-network-loading[aria-busy="true"]'),
+		).toBeInTheDocument();
+		expect(container.querySelector(".dt-network-plot")).toBeInTheDocument();
 		expect(apiMocks.fetchMonitor).not.toHaveBeenCalled();
 	});
 
@@ -299,6 +305,51 @@ describe("NetworkChart", () => {
 });
 
 describe("NetworkChartClient", () => {
+	it.each([
+		false,
+		true,
+	])("preserves the coupled axis and overlay gutters when mobile=%s", (mobile) => {
+		vi.mocked(window.matchMedia).mockImplementation((query) => ({
+			matches: mobile && query === "(max-width: 640px)",
+			media: query,
+			onchange: null,
+			addListener: vi.fn(),
+			removeListener: vi.fn(),
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+			dispatchEvent: vi.fn(),
+		}));
+		render(
+			<NetworkChartClient
+				chartDataKey={["Alpha"]}
+				chartConfig={chartConfig}
+				chartData={{ Alpha: clientChartData.Alpha }}
+				serverName="geometry"
+				isPeriodLoading={false}
+				period="6h"
+				onPeriodChange={vi.fn()}
+				isLogin={true}
+			/>,
+		);
+		expect(screen.getByTestId("network-chart-interaction-overlay")).toHaveStyle(
+			{ left: `${mobile ? 56 : 68}px`, right: "12px" },
+		);
+		expect(screen.getByTestId("y-axis")).toHaveAttribute(
+			"data-width",
+			String(mobile ? 48 : 60),
+		);
+		vi.mocked(window.matchMedia).mockImplementation((query) => ({
+			matches: false,
+			media: query,
+			onchange: null,
+			addListener: vi.fn(),
+			removeListener: vi.fn(),
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+			dispatchEvent: vi.fn(),
+		}));
+	});
+
 	it("provides explicit navigation for monitor targets outside the viewport", async () => {
 		const user = userEvent.setup();
 

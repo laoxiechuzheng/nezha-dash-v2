@@ -95,7 +95,13 @@ describe("basic display components", () => {
 		).toBeInTheDocument();
 		expect(container.querySelectorAll(".hamster-loading-bar")).toHaveLength(16);
 		expect(container.querySelector(".animate-spin")).toBeInTheDocument();
-		expect(container.querySelector(".h-\\[250px\\]")).toBeInTheDocument();
+		const networkLoading = container.querySelector(
+			'.dt-network-loading[aria-busy="true"]',
+		);
+		expect(networkLoading).toBeInTheDocument();
+		expect(
+			networkLoading?.querySelector(".dt-network-plot"),
+		).toBeInTheDocument();
 	});
 
 	it("catches render errors with ErrorBoundary", () => {
@@ -121,7 +127,9 @@ describe("interactive app controls", () => {
 		);
 
 		expect(screen.getByText("command-closed")).toBeInTheDocument();
-		await user.click(screen.getByRole("button", { name: "Search" }));
+		await user.click(
+			screen.getByRole("button", { name: "v2Shell.search.label" }),
+		);
 		expect(screen.getByText("command-open")).toBeInTheDocument();
 	});
 
@@ -184,7 +192,7 @@ describe("ui primitives", () => {
 			</>,
 		);
 
-		expect(screen.getByTestId("skeleton")).toHaveClass("animate-pulse", "h-4");
+		expect(screen.getByTestId("skeleton")).toHaveClass("shimmer", "h-4");
 		expect(screen.getByTestId("horizontal")).toHaveClass("h-px", "w-full");
 		expect(screen.getByTestId("vertical")).toHaveClass("h-full", "w-px");
 		expect(container.querySelectorAll("[data-orientation]")).toHaveLength(2);

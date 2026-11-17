@@ -17,7 +17,7 @@ export default function TabSwitch({
 		useActiveIndicator(tabs, currentTab);
 
 	return (
-		<div className="server-info-tab w-full border-b border-border">
+		<div className="server-info-tab dt-tabs">
 			<div
 				ref={containerRef}
 				role="tablist"
@@ -26,11 +26,11 @@ export default function TabSwitch({
 				{indicator && (
 					<div
 						aria-hidden="true"
-						className="active-indicator-fade-in absolute bottom-0 left-0 z-10 h-0.5 rounded-full bg-primary"
+						className="active-indicator-fade-in dt-tab-indicator"
 						style={{
 							transform: `translateX(${indicator.x}px)`,
 							transition: indicator.shouldAnimate
-								? "transform 0.2s var(--timing), width 0.2s var(--timing)"
+								? "transform 220ms cubic-bezier(.3,.7,.2,1), width 220ms cubic-bezier(.3,.7,.2,1)"
 								: "none",
 							width: indicator.width,
 						}}
@@ -53,7 +53,7 @@ export default function TabSwitch({
 								setCurrentTab(tab);
 							}}
 							className={cn(
-								"relative flex h-10 cursor-pointer items-center gap-2 px-3 text-[13px] font-medium transition-colors duration-150",
+								"dt-tab relative flex h-10 cursor-pointer items-center gap-2 px-3 text-[13px] font-medium transition-colors duration-150",
 								selected
 									? "text-foreground"
 									: "text-muted-foreground hover:text-foreground",

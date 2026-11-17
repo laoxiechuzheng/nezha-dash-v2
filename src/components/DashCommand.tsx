@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Moon, Sun, SunMoon } from "lucide-react";
+import { Home, Moon, SearchX, Sun, SunMoon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -83,20 +83,36 @@ export function DashCommand() {
 			id: server.id,
 			name: server.name,
 			online: formatNezhaInfo(nezhaWsData.now, server).online,
+			platform: server.host.platform,
+			country: server.country_code,
 		}));
 	}, [isOpen, nezhaWsData]);
 
 	if (!connected || !nezhaWsData) return null;
 
 	return (
-		<CommandDialog open={isOpen} onOpenChange={closeCommand}>
+		<CommandDialog
+			open={isOpen}
+			onOpenChange={(open) => {
+				if (!open) closeCommand();
+			}}
+		>
 			<CommandInput
 				placeholder={t("TypeCommand")}
 				value={search}
 				onValueChange={setSearch}
 			/>
 			<CommandList>
-				<CommandEmpty>{t("NoResults")}</CommandEmpty>
+				<CommandEmpty>
+					<span className="sh-empty-icon">
+						<SearchX className="size-6" aria-hidden="true" />
+					</span>
+					<span>
+						{search
+							? t("v2Shell.search.empty", { query: search })
+							: t("NoResults")}
+					</span>
+				</CommandEmpty>
 				{serverCommands.length > 0 && (
 					<CommandGroup heading={t("Servers")}>
 						{serverCommands.map((server) => (
@@ -109,29 +125,36 @@ export function DashCommand() {
 									closeCommand();
 								}}
 							>
+								{server.country && (
+									<span
+										aria-hidden="true"
+										className={`fi fi-${server.country.toLowerCase()} shrink-0 rounded-[3px]`}
+									/>
+								)}
 								<span
 									className="status-dot"
 									data-status={server.online ? "online" : "offline"}
 								/>
 								<span
 									className={cn(
-										"truncate",
+										"min-w-0 flex-1 truncate",
 										!server.online && "text-muted-foreground",
 									)}
 								>
 									{server.name}
 								</span>
-								<span className="ml-auto font-mono text-[11px] text-muted-foreground tabular-nums">
-									#{server.id}
+								<span className="max-w-1/4 truncate text-xs text-muted-foreground">
+									{server.platform}
 								</span>
+								<kbd className="kbd sh-command-enter">↵</kbd>
 							</CommandItem>
 						))}
 					</CommandGroup>
 				)}
 				<CommandSeparator />
 
-				<CommandGroup heading={t("Shortcuts")}>
-					{shortcuts.map((item) => (
+				<CommandGroup heading={t("v2Shell.search.pages")}>
+					{shortcuts.slice(0, 1).map((item) => (
 						<CommandItem
 							key={item.label}
 							value={item.value}
@@ -145,7 +168,29 @@ export function DashCommand() {
 						</CommandItem>
 					))}
 				</CommandGroup>
+				<CommandGroup heading={t("v2Shell.search.themes")}>
+					{shortcuts.slice(1).map((item) => (
+						<CommandItem
+							key={item.label}
+							value={item.value}
+							onSelect={() => {
+								item.action();
+								closeCommand();
+							}}
+						>
+							{item.icon}
+							<span>{item.label}</span>
+							<kbd className="kbd sh-command-enter ml-auto">↵</kbd>
+						</CommandItem>
+					))}
+				</CommandGroup>
 			</CommandList>
+			<div className="sh-command-foot">
+				<span>
+					↑↓ {t("v2Shell.search.select")} · ↵ {t("v2Shell.search.open")}
+				</span>
+				<span>Esc {t("v2Shell.search.close")}</span>
+			</div>
 		</CommandDialog>
 	);
 }

@@ -26,5 +26,12 @@ export default function NumericText({
 	void transition;
 	void trend;
 
-	return <span {...spanProps}>{value}</span>;
+	return (
+		<span
+			{...spanProps}
+			className={["num", spanProps.className].filter(Boolean).join(" ")}
+		>
+			{value}
+		</span>
+	);
 }

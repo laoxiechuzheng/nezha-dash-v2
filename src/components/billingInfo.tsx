@@ -74,7 +74,7 @@ export default function BillingInfo({
 			)}
 			{hasBillingDates && !isNeverExpire && (
 				<RemainPercentBar
-					className="mt-0.5"
+					className="hm-billing-bar mt-0.5 h-[4px] w-[48px]"
 					value={daysLeftObject.remainingPercentage * 100}
 				/>
 			)}

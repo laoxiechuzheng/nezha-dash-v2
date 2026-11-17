@@ -73,15 +73,28 @@ const MainApp: React.FC = () => {
 	}, [i18n, settingData?.data?.config?.language]);
 
 	const initialBackendError = !settingData ? toError(error) : null;
+	const customMobileBackgroundImage =
+		window.CustomMobileBackgroundImage || undefined;
+
+	useEffect(() => {
+		const desktop = window.matchMedia("(min-width: 640px)");
+		const updateBackgroundState = () => {
+			const activeImage = desktop.matches
+				? customBackgroundImage
+				: customMobileBackgroundImage || customBackgroundImage;
+			document.documentElement.dataset.customBackground = String(!!activeImage);
+		};
+		updateBackgroundState();
+		desktop.addEventListener("change", updateBackgroundState);
+		return () => {
+			desktop.removeEventListener("change", updateBackgroundState);
+			delete document.documentElement.dataset.customBackground;
+		};
+	}, [customBackgroundImage, customMobileBackgroundImage]);
 
 	if (settingData?.data?.config?.custom_code && !isCustomCodeInjected) {
 		return null;
 	}
-
-	const customMobileBackgroundImage =
-		window.CustomMobileBackgroundImage !== ""
-			? window.CustomMobileBackgroundImage
-			: undefined;
 
 	return (
 		<ErrorBoundary>
@@ -105,11 +118,7 @@ const MainApp: React.FC = () => {
 					style={{ backgroundImage: `url(${customMobileBackgroundImage})` }}
 				/>
 			)}
-			<div
-				className={cn("relative flex min-h-screen w-full flex-col", {
-					"bg-background": !customBackgroundImage,
-				})}
-			>
+			<div className="sh-app relative z-10 flex min-h-screen w-full flex-col">
 				<RefreshToast />
 				<Header />
 				<DashCommand />

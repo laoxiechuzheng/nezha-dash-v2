@@ -1,0 +1,10 @@
+{
+	"v2Detail": {
+		"identity": { "lastReport": "最后上报 {{time}}", "bootAt": "启动时间" },
+		"period": { "lockedLogin": "登录后可用", "lockedTsdb": "未开启历史数据" },
+		"network": {
+			"coverage": "历史仅覆盖 {{span}}",
+			"recordsTitle": "最近故障记录"
+		}
+	}
+}

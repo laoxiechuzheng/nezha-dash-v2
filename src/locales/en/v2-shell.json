@@ -1,0 +1,26 @@
+{
+	"v2Shell": {
+		"header": {
+			"visitors": "Online visitors",
+			"disconnected": "Disconnected, reconnecting",
+			"navigation": "Navigation",
+			"customLinks": "Custom links"
+		},
+		"search": {
+			"label": "Search",
+			"title": "Search servers and commands",
+			"description": "Use the arrow keys to select a server, page, or theme.",
+			"pages": "Pages",
+			"themes": "Themes",
+			"empty": "No matches for “{{query}}”",
+			"select": "Select",
+			"open": "Open",
+			"close": "Close"
+		},
+		"theme": { "label": "Toggle theme" },
+		"language": { "label": "Change language" },
+		"close": "Close",
+		"retry": "Retry",
+		"login": { "title": "Login", "subtitle": "Dashboard" }
+	}
+}
